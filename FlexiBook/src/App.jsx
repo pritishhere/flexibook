@@ -8,6 +8,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import HomePage from './HomePage'; 
 import CustomerPage from './CustomerPage'; 
+import BusinessRegistration from "./BusinessRegistration/BusinessRegistration";
 
 function App() {
   return (
@@ -23,6 +24,9 @@ function App() {
           
           {/* Jab URL '/customers' ho, toh CustomerPage dikhao */}
           <Route path="/customers" element={<CustomerPage />} />
+          
+          {/*show business registration*/ }
+          <Route path="/business-register" element={<BusinessRegistration />} />
         </Routes>
       </div>
 

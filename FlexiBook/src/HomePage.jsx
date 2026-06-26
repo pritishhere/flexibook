@@ -81,8 +81,7 @@ const HomePage = () => {
                 <div className="flex flex-col h-full w-full">
                   <h4 className="font-bold text-slate-900 text-sm sm:text-base mb-1">Business Owner</h4>
                   <p className="text-xs sm:text-sm text-slate-600 mb-4 leading-relaxed">Manage appointments and grow sales.</p>
-                  <button className="mt-auto text-emerald-600 border-2 border-emerald-600 bg-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-emerald-700 hover:text-white text-center w-full transition-all shadow-sm">Register Now →</button>
-                </div>
+                  <Link to="/business-register" className="mt-auto text-emerald-600 border-2 border-emerald-600 bg-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-emerald-700 hover:text-white text-center w-full transition-all shadow-sm inline-block">Register Now →</Link>                </div>
               </div>
             </div>
 

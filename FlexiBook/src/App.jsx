@@ -1,35 +1,48 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-// Aapke components aur pages import kar rahe hain
-// Dhyan dein: Agar file paths alag hain toh inhe apne hisaab se adjust kar lena
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import HomePage from './HomePage';
 import CustomerPage from './CustomerPage';
-import LoginPage from './LoginPage'; // <-- 1. Your Login Page imported here!
+import LoginPage from './LoginPage'; 
+import SignUpGateway from './SignUpGateway'; 
+import CustomerRegister from './CustomerRegister'; // Imported the new registration form page
 import BusinessRegistration from "./BusinessRegistration/BusinessRegistration";
+
 function App() {
   return (
     <Router>
-      {/* Header sabse upar rahega, har page par dikhega */}
+      {/* Header stays static at the top of every page */}
       <Header />
-      {/* Routes decide karta hai ki URL ke hisaab se kaunsa page dikhana hai */}
+      
+      {/* App wrapper to ensure full page layout scaling */}
       <div className="min-h-screen">
         <Routes>
-          {/* Jab URL '/' ho, toh HomePage dikhao */}
+          {/* Main Landing/Home Page */}
           <Route path="/" element={<HomePage />} />     
-          {/* Jab URL '/customers' ho, toh CustomerPage dikhao */}
+          
+          {/* Customers Features Page */}
           <Route path="/customers" element={<CustomerPage />} />
-          {/* Jab URL '/login' ho, toh LoginPage dikhao */}
-          <Route path="/login" element={<LoginPage />} /> {/* <-- 2. Your Login Route added here! */}       
-          {/*show business registration*/ }
-          <Route path="/business-register" element={<BusinessRegistration />} />
+          
+          {/* Styled Login View */}
+          <Route path="/login" element={<LoginPage />} />       
+          
+          {/* Gateway room that splits into Customer vs Business choices */}
+          <Route path="/business-register" element={<SignUpGateway />} />
+          
+          {/* Full Customer Registration Account Form */}
+          <Route path="/customer-register" element={<CustomerRegister />} />
+          
+          {/* Full Business Profile Registration Form */}
+          <Route path="/real-business-form" element={<BusinessRegistration />} /> 
         </Routes>
       </div>
-      {/* Footer sabse neeche rahega, har page par dikhega */}
+      
+      {/* Footer stays static at the bottom of every page */}
       <Footer />
     </Router>
   );
 }
+
 export default App;

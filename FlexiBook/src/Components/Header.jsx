@@ -55,8 +55,19 @@ export const Header = () => {
 
         {/* 3. AUTH BUTTONS */}
         <div className="hidden lg:flex flex-1 justify-end items-center gap-3 xl:gap-5 pr-2 sm:pr-4">
-          <button className="text-sm xl:text-base font-semibold text-gray-700 hover:text-blue-600 transition-colors">Login</button>
-          <button className="text-sm xl:text-base font-semibold bg-blue-600 text-white px-5 xl:px-7 py-2 xl:py-2.5 rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-200">Sign Up</button>
+          {/* Linked Desktop Login Button */}
+          <Link to="/login" className={getDesktopLinkStyle('/login')}>
+            <button className="text-sm xl:text-base font-semibold text-gray-700 hover:text-blue-600 transition-colors">
+              Login
+            </button>
+          </Link>
+          
+          {/* FIXED: Wrapped Desktop Sign Up Button in a Link to /business-register */}
+          <Link to="/business-register">
+            <button className="text-sm xl:text-base font-semibold bg-blue-600 text-white px-5 xl:px-7 py-2 xl:py-2.5 rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-200">
+              Sign Up
+            </button>
+          </Link>
         </div>
 
         {/* MOBILE HAMBURGER MENU BUTTON */}
@@ -87,8 +98,19 @@ export const Header = () => {
           <a href="#" className="text-base font-medium text-gray-600 py-2">Contact Us</a>
           <hr className="border-gray-100 my-2" />
           <div className="flex flex-col sm:flex-row gap-3">
-            <button className="w-full text-center text-base font-semibold text-gray-700 py-3 border border-gray-200 rounded-lg">Login</button>
-            <button className="w-full text-center text-base font-semibold bg-blue-600 text-white py-3 rounded-lg">Sign Up</button>
+            {/* Linked Mobile Login Button */}
+            <Link to="/login" onClick={() => setIsOpen(false)} className="w-full">
+              <button className="w-full text-center text-base font-semibold text-gray-700 py-3 border border-gray-200 rounded-lg">
+                Login
+              </button>
+            </Link>
+            
+            {/* FIXED: Wrapped Mobile Sign Up Button in a Link and close dropdown on click */}
+            <Link to="/business-register" onClick={() => setIsOpen(false)} className="w-full">
+              <button className="w-full text-center text-base font-semibold bg-blue-600 text-white py-3 rounded-lg">
+                Sign Up
+              </button>
+            </Link>
           </div>
         </div>
       )}

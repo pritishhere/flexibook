@@ -8,6 +8,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import HomePage from './HomePage'; 
 import CustomerPage from './CustomerPage'; 
+import LoginPage from './LoginPage'; // <-- 1. Your Login Page imported here!
 
 function App() {
   return (
@@ -23,6 +24,9 @@ function App() {
           
           {/* Jab URL '/customers' ho, toh CustomerPage dikhao */}
           <Route path="/customers" element={<CustomerPage />} />
+
+          {/* Jab URL '/login' ho, toh LoginPage dikhao */}
+          <Route path="/login" element={<LoginPage />} /> {/* <-- 2. Your Login Route added here! */}
         </Routes>
       </div>
 

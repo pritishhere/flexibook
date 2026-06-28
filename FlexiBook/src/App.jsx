@@ -24,6 +24,7 @@ function App() {
           
           {/* Jab URL '/customers' ho, toh CustomerPage dikhao */}
           <Route path="/customers" element={<CustomerPage />} />
+          <Route path="/login" element={<Login/>} />
           
           {/*show business registration*/ }
           <Route path="/business-register" element={<BusinessRegistration />} />

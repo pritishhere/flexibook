@@ -18,7 +18,7 @@ const CustomerPage = () => {
   });
   const [isOthersOpen, setIsOthersOpen] = useState(false); 
 
-  // 🔥 NEW: Full Page Detail State 🔥
+  // 🔥 Full Page Detail State 🔥
   const [activeDetailPage, setActiveDetailPage] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -47,12 +47,11 @@ const CustomerPage = () => {
     'Vellore': 'Tamil Nadu', 'Pan India': 'All India'
   };
 
-  // Scroll to top when opening detail page
   useEffect(() => {
     if (activeDetailPage) window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeDetailPage]);
 
-  // ================= 3. MEGA REAL DATA ENGINE (220 Items Total) =================
+  // ================= 3. MEGA REAL DATA ENGINE =================
   const realHealthcareData = [
     { id: 1, name: 'AIIMS', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.9', reviews: '24.5k', distance: '4.2 km away', location: 'New Delhi', desc: 'All India Institute of Medical Sciences. Premier govt medical college and hospital providing world-class healthcare.', tags: ['Govt Hospital', 'Research'], availabilityStatus: 'Fully Booked', nextAvailable: 'Next Month', priceValue: 100, price: '₹100 Registration', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=400&q=80' },
     { id: 2, name: 'Apollo Hospitals', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.8', reviews: '12.1k', distance: '2.5 km away', location: 'Chennai', desc: 'Pioneers of private healthcare in India, offering advanced medical treatments, surgeries, and global standards.', tags: ['Private', 'Advanced Surgery'], availabilityStatus: 'Available Now', nextAvailable: 'Available Now', priceValue: 1200, price: '₹1200 Consultation', image: 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?auto=format&fit=crop&w=400&q=80' },
@@ -346,7 +345,6 @@ const CustomerPage = () => {
       { name: "Priya Desai", title: "Dermatologist", exp: "12 years of experience", desc: "Advanced skin care and laser therapy.", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80" },
       { name: "Kabir Singh", title: "Spa Therapist", exp: "15 years of experience", desc: "Deep tissue and authentic Ayurvedic massages.", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" }
     ];
-    // Default fallback
     return [
       { name: "Alex Mercer", title: "Lead Specialist", exp: "10+ years experience", desc: "Ensures top quality service delivery.", image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80" },
       { name: "Sarah Connor", title: "Senior Executive", exp: "8+ years experience", desc: "Customer relations and operations head.", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" },
@@ -567,7 +565,6 @@ const CustomerPage = () => {
             </div>
 
             <div className="p-6 sm:p-8 min-h-[300px]">
-              
               {/* Tab: Overview */}
               {activeTab === 'overview' && (
                 <div className="animate-fade-in">
@@ -649,7 +646,6 @@ const CustomerPage = () => {
                   ))}
                 </div>
               )}
-
             </div>
           </div>
 
@@ -733,6 +729,23 @@ const CustomerPage = () => {
                         <span className="text-sm text-slate-600 group-hover/item:text-slate-900 group-hover/item:pl-1 transition-all duration-200">{cat}</span>
                       </label>
                     ))}
+                    {/* Other Categories */}
+                    <div className="mt-1">
+                      <div className="flex items-center justify-between cursor-pointer group/other py-1" onClick={() => setIsOthersOpen(!isOthersOpen)}>
+                        <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition-colors duration-200">Other Services</span>
+                        <svg className={`w-4 h-4 text-slate-400 group-hover/other:text-blue-500 transform transition-transform duration-300 ${isOthersOpen ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </div>
+                      {isOthersOpen && (
+                        <div className="flex flex-col gap-2.5 mt-2.5 pl-3.5 border-l-2 border-slate-100 focus-within:border-blue-400 transition-all duration-300">
+                          {otherCategories.map((cat, i) => (
+                            <label key={i} className="flex items-center gap-3 cursor-pointer group/sub select-none">
+                              <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleCategoryToggle(cat)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                              <span className="text-sm text-slate-600 group-hover/sub:text-slate-900 group-hover/sub:pl-1 transition-all duration-200">{cat}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -760,7 +773,7 @@ const CustomerPage = () => {
                   <svg className={`w-4 h-4 text-slate-400 group-hover:text-blue-500 transform transition-transform duration-300 ${openSections.sortBy ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 {openSections.sortBy && (
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500 bg-white cursor-pointer mb-4 transition-all duration-200">
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white cursor-pointer mb-4 transition-all duration-200">
                     <option value="Recommended">Recommended</option>
                     <option value="Nearest First">Nearest First</option>
                     <option value="Highest Rated">Highest Rated</option>
@@ -769,74 +782,225 @@ const CustomerPage = () => {
               </div>
               <hr className="border-slate-100/80 my-4" />
 
-              {/* Availability, Price, Ratings Filters (Simplified for brevity but identical logic) */}
+              {/* Availability */}
               <div className="mb-2">
-                <h4 className="font-bold text-slate-800 text-sm mb-4">Availability</h4>
-                <div className="flex flex-col gap-2.5 mb-4">
-                  {availabilityOptions.map((status, i) => (
-                    <label key={i} className="flex items-center gap-3 cursor-pointer group/avail">
-                      <input type="checkbox" checked={selectedAvailability.includes(status)} onChange={() => handleAvailabilityToggle(status)} className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
-                      <span className="text-sm text-slate-600">{status}</span>
-                    </label>
-                  ))}
+                <div className="flex items-center justify-between mb-4 cursor-pointer group" onClick={() => toggleSection('availability')}>
+                  <h4 className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors duration-200">Availability</h4>
+                  <svg className={`w-4 h-4 text-slate-400 group-hover:text-blue-500 transform transition-transform duration-300 ${openSections.availability ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
+                {openSections.availability && (
+                  <div className="flex flex-col gap-2.5 mb-4">
+                    {availabilityOptions.map((status, i) => (
+                      <label key={i} className="flex items-center gap-3 cursor-pointer group/avail select-none">
+                        <input type="checkbox" checked={selectedAvailability.includes(status)} onChange={() => handleAvailabilityToggle(status)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                        <span className="text-sm text-slate-600 group-hover/avail:text-slate-900 group-hover/avail:pl-1 transition-all duration-200">{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
+              <hr className="border-slate-100/80 my-4" />
+
+              {/* Price Ranges */}
+              <div>
+                <div className="flex items-center justify-between mb-4 cursor-pointer group" onClick={() => toggleSection('price')}>
+                  <h4 className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors duration-200">Price Range</h4>
+                  <svg className={`w-4 h-4 text-slate-400 group-hover:text-blue-500 transform transition-transform duration-300 ${openSections.price ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                {openSections.price && (
+                  <div className="flex flex-col gap-2.5 mb-4">
+                    {priceOptions.map((price, i) => (
+                      <label key={i} className="flex items-center gap-3 cursor-pointer group/price select-none">
+                        <input type="checkbox" checked={selectedPrices.includes(price)} onChange={() => handlePriceToggle(price)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                        <span className="text-sm text-slate-600 group-hover/price:text-slate-900 group-hover/price:pl-1 transition-all duration-200">{price}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <hr className="border-slate-100/80 my-4" />
+
+              {/* Ratings Filter */}
+              <div>
+                <div className="flex items-center justify-between mb-4 cursor-pointer group" onClick={() => toggleSection('ratings')}>
+                  <h4 className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors duration-200">Ratings</h4>
+                  <svg className={`w-4 h-4 text-slate-400 group-hover:text-blue-500 transform transition-transform duration-300 ${openSections.ratings ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                {openSections.ratings && (
+                  <div className="flex flex-col gap-2.5">
+                    {ratingOptions.map((rating, i) => (
+                      <label key={i} className="flex items-center gap-3 cursor-pointer group/rating select-none">
+                        <input type="checkbox" checked={selectedRatings.includes(rating)} onChange={() => handleRatingToggle(rating)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                        <div className="flex items-center gap-1 group-hover/rating:pl-1 transition-all duration-200">
+                          <span className="text-yellow-400 text-sm">★</span>
+                          <span className="text-sm text-slate-600 group-hover/rating:text-slate-900">{rating}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
 
-          {/* MAIN CONTENT LISTINGS */}
+          {/* MAIN CONTENT LISTINGS (PREMIUM CARDS) */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">All Services <span className="text-blue-600 text-sm ml-2">({sortedServices.length} Results)</span></h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold text-slate-900">All Services</h2>
+                <span className="bg-blue-50/80 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm transition-all">{sortedServices.length} Results</span>
+              </div>
+              <button className="flex items-center gap-2 text-blue-600 text-sm font-medium border border-blue-200 bg-white/95 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-blue-50 active:scale-95 transition-all shadow-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                Map View
+              </button>
             </div>
 
             <div className="flex flex-col gap-5">
               {currentServices.length > 0 ? currentServices.map((service) => (
-                <div key={service.id} className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/50 p-4 flex flex-col md:flex-row gap-5 hover:-translate-y-1.5 hover:shadow-lg transition-all duration-400 group/card relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+                // 🔥 RESTORED PREMIUM HOVER ANIMATIONS HERE 🔥
+                <div key={service.id} className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/50 p-4 sm:p-5 flex flex-col md:flex-row gap-5 hover:-translate-y-1.5 hover:shadow-[0_12px_30px_-10px_rgba(37,99,235,0.2)] hover:border-blue-300/50 transition-all duration-400 ease-out group/card relative overflow-hidden">
+                  
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
 
-                  <div className="w-full md:w-48 h-40 bg-slate-50 rounded-xl relative flex items-center justify-center overflow-hidden">
-                    {service.image ? <img src={service.image} className="w-full h-full object-cover transition-transform group-hover/card:scale-110" alt="img" /> : <span>{service.icon}</span>}
+                  <div className="w-full md:w-48 h-40 bg-slate-50 rounded-xl shrink-0 relative flex items-center justify-center border border-slate-100 overflow-hidden shadow-inner">
+                    {service.image ? (
+                      <img src={service.image} alt={service.name} className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110" />
+                    ) : (
+                      <span className="text-4xl opacity-80 transition-transform duration-500 group-hover/card:scale-125">{service.icon}</span>
+                    )}
+                    {service.image && <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent"></div>}
                   </div>
 
-                  <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex-1 flex flex-col justify-between ml-0 md:ml-1">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">{service.name}</h3>
-                      <p className="text-sm text-slate-500 mb-2">{service.category}</p>
-                      <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
-                        <span className="font-bold text-yellow-600">★ {service.rating}</span>
-                        <span>📍 {service.distance}</span>
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <h3 className="text-lg font-bold text-slate-900 bg-left-bottom bg-gradient-to-r from-blue-600 to-blue-600 bg-[length:0%_2px] bg-no-repeat group-hover/card:bg-[length:100%_2px] transition-all duration-500 ease-out pb-0.5">
+                          {service.name}
+                        </h3>
+                        {service.verified && (
+                          <span className="flex items-center gap-1 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm border border-emerald-100/50 uppercase tracking-wide">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                            Verified
+                          </span>
+                        )}
                       </div>
-                      <p className="text-sm text-slate-600 line-clamp-2">{service.desc}</p>
+                      <p className="text-sm text-slate-500 mb-2 font-medium">{service.category}</p>
+                      
+                      <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
+                        <div className="flex items-center gap-1 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-100/50">
+                          <span className="text-yellow-500 text-xs">★</span>
+                          <span className="font-bold text-yellow-700">{service.rating} <span className="font-medium text-yellow-600/70 text-xs">({service.reviews})</span></span>
+                        </div>
+                        <div className="flex items-center gap-1"><span className="text-slate-400">📍</span><span className="font-medium">{service.distance} ({service.location})</span></div>
+                      </div>
+
+                      <p className="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">{service.desc}</p>
                     </div>
 
-                    <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
-                      <button onClick={() => { setActiveDetailPage(service); setActiveTab('overview'); }} className="px-4 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all">View Details</button>
-                      <button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.name + ', ' + service.location)}`, '_blank')} className="px-4 py-1.5 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-800 hover:text-white transition-all">View on Map</button>
+                    {/* RESTORED TAGS ANIMATION */}
+                    <div className="flex flex-wrap gap-2 mt-auto">
+                      {service.tags.map((tag, idx) => (
+                        <span key={idx} className="bg-slate-100/80 text-slate-600 text-[11px] font-medium px-2.5 py-1 rounded-md border border-slate-200/60 group-hover/card:border-blue-200 group-hover/card:bg-blue-50 group-hover/card:text-blue-700 transition-colors duration-300">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-100/80">
+                      <button onClick={() => { setActiveDetailPage(service); setActiveTab('overview'); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50/50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-300 hover:shadow-[0_4px_12px_-4px_rgba(37,99,235,0.4)] active:scale-95 group/details">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z"></path></svg>
+                        View Details
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.name + ', ' + service.location)}`, '_blank'); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-800 hover:border-slate-800 hover:text-white transition-all duration-300 hover:shadow-[0_4px_12px_-4px_rgba(30,41,59,0.4)] active:scale-95 group/map">
+                        <svg className="w-3.5 h-3.5 text-slate-400 group-hover/map:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        View on Map
+                      </button>
                     </div>
                   </div>
 
-                  <div className="w-full md:w-48 flex flex-col items-start md:items-end justify-between border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pl-5">
-                    <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border ${service.availabilityStatus === 'Available Now' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>{service.availabilityStatus}</span>
-                    <div className="text-left md:text-right my-4">
-                      <p className="text-xs text-slate-400 uppercase font-semibold">Next Slot</p>
-                      <p className="text-sm font-bold text-slate-800">{service.nextAvailable}</p>
-                      <p className="text-[15px] font-black text-blue-600 mt-2">{service.price}</p>
+                  <div className="w-full md:w-48 flex flex-col items-start md:items-end justify-between border-t border-slate-100 md:border-t-0 md:border-l md:border-slate-100/80 pt-4 md:pt-0 md:pl-5 mt-4 md:mt-0">
+                    <div className="w-full flex justify-between md:justify-end items-start mb-4">
+                       <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm ${
+                         service.availabilityStatus === 'Available Now' ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-emerald-700 border-emerald-100' : 
+                         service.availabilityStatus === 'Available Today' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-100' :
+                         service.availabilityStatus === 'Join Queue' ? 'bg-gradient-to-r from-purple-50 to-fuchsia-50 text-purple-700 border-purple-100' :
+                         'bg-slate-50 text-slate-500 border-slate-200'
+                       }`}>
+                         {service.availabilityStatus}
+                       </span>
                     </div>
-                    <button className="w-full font-bold py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm">Book Now</button>
+                    
+                    <div className="w-full flex flex-row md:flex-col justify-between md:items-end gap-2 mb-5">
+                      <div className="text-left md:text-right">
+                        <p className="text-xs text-slate-400 mb-0.5 uppercase tracking-wider font-semibold">Next Available</p>
+                        <p className="text-sm font-bold text-slate-800">{service.nextAvailable}</p>
+                      </div>
+                      <div className="text-left md:text-right">
+                        <p className="text-[15px] font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-blue-500">{service.price}</p>
+                      </div>
+                    </div>
+
+                    <button disabled={service.availabilityStatus === 'Fully Booked'} className={`relative overflow-hidden w-full font-bold py-2.5 rounded-xl transition-all duration-300 text-sm shadow-sm flex items-center justify-center gap-2 group/btn ${service.availabilityStatus === 'Fully Booked' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-[0_8px_20px_-6px_rgba(37,99,235,0.5)] active:scale-[0.97]'}`}>
+                      <span>{service.availabilityStatus === 'Join Queue' ? 'Join Queue' : service.availabilityStatus === 'Fully Booked' ? 'Unavailable' : 'Book Now'}</span>
+                      {service.availabilityStatus !== 'Fully Booked' && (
+                        <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                      )}
+                    </button>
                   </div>
+
                 </div>
               )) : (
-                <div className="p-10 text-center text-slate-500">No match found.</div>
+                <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-sm border border-slate-200 p-10 text-center flex flex-col items-center justify-center animate-fade-in">
+                   <span className="text-4xl mb-4">🔮</span>
+                   <h3 className="text-lg font-bold text-slate-900 mb-2">No Match Found</h3>
+                   <p className="text-sm text-slate-500 mb-4">We couldn't find any service matching these specific filters.</p>
+                   <button onClick={handleClearAll} className="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm shadow-sm active:scale-95">Clear All Filters</button>
+                </div>
               )}
             </div>
 
-            {/* Pagination Component (Simplified in snippet, fully functional) */}
-            <div className="mt-8 flex justify-center gap-2">
-              {getPageNumbers().map((p, i) => (
-                <button key={i} onClick={() => typeof p === 'number' && setCurrentPage(p)} className={`w-8 h-8 rounded-lg font-bold border ${currentPage === p ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>{p}</button>
-              ))}
-            </div>
+            {/* 🔥 RESTORED FULL PAGINATION & GO TO PAGE 🔥 */}
+            {sortedServices.length > 0 && (
+              <div className="flex flex-col md:flex-row items-center justify-between border-t border-slate-200/60 mt-10 pt-6 gap-6 bg-white/50 p-4 rounded-xl backdrop-blur-sm shadow-sm">
+                <div className="text-sm text-slate-500 font-medium">
+                  Showing <span className="font-bold text-slate-900">{indexOfFirstItem + 1}</span> to <span className="font-bold text-slate-900">{Math.min(indexOfLastItem, sortedServices.length)}</span> of <span className="font-bold text-slate-900">{sortedServices.length}</span> results
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={handlePrevPage} disabled={currentPage === 1} className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-medium transition-colors bg-white/95 ${currentPage === 1 ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 shadow-sm'}`}>{"<"}</button>
+                    
+                    {getPageNumbers().map((page, index) => (
+                      <button 
+                        key={index}
+                        onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                        disabled={page === '...'}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-semibold transition-all bg-white/95 shadow-sm ${page === '...' ? 'border-transparent text-slate-400 cursor-default shadow-none' : currentPage === page ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-105' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600'}`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button onClick={handleNextPage} disabled={currentPage === totalPages} className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-medium transition-colors bg-white/95 ${currentPage === totalPages ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 shadow-sm'}`}>{">"}</button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 pl-0 sm:pl-4 sm:border-l border-slate-300">
+                    <span className="text-sm text-slate-500 font-medium">Go to:</span>
+                    <select 
+                      value={currentPage} 
+                      onChange={handleDropdownChange}
+                      className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer bg-white/95 shadow-sm"
+                    >
+                      {[...Array(totalPages)].map((_, idx) => (
+                        <option key={idx + 1} value={idx + 1}>Page {idx + 1}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -17,10 +17,11 @@ export const Header = () => {
     return location.pathname === path
       ? "text-base font-bold text-blue-600 py-2" // Active Style Mobile
       : "text-base font-medium text-gray-600 py-2"; // Normal Style Mobile
-  };
+  }; 
+  
 
   return (
-    <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+    <header className={"w-full bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm "}>
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-20 md:h-24 flex items-center justify-between">
         
         {/* 1. LOGO SECTION */}

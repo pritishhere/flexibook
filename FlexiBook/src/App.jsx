@@ -24,7 +24,6 @@ function App() {
           
           {/* Customers Features Page */}
           <Route path="/customers" element={<CustomerPage />} />
-          <Route path="/login" element={<Login/>} />
           
           {/* Styled Login View */}
           <Route path="/login" element={<LoginPage />} />       

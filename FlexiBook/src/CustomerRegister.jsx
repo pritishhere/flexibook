@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import familyBg from './family-bg.png'; // Importing your local background image
+import { useNavigate, Link } from 'react-router-dom';
+import familyBg from './family-bg.png'; 
 
 const CustomerRegister = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +9,7 @@ const CustomerRegister = () => {
     password: '',
     confirmPassword: ''
   });
+  const [focusedField, setFocusedField] = useState('');
 
   const { name, email, password, confirmPassword } = formData;
   const navigate = useNavigate();
@@ -27,8 +28,24 @@ const CustomerRegister = () => {
 
     console.log("Registering Customer:", name, email);
     alert("Account Created Successfully!");
-    navigate('/');
+    navigate('/login'); // Sends them straight to your clean login card
   };
+
+  // Reusable, interactive input design config mapping
+  const getInputStyle = (fieldName) => ({
+    width: '100%', 
+    padding: '12px 16px', 
+    marginTop: '6px',
+    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid #cbd5e1', 
+    borderRadius: '8px',
+    backgroundColor: '#ffffff', 
+    color: '#0f172a', 
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'all 0.2s ease',
+    boxShadow: focusedField === fieldName ? '0 0 0 4px rgba(37, 99, 235, 0.15)' : 'none'
+  });
 
   return (
     <div style={{ 
@@ -37,8 +54,7 @@ const CustomerRegister = () => {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      // Matches the layout styling scheme from the login view container
-      backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(${familyBg})`, 
+      backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url(${familyBg})`, 
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -47,58 +63,141 @@ const CustomerRegister = () => {
     }}>
       <div style={{ 
         width: '100%',
-        maxWidth: '450px', 
-        padding: '35px 30px', 
-        border: '1px solid #e2e8f0', 
-        borderRadius: '12px',
-        backgroundColor: '#ffffff',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        maxWidth: '440px', 
+        padding: '40px 36px', 
+        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        borderRadius: '20px',
+        backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+        boxSizing: 'border-box',
+        position: 'relative'
       }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '24px', color: '#1e293b', fontWeight: '700', fontSize: '1.6rem' }}>
+        
+        {/* Compact Long-Tail Back Arrow pointing beautifully back to the Gateway selection room */}
+        <Link 
+          to="/business-register" 
+          style={{
+            position: 'absolute',
+            top: '26px',
+            left: '26px',
+            color: '#475569', 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.2s, color 0.2s',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.color = '#2563eb';
+            e.currentTarget.style.transform = 'translateX(-3px)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.color = '#475569';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="21" y1="12" x2="3" y2="12"></line>
+            <polyline points="10 19 3 12 10 5"></polyline>
+          </svg>
+        </Link>
+
+        <h2 style={{ 
+          textAlign: 'center', 
+          marginBottom: '6px', 
+          color: '#0f172a', 
+          fontSize: '1.75rem', 
+          fontWeight: '800',
+          letterSpacing: '-0.025em',
+          marginTop: '16px' 
+        }}>
           Create Customer Account
         </h2>
+        <p style={{
+          textAlign: 'center',
+          color: '#475569',
+          fontSize: '14px',
+          marginTop: '0',
+          marginBottom: '28px',
+          fontWeight: '400'
+        }}>
+          Join FlexiBook today to manage your bookings
+        </p>
         
         <form onSubmit={onSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#475569' }}>Full Name</label>
+          {/* Full Name Field */}
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Full Name</label>
             <input 
-              type="text" name="name" value={name} onChange={onChange} required placeholder="John Doe"
-              style={{ width: '100%', padding: '11px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', boxSizing: 'border-box', backgroundColor: '#f8fafc' }}
+              type="text" name="name" value={name} onChange={onChange} 
+              onFocus={() => setFocusedField('name')} onBlur={() => setFocusedField('')}
+              required placeholder="John Doe" style={getInputStyle('name')} 
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#475569' }}>Email Address</label>
+          {/* Email Address Field */}
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Email Address</label>
             <input 
-              type="email" name="email" value={email} onChange={onChange} required placeholder="you@example.com"
-              style={{ width: '100%', padding: '11px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', boxSizing: 'border-box', backgroundColor: '#f8fafc' }}
+              type="email" name="email" value={email} onChange={onChange} 
+              onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField('')}
+              required placeholder="you@example.com" style={getInputStyle('email')} 
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#475569' }}>Password</label>
+          {/* Password Field */}
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Password</label>
             <input 
-              type="password" name="password" value={password} onChange={onChange} required placeholder="••••••••"
-              style={{ width: '100%', padding: '11px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', boxSizing: 'border-box', backgroundColor: '#f8fafc' }}
+              type="password" name="password" value={password} onChange={onChange} 
+              onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField('')}
+              required placeholder="••••••••" style={getInputStyle('password')} 
             />
           </div>
 
-          <div style={{ marginBottom: '26px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#475569' }}>Confirm Password</label>
+          {/* Confirm Password Field */}
+          <div style={{ marginBottom: '32px' }}>
+            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Confirm Password</label>
             <input 
-              type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} required placeholder="••••••••"
-              style={{ width: '100%', padding: '11px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', boxSizing: 'border-box', backgroundColor: '#f8fafc' }}
+              type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} 
+              onFocus={() => setFocusedField('confirmPassword')} onBlur={() => setFocusedField('')}
+              required placeholder="••••••••" style={getInputStyle('confirmPassword')} 
             />
           </div>
 
-          <button type="submit" style={{ 
-            width: '100%', padding: '13px', backgroundColor: '#2563eb', color: 'white', 
-            border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '16px',
-            boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)'
-          }}>
+          <button 
+            type="submit" 
+            style={{ 
+              width: '100%', 
+              padding: '14px', 
+              backgroundColor: '#2563eb', 
+              color: '#ffffff', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '16px',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+              transition: 'all 0.2s ease',
+            }}
+          >
             Sign Up
           </button>
         </form>
+
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: '28px', 
+          fontSize: '14px', 
+          color: '#64748b', 
+          fontWeight: '400' 
+        }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>
+            Sign In
+          </Link>
+        </div>
       </div>
     </div>
   );

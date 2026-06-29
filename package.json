@@ -1,29 +1,19 @@
 {
-<<<<<<< HEAD
   "name": "flexidata",
   "version": "1.0.0",
-  "description": "",
+  "description": "FlexiBook backend",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon --env-file=.env app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "mongodb": "^7.4.0",
-    "nodemon": "^3.1.14"
+    "bcryptjs": "^2.6.2",
+    "cors": "^2.8.2",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.2.0",
+    "mongoose": "^8.1.0",
+    "nodemon": "^3.0.0"
   }
-=======
-  "name": "flexibook-root",
-  "private": true,
-  "version": "1.0.0",
-  "workspaces": [
-    "FlexiBook",
-    "server"
-  ]
->>>>>>> 98f3172de25bedf95bb597416a677e3596e7b0b2
 }

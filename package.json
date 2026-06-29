@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "flexidata",
   "version": "1.0.0",
   "description": "",
@@ -16,4 +17,13 @@
     "mongodb": "^7.4.0",
     "nodemon": "^3.1.14"
   }
+=======
+  "name": "flexibook-root",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "FlexiBook",
+    "server"
+  ]
+>>>>>>> 98f3172de25bedf95bb597416a677e3596e7b0b2
 }

@@ -202,3 +202,127 @@ exports.getServiceById = async (req, res) => {
         });
     }
 };
+
+// @desc    Update a service by ID
+exports.updateService = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            // Validate IDs if provided
+            if (req.body.hospitalId && !mongoose.Types.ObjectId.isValid(req.body.hospitalId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid hospital ID format'
+                });
+            }
+            if (req.body.departmentId && !mongoose.Types.ObjectId.isValid(req.body.departmentId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid department ID format'
+                });
+            }
+
+            const service = await Service.findByIdAndUpdate(id, req.body, {
+                new: true,
+                runValidators: true
+            }).populate('hospitalId', 'name').populate('departmentId', 'name');
+
+            if (!service) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Service not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Service updated successfully (MongoDB)',
+                data: service
+            });
+        } else {
+            // Use In-Memory fallback
+            const index = inMemoryDb.services.findIndex(s => s._id === id);
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Service not found'
+                });
+            }
+
+            // Merge details
+            inMemoryDb.services[index] = {
+                ...inMemoryDb.services[index],
+                ...req.body,
+                updatedAt: new Date()
+            };
+
+            // Mock populate
+            const service = inMemoryDb.services[index];
+            const hospital = inMemoryDb.hospitals.find(h => h._id === service.hospitalId);
+            const department = inMemoryDb.departments.find(d => d._id === service.departmentId);
+            const populated = {
+                ...service,
+                hospitalId: hospital ? { _id: hospital._id, name: hospital.name } : service.hospitalId,
+                departmentId: department ? { _id: department._id, name: department.name } : service.departmentId
+            };
+
+            return res.status(200).json({
+                success: true,
+                message: 'Service updated successfully (In-Memory Fallback)',
+                data: populated
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error updating service',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Delete a service by ID
+exports.deleteService = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            const service = await Service.findByIdAndDelete(id);
+
+            if (!service) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Service not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Service deleted successfully (MongoDB)'
+            });
+        } else {
+            // Use In-Memory fallback
+            const index = inMemoryDb.services.findIndex(s => s._id === id);
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Service not found'
+                });
+            }
+
+            inMemoryDb.services.splice(index, 1);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Service deleted successfully (In-Memory Fallback)'
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting service',
+            error: error.message
+        });
+    }
+};

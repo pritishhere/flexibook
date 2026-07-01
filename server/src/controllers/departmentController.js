@@ -169,3 +169,119 @@ exports.getDepartmentById = async (req, res) => {
         });
     }
 };
+
+// @desc    Update a department by ID
+exports.updateDepartment = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            // If hospitalId is provided in update, validate it
+            if (req.body.hospitalId && !mongoose.Types.ObjectId.isValid(req.body.hospitalId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid hospital ID format'
+                });
+            }
+
+            const department = await Department.findByIdAndUpdate(id, req.body, {
+                new: true,
+                runValidators: true
+            }).populate('hospitalId', 'name');
+
+            if (!department) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Department not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Department updated successfully (MongoDB)',
+                data: department
+            });
+        } else {
+            // Use In-Memory fallback
+            const index = inMemoryDb.departments.findIndex(d => d._id === id);
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Department not found'
+                });
+            }
+
+            // Merge details
+            inMemoryDb.departments[index] = {
+                ...inMemoryDb.departments[index],
+                ...req.body,
+                updatedAt: new Date()
+            };
+
+            // Mock populate
+            const department = inMemoryDb.departments[index];
+            const hospital = inMemoryDb.hospitals.find(h => h._id === department.hospitalId);
+            const populated = {
+                ...department,
+                hospitalId: hospital ? { _id: hospital._id, name: hospital.name } : department.hospitalId
+            };
+
+            return res.status(200).json({
+                success: true,
+                message: 'Department updated successfully (In-Memory Fallback)',
+                data: populated
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error updating department',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Delete a department by ID
+exports.deleteDepartment = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            const department = await Department.findByIdAndDelete(id);
+
+            if (!department) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Department not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Department deleted successfully (MongoDB)'
+            });
+        } else {
+            // Use In-Memory fallback
+            const index = inMemoryDb.departments.findIndex(d => d._id === id);
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Department not found'
+                });
+            }
+
+            inMemoryDb.departments.splice(index, 1);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Department deleted successfully (In-Memory Fallback)'
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting department',
+            error: error.message
+        });
+    }
+};

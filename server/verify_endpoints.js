@@ -114,11 +114,61 @@ async function start() {
             throw new Error(`Failed to create service (Status: ${sRes.status})`);
         }
 
+        const serviceId = sRes.data.data._id;
+
         // 6. Fetch services
         console.log('\n6. Fetching services...');
         const listSRes = await request(`${baseUrl}/services?hospitalId=${hospitalId}`);
         console.log(`   Response Status: ${listSRes.status}`);
         console.log(`   Services Found: ${listSRes.data.count}`);
+
+        // 7. Update Hospital
+        console.log('\n7. Updating Hospital...');
+        const updateHRes = await request(`${baseUrl}/hospitals/${hospitalId}`, {
+            method: 'PUT',
+            body: { name: 'Apollo Gleneagles Hospital' }
+        });
+        console.log(`   Response Status: ${updateHRes.status}`);
+        console.log(`   Updated Name: ${updateHRes.data.data.name}`);
+
+        // 8. Update Department
+        console.log('\n8. Updating Department...');
+        const updateDRes = await request(`${baseUrl}/departments/${departmentId}`, {
+            method: 'PUT',
+            body: { description: 'Super-specialty neurology and neurosurgery' }
+        });
+        console.log(`   Response Status: ${updateDRes.status}`);
+        console.log(`   Updated Description: ${updateDRes.data.data.description}`);
+
+        // 9. Update Service
+        console.log('\n9. Updating Service...');
+        const updateSRes = await request(`${baseUrl}/services/${serviceId}`, {
+            method: 'PUT',
+            body: { price: 2800 }
+        });
+        console.log(`   Response Status: ${updateSRes.status}`);
+        console.log(`   Updated Price: ${updateSRes.data.data.price}`);
+
+        // 10. Delete Service
+        console.log('\n10. Deleting Service...');
+        const deleteSRes = await request(`${baseUrl}/services/${serviceId}`, {
+            method: 'DELETE'
+        });
+        console.log(`   Response Status: ${deleteSRes.status}`);
+
+        // 11. Delete Department
+        console.log('\n11. Deleting Department...');
+        const deleteDRes = await request(`${baseUrl}/departments/${departmentId}`, {
+            method: 'DELETE'
+        });
+        console.log(`   Response Status: ${deleteDRes.status}`);
+
+        // 12. Delete Hospital
+        console.log('\n12. Deleting Hospital...');
+        const deleteHRes = await request(`${baseUrl}/hospitals/${hospitalId}`, {
+            method: 'DELETE'
+        });
+        console.log(`   Response Status: ${deleteHRes.status}`);
 
         console.log('\n✅ EVERYTHING IS WORKING CORRECTLY!');
     } catch (error) {

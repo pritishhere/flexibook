@@ -144,3 +144,103 @@ exports.getHospitalById = async (req, res) => {
         });
     }
 };
+
+// @desc    Update a hospital by ID
+exports.updateHospital = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            const hospital = await Hospital.findByIdAndUpdate(id, req.body, {
+                new: true,
+                runValidators: true
+            });
+
+            if (!hospital) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Hospital not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Hospital updated successfully (MongoDB)',
+                data: hospital
+            });
+        } else {
+            // Use In-Memory fallback
+            const index = inMemoryDb.hospitals.findIndex(h => h._id === id);
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Hospital not found'
+                });
+            }
+
+            // Merge details
+            inMemoryDb.hospitals[index] = {
+                ...inMemoryDb.hospitals[index],
+                ...req.body,
+                updatedAt: new Date()
+            };
+
+            return res.status(200).json({
+                success: true,
+                message: 'Hospital updated successfully (In-Memory Fallback)',
+                data: inMemoryDb.hospitals[index]
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error updating hospital',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Delete a hospital by ID
+exports.deleteHospital = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            const hospital = await Hospital.findByIdAndDelete(id);
+
+            if (!hospital) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Hospital not found'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Hospital deleted successfully (MongoDB)'
+            });
+        } else {
+            // Use In-Memory fallback
+            const index = inMemoryDb.hospitals.findIndex(h => h._id === id);
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Hospital not found'
+                });
+            }
+
+            inMemoryDb.hospitals.splice(index, 1);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Hospital deleted successfully (In-Memory Fallback)'
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting hospital',
+            error: error.message
+        });
+    }
+};

@@ -9,7 +9,6 @@ const app = express();
 // Middlewares
 app.use(cors()); 
 app.use(express.json()); 
-
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log('✅ MongoDB Database Connected Successfully!'))

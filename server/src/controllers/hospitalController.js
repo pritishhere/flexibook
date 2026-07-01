@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Hospital = require('../models/Hospital');
+const inMemoryDb = require('../utils/inMemoryDb');
 
 // @desc    Create a new hospital (Typically for Business Owners)
 exports.createHospital = async (req, res) => {
@@ -6,20 +8,51 @@ exports.createHospital = async (req, res) => {
         // Extract data sent from the frontend
         const { name, address, city, contactNumber, emergencyNumber } = req.body;
 
-        // Create and save the new hospital in the database
-        const newHospital = await Hospital.create({
-            name,
-            address,
-            city,
-            contactNumber,
-            emergencyNumber
-        });
+        if (mongoose.connection.readyState === 1) {
+            // Create and save the new hospital in the database
+            const newHospital = await Hospital.create({
+                name,
+                address,
+                city,
+                contactNumber,
+                emergencyNumber
+            });
 
-        res.status(201).json({
-            success: true,
-            message: 'Hospital created successfully',
-            data: newHospital
-        });
+            return res.status(201).json({
+                success: true,
+                message: 'Hospital created successfully (MongoDB)',
+                data: newHospital
+            });
+        } else {
+            // Use In-Memory fallback
+            if (!name || !address || !city || !contactNumber) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation failed: name, address, city, and contactNumber are required'
+                });
+            }
+
+            const newHospital = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                name,
+                address,
+                city,
+                contactNumber,
+                emergencyNumber: emergencyNumber || '',
+                rating: 0,
+                isVerified: false,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            inMemoryDb.hospitals.push(newHospital);
+
+            return res.status(201).json({
+                success: true,
+                message: 'Hospital created successfully (In-Memory Fallback)',
+                data: newHospital
+            });
+        }
     } catch (error) {
         res.status(500).json({ 
             success: false, 
@@ -32,23 +65,35 @@ exports.createHospital = async (req, res) => {
 // @desc    Get all hospitals (For Patient App Home Screen)
 exports.getAllHospitals = async (req, res) => {
     try {
-        // 🔥 PRO FEATURE: Smart search by city (e.g., /api/hospitals?city=Mumbai)
         const { city } = req.query;
-        let query = {};
         
-        if (city) {
-            // $regex makes the search case-insensitive (mumbai = Mumbai)
-            query.city = { $regex: city, $options: 'i' }; 
+        if (mongoose.connection.readyState === 1) {
+            let query = {};
+            if (city) {
+                query.city = { $regex: city, $options: 'i' }; 
+            }
+            const hospitals = await Hospital.find(query);
+
+            return res.status(200).json({
+                success: true,
+                count: hospitals.length,
+                data: hospitals
+            });
+        } else {
+            // Use In-Memory fallback
+            let filteredHospitals = inMemoryDb.hospitals;
+            if (city) {
+                filteredHospitals = inMemoryDb.hospitals.filter(h => 
+                    h.city && h.city.toLowerCase().includes(city.toLowerCase())
+                );
+            }
+
+            return res.status(200).json({
+                success: true,
+                count: filteredHospitals.length,
+                data: filteredHospitals
+            });
         }
-
-        // Fetch hospitals based on the query (all or filtered by city)
-        const hospitals = await Hospital.find(query);
-
-        res.status(200).json({
-            success: true,
-            count: hospitals.length,
-            data: hospitals
-        });
     } catch (error) {
         res.status(500).json({ 
             success: false, 
@@ -61,22 +106,36 @@ exports.getAllHospitals = async (req, res) => {
 // @desc    Get a single hospital by ID (When user clicks on a hospital card)
 exports.getHospitalById = async (req, res) => {
     try {
-        // Find the hospital using the ID passed in the URL (e.g., /api/hospitals/12345)
-        const hospital = await Hospital.findById(req.params.id);
+        const { id } = req.params;
 
-        // If no hospital is found with that ID
-        if (!hospital) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Hospital not found' 
+        if (mongoose.connection.readyState === 1) {
+            const hospital = await Hospital.findById(id);
+            if (!hospital) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Hospital not found' 
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: hospital
+            });
+        } else {
+            // Use In-Memory fallback
+            const hospital = inMemoryDb.hospitals.find(h => h._id === id);
+            if (!hospital) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Hospital not found' 
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: hospital
             });
         }
-
-        // Return the found hospital
-        res.status(200).json({
-            success: true,
-            data: hospital
-        });
     } catch (error) {
         res.status(500).json({ 
             success: false, 

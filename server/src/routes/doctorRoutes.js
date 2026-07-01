@@ -5,7 +5,7 @@ const {
     createDoctor, 
     getDoctors, 
     getDoctorById 
-} = require('../controllers/doctorController');
+} = require('../controllers/doctorcontroller');
 
 // 🌐 GET /api/doctors - Get all doctors (or filter by hospital/specialization)
 router.get('/', getDoctors);

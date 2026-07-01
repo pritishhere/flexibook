@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../models/user');
 const jwt = require('jsonwebtoken'); // To create digital ID cards for logged-in users
 
 // Helper function to generate a JWT token

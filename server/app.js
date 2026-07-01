@@ -19,11 +19,17 @@ mongoose.connect(process.env.MONGO_URI)
 const authRoutes = require('./src/routes/authRoutes');
 const hospitalRoutes = require('./src/routes/hospitalRoutes');
 const doctorRoutes = require('./src/routes/doctorRoutes'); // 🔥 Naya Doctor Route aa gaya
+const appointmentRoutes = require('./src/routes/appointmentRoutes');
+const medicalRecordRoutes = require('./src/routes/recordRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 // --- USE ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/doctors', doctorRoutes); // 🔥 Naya Doctor Route link ho gaya
+app.use('/api/appointments', appointmentRoutes); // 🔥 Added
+app.use('/api/records', recordRoutes);
+app.use('/api/users', userRoutes);
 
 // Basic Test Route
 app.get('/', (req, res) => {

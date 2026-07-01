@@ -7,7 +7,12 @@ const {
     getAllHospitals, 
     getHospitalById 
 } = require('../controllers/hospitalController');
+// Open/Public routes
+router.get('/all', doctorController.getAllDoctors);
 
+// Protected administrative actions
+router.post('/add-new', protect, authorize('admin'), doctorController.registerDoctor);
+router.delete('/:id', protect, authorize('admin'), doctorController.removeDoctor);
 // 🌐 GET /api/hospitals - Get a list of all hospitals (or search by city)
 router.get('/', getAllHospitals);
 

@@ -5,7 +5,9 @@ const router = express.Router();
 const { 
     createHospital, 
     getAllHospitals, 
-    getHospitalById 
+    getHospitalById,
+    updateHospital,
+    deleteHospital
 } = require('../controllers/hospitalController');
 // Open/Public routes
 router.get('/all', doctorController.getAllDoctors);
@@ -21,5 +23,11 @@ router.post('/', createHospital);
 
 // 🌐 GET /api/hospitals/:id - Get full details of one specific hospital
 router.get('/:id', getHospitalById);
+
+// 🌐 PUT /api/hospitals/:id - Update details of a specific hospital
+router.put('/:id', updateHospital);
+
+// 🌐 DELETE /api/hospitals/:id - Delete a specific hospital
+router.delete('/:id', deleteHospital);
 
 module.exports = router;

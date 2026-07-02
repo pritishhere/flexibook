@@ -5,9 +5,13 @@ const {
     createDoctor, 
     getDoctors, 
     getDoctorById 
+<<<<<<< HEAD
 } = require('../controllers/doctorController');
 // Open/Public routes
 router.get('/all', doctorController.getAllDoctors);
+=======
+} = require('../controllers/doctorcontroller');
+>>>>>>> main
 
 // Protected administrative actions
 router.post('/add-new', protect, authorize('admin'), doctorController.registerDoctor);

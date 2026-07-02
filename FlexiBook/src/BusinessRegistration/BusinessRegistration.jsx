@@ -1,73 +1,191 @@
-import React, { useState } from "react";
+// src/BusinessRegistration/BusinessRegistration.jsx
+
+import { useMemo, useState } from "react";
 
 import RegistrationHeader from "./RegistrationHeader";
 import ProgressBar from "./ProgressBar";
 import LeftPanel from "./LeftPanel";
 
-const BusinessRegistration = () => {
-  const [currentStep, setCurrentStep] = useState(1);
+import BusinessInfoStep from "./01_BusinessInfoStep";
+import BusinessDetailStep from "./02_BusinessDetailStep";
+import ServicesStep from "./03_ServicesStep";
+import AvailabilityStep from "./04_AvailabilityStep";
+import ReviewStep from "./05_ReviewStep";
 
-  return (
-    <div className="min-h-screen bg-gray-100">
+const initialForm = {
+  // Step 1
+  businessName: "",
+  ownerName: "",
+  businessEmail: "",
+  businessPhone: "",
+  whatsappNumber: "",
+  businessCategory: "",
+  businessType: "",
+  registrationNumber: "",
+  gstNumber: "",
+  website: "",
+  logo: null,
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+  // Step 2
+  address1: "",
+  address2: "",
+  landmark: "",
+  city: "",
+  state: "",
+  pincode: "",
+  description: "",
+  establishedYear: "",
+  employees: "",
+  languages: [],
 
-        <RegistrationHeader />
+  // Step 3
+  services: [],
+  serviceMode: [],
+  averagePrice: "",
+  gstRegistered: false,
+  paymentMethods: [],
+  slotDuration: "",
+  bufferTime: "",
 
-        <ProgressBar currentStep={currentStep} />
+  // Step 4
+  workingDays: [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+  ],
+  openTime: "09:00",
+  closeTime: "18:00",
+  lunchBreak: "",
+  appointmentRequired: true,
+  emergencySupport: false,
 
-        <div className="grid lg:grid-cols-4 gap-8">
-
-          {/* Left Side */}
-          <div className="lg:col-span-1">
-            <LeftPanel />
-          </div>
-
-          {/* Right Side */}
-          <div className="lg:col-span-3">
-
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-
-              <h2 className="text-3xl font-bold mb-2">
-                Step {currentStep}
-              </h2>
-
-              <p className="text-gray-500 mb-10">
-                This area will display the form for each step.
-              </p>
-
-              <div className="flex justify-between">
-
-                <button
-                  disabled={currentStep === 1}
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  className="px-6 py-3 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                >
-                  ← Previous
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (currentStep < 5)
-                      setCurrentStep(currentStep + 1);
-                  }}
-                  className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Save & Continue →
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
+  // Step 5
+  termsAccepted: false,
 };
 
-export default BusinessRegistration;
+const steps = [
+  {
+    id: 1,
+    title: "Business Info",
+    subtitle: "Basic details",
+  },
+  {
+    id: 2,
+    title: "Business Details",
+    subtitle: "Location & profile",
+  },
+  {
+    id: 3,
+    title: "Services",
+    subtitle: "Offerings",
+  },
+  {
+    id: 4,
+    title: "Availability",
+    subtitle: "Working schedule",
+  },
+  {
+    id: 5,
+    title: "Review",
+    subtitle: "Confirmation",
+  },
+];
+
+export default function BusinessRegistration() {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState(initialForm);
+
+  const updateField = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const updateForm = (values) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...values,
+    }));
+  };
+
+  const nextStep = () => {
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length));
+  };
+
+  const previousStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
+  const goToStep = (step) => {
+    setCurrentStep(step);
+  };
+
+  const completion = useMemo(() => {
+    return Math.round((currentStep / steps.length) * 100);
+  }, [currentStep]);
+
+  const sharedProps = {
+    formData,
+    updateField,
+    updateForm,
+    nextStep,
+    previousStep,
+    goToStep,
+    currentStep,
+    totalSteps: steps.length,
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <BusinessInfoStep {...sharedProps} />;
+
+      case 2:
+        return <BusinessDetailStep {...sharedProps} />;
+
+      case 3:
+        return <ServicesStep {...sharedProps} />;
+
+      case 4:
+        return <AvailabilityStep {...sharedProps} />;
+
+      case 5:
+        return <ReviewStep {...sharedProps} />;
+
+      default:
+        return <BusinessInfoStep {...sharedProps} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <RegistrationHeader />
+
+      <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+          <LeftPanel
+            steps={steps}
+            currentStep={currentStep}
+            completion={completion}
+            formData={formData}
+          />
+
+          <div className="space-y-6">
+            <ProgressBar
+              steps={steps}
+              currentStep={currentStep}
+              completion={completion}
+            />
+
+            <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+              {renderStep()}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

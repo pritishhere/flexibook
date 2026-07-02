@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+<<<<<<< HEAD
 const upload = require('../middleware/uploadMiddleware');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const MedicalRecord = require('../models/MedicalRecord');
@@ -133,5 +134,19 @@ router.delete('/:id', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+=======
+
+// 1. Import the Upload Middleware and the Record Controller
+const uploadMiddleware = require('../middlewares/uploadMiddleware');
+const recordController = require('../controllers/recordController');
+
+// 2. Define the route for uploading records (Endpoint: POST /api/records/upload)
+// 'uploadMiddleware.single("document")' expects a single file sent with the field name 'document'
+router.post(
+    '/upload', 
+    uploadMiddleware.single('document'), // Middleware validates and stores the file first
+    recordController.uploadRecord        // Controller handles the database saving logic
+);
+>>>>>>> main
 
 module.exports = router;

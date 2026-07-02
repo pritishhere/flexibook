@@ -18,18 +18,26 @@ mongoose.connect(process.env.MONGO_URI)
 // --- IMPORT ROUTES ---
 const authRoutes = require('./src/routes/authRoutes');
 const hospitalRoutes = require('./src/routes/hospitalRoutes');
-const doctorRoutes = require('./src/routes/doctorRoutes'); // 🔥 Naya Doctor Route aa gaya
+const doctorRoutes = require('./src/routes/doctorRoutes'); 
 const appointmentRoutes = require('./src/routes/appointmentRoutes');
-const medicalRecordRoutes = require('./src/routes/recordRoutes');
+const recordRoutes = require('./src/routes/recordRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+
+// 💡 FIXED: Added the missing imports from the 'main' branch conflict here
+const departmentRoutes = require('./src/routes/departmentRoutes');
+const serviceRoutes = require('./src/routes/serviceRoutes');
 
 // --- USE ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
-app.use('/api/doctors', doctorRoutes); // 🔥 Naya Doctor Route link ho gaya
-app.use('/api/appointments', appointmentRoutes); // 🔥 Added
+app.use('/api/doctors', doctorRoutes); 
+app.use('/api/appointments', appointmentRoutes); 
 app.use('/api/records', recordRoutes);
 app.use('/api/users', userRoutes);
+
+// Combined from main branch
+app.use('/api/departments', departmentRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Basic Test Route
 app.get('/', (req, res) => {

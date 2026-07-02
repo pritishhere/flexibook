@@ -9,8 +9,9 @@ const testWhatsApp = async () => {
     const token = process.env.TWILIO_AUTH_TOKEN;
     const fromWhatsApp = process.env.TWILIO_WHATSAPP_NUMBER; 
     
-    // The recipient is your personal WhatsApp phone number
-    const testRecipient = '+919883769499'; 
+    // The recipient is the first argument passed (e.g. node verify_whatsapp.js +91XXXXXXXXXX) 
+    // or falls back to your personal number
+    const testRecipient = process.argv[2] || '+919883769499'; 
 
     console.log('🔄 Triggering Twilio WhatsApp Config Test...');
     console.log(`   - Account SID: ${sid}`);
@@ -28,16 +29,16 @@ const testWhatsApp = async () => {
     await sendAppointmentAlert({
         email: '',
         phone: testRecipient,
-        name: 'Pritish Ghosh',
+        name: 'Sainee Sarker',
         doctorName: 'Dr. Sen',
         date: new Date(),
         tokenNumber: 5,
         type: 'booked'
     });
 
-    console.log('\n💡 Tip: To receive messages on your phone from the Twilio Sandbox, you MUST opt-in first:');
-    console.log(`   1. Save the Twilio number (${fromWhatsApp}) to your contacts.`);
-    console.log('   2. Open WhatsApp and send a message containing your Sandbox join code (e.g. "join sandbox-code-word") to that Twilio contact.');
+    console.log('\n💡 Tip: To receive messages on the target phone from the Twilio Sandbox, they MUST opt-in first:');
+    console.log(`   1. Save the Twilio number (${fromWhatsApp}) to their contacts.`);
+    console.log('   2. Open WhatsApp and send a message containing your Sandbox join code to that Twilio contact.');
 };
 
 testWhatsApp();

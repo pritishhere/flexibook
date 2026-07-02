@@ -36,7 +36,6 @@ connectDB();
 const authRoutes = require('./src/routes/authRoutes');
 const hospitalRoutes = require('./src/routes/hospitalRoutes');
 const doctorRoutes = require('./src/routes/doctorRoutes'); 
-const appointmentRoutes = require('./src/routes/appointmentRoutes');
 const recordRoutes = require('./src/routes/recordRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const departmentRoutes = require('./src/routes/departmentRoutes');
@@ -52,7 +51,6 @@ const paymentRoutes = require('./src/routes/paymentRoutes'); // 💳 Payment Rou
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/doctors', doctorRoutes); 
-app.use('/api/appointments', appointmentRoutes); 
 app.use('/api/records', recordRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/departments', departmentRoutes);

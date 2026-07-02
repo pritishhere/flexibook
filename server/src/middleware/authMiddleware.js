@@ -49,7 +49,7 @@ const protect = async (req, res, next) => {
 /**
  * Restricts route access to specific account roles (e.g., 'admin', 'doctor', 'patient').
  * MUST be placed sequentially AFTER the 'protect' middleware in your routes.
- * * @param {...String} roles - Allowed roles for the target route
+ * @param {...String} roles - Allowed roles for the target route
  */
 const authorize = (...roles) => {
     return (req, res, next) => {

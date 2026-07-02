@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema({
         enum: ['patient', 'doctor', 'business', 'admin'],
         default: 'patient'
     },
+    avatar: { 
+        type: String, 
+        default: '' 
+    },
     // Keeps track of appointments linked to this user (from teammate branch)
     appointments: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -44,7 +48,7 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Pre-save hook to hash the password
+// Pre-save hook to hash the password safely
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         return next();
@@ -58,7 +62,11 @@ userSchema.pre('save', async function (next) {
     }
 });
 
-// Method to compare entered password with hashed password
+// Support both naming methodologies to prevent code breakage in other controller layers
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
+
 userSchema.methods.comparePassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };

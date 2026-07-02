@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 // 1. Import the Upload Middleware and the Record Controller
-const uploadMiddleware = require('../middlewares/uploadMiddleware');
+const uploadMiddleware = require('../middleware/uploadMiddleware');
 const recordController = require('../controllers/recordController');
 
 // 2. Define the route for uploading records (Endpoint: POST /api/records/upload)

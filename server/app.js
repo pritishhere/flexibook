@@ -1,40 +1,73 @@
+// ==========================================
+// 1. IMPORT REQUIRED PACKAGES
+// ==========================================
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path'); // 🔥 Ninja: For serving static files
 require('dotenv').config();
 
-// App Initialization
+// 🔥 FIXED PATH: config folder is inside src
+const connectDB = require('./src/config/db');
+
+
+// ==========================================
+// 2. APP INITIALIZATION & MIDDLEWARES
+// ==========================================
 const app = express();
 
-// Middlewares
 app.use(cors()); 
 app.use(express.json()); 
-// Database Connection
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log('✅ MongoDB Database Connected Successfully!'))
-.catch((err) => console.log('❌ MongoDB Connection Failed:', err.message));
+app.use(express.urlencoded({ extended: true })); // Good for form-data (Uploads)
 
-// --- IMPORT ROUTES ---
+// 🔥 NINJA FEATURE: Serve the 'uploads' directory statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+// ==========================================
+// 3. DATABASE CONNECTION
+// ==========================================
+// This single line handles the connection using your src/config/db.js file
+connectDB();
+
+
+// ==========================================
+// 4. IMPORT ROUTES
+// ==========================================
 const authRoutes = require('./src/routes/authRoutes');
 const hospitalRoutes = require('./src/routes/hospitalRoutes');
-const doctorRoutes = require('./src/routes/doctorRoutes'); // 🔥 Naya Doctor Route aa gaya
+const doctorRoutes = require('./src/routes/doctorRoutes'); 
 const departmentRoutes = require('./src/routes/departmentRoutes');
 const serviceRoutes = require('./src/routes/serviceRoutes');
+const recordRoutes = require('./src/routes/recordRoutes'); // 🔥 Ninja Record Route
 
-// --- USE ROUTES ---
+
+// ==========================================
+// 5. USE ROUTES (Mounting API Endpoints)
+// ==========================================
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
-app.use('/api/doctors', doctorRoutes); // 🔥 Naya Doctor Route link ho gaya
+app.use('/api/doctors', doctorRoutes); 
 app.use('/api/departments', departmentRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/records', recordRoutes); // 🔥 Ninja Record API
 
-// Basic Test Route
+
+// ==========================================
+// 6. BASIC TEST ROUTE
+// ==========================================
 app.get('/', (req, res) => {
-    res.send('FlexiBook Backend is Running Smoothly with Nodemon! 🚀');
+    res.send('FlexiBook Backend is Running Smoothly (With All Routes)! 🚀');
 });
 
-// Server Listen
+
+// ==========================================
+// 7. START THE SERVER
+// ==========================================
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
+    console.log(`=========================================`);
     console.log(`🚀 Server is running smoothly on port ${PORT}`);
+    console.log(`📂 Static uploads are served at: /uploads`);
+    console.log(`=========================================`);
 });

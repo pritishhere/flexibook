@@ -1,47 +1,42 @@
 const mongoose = require('mongoose');
 
 const appointmentSchema = new mongoose.Schema({
-    // Patient who is booking the appointment
-    userId: {
+    patient: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'User', 
         required: true
     },
-    // Hospital where the appointment is booked
-    hospitalId: {
+    doctor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor',
+        required: true
+    },
+    hospital: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Hospital',
         required: true
     },
-    // Doctor for the consultation (can be null if booking only a test)
-    doctorId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Doctor'
-    },
-    // If the patient is booking a specific test/service instead of a doctor
-    serviceId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Service'
-    },
     appointmentDate: {
         type: Date,
-        required: [true, 'Appointment date is required']
-    },
-    // 🔥 PRO FEATURE: Token number for live tracking
-    tokenNumber: {
-        type: Number,
         required: true
     },
-    // Live status of the patient in the queue
+    timeSlot: {
+        type: String,
+        required: true 
+    },
+    tokenNumber: {
+        type: Number,
+        required: true 
+    },
+    reasonForVisit: {
+        type: String,
+        default: 'General Checkup'
+    },
     status: {
         type: String,
-        enum: ['pending', 'in-queue', 'completed', 'cancelled'],
-        default: 'pending'
-    },
-    // Dynamic estimated wait time in minutes
-    estimatedWaitTime: {
-        type: Number,
-        default: 0
+        // Updated to include Advanced Phase 3 logic states
+        enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled', 'Missed'],
+        default: 'Pending'
     }
 }, { 
     timestamps: true 

@@ -6,7 +6,7 @@ const connectDB = async () => {
         console.log(`✅ MongoDB Database Connected Successfully! Host: ${conn.connection.host}`);
     } catch (error) {
         console.error(`❌ MongoDB Connection Failed: ${error.message}`);
-        process.exit(1); // 1 ka matlab hai "Error ke sath server band kar do"
+        process.exit(1);
     }
 };
 

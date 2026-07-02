@@ -1,6 +1,9 @@
+// Node.js ko bolna ki 10 ki jagah 20 listeners allow kare
+require('events').EventEmitter.defaultMaxListeners = 20;
 // ==========================================
 // 1. IMPORT REQUIRED PACKAGES
 // ==========================================
+const appointmentRoutes = require('./src/routes/appointmentRoutes');
 const express = require('express');
 const cors = require('cors');
 const path = require('path'); // 🔥 Ninja: For serving static files
@@ -15,6 +18,7 @@ const connectDB = require('./src/config/db');
 // ==========================================
 const app = express();
 
+app.use('/api/appointments', appointmentRoutes);
 app.use(cors()); 
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); // Good for form-data (Uploads)

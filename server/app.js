@@ -16,7 +16,7 @@ const connectDB = require('./src/config/db');
 const app = express();
 
 app.use(cors()); 
-app.use(express.json()); 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Good for form-data (Uploads)
 
 // 🔥 NINJA FEATURE: Serve the 'uploads' directory statically
@@ -36,9 +36,14 @@ connectDB();
 const authRoutes = require('./src/routes/authRoutes');
 const hospitalRoutes = require('./src/routes/hospitalRoutes');
 const doctorRoutes = require('./src/routes/doctorRoutes'); 
+const appointmentRoutes = require('./src/routes/appointmentRoutes');
+const recordRoutes = require('./src/routes/recordRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 const departmentRoutes = require('./src/routes/departmentRoutes');
 const serviceRoutes = require('./src/routes/serviceRoutes');
-const recordRoutes = require('./src/routes/recordRoutes'); // 🔥 Ninja Record Route
+const reviewRoutes = require('./src/routes/reviewRoutes');
+const aiRoutes = require('./src/routes/aiRoutes'); // 🧠 AI Symptom Checker Route
+const paymentRoutes = require('./src/routes/paymentRoutes'); // 💳 Payment Route
 
 
 // ==========================================
@@ -47,9 +52,14 @@ const recordRoutes = require('./src/routes/recordRoutes'); // 🔥 Ninja Record 
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/doctors', doctorRoutes); 
+app.use('/api/appointments', appointmentRoutes); 
+app.use('/api/records', recordRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/services', serviceRoutes);
-app.use('/api/records', recordRoutes); // 🔥 Ninja Record API
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/ai', aiRoutes); // 🧠 AI endpoints mounted
+app.use('/api/payments', paymentRoutes); // 💳 Payment endpoints mounted
 
 
 // ==========================================

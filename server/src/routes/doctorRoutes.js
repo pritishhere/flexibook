@@ -5,8 +5,17 @@ const {
     createDoctor, 
     getDoctors, 
     getDoctorById 
+<<<<<<< HEAD
+} = require('../controllers/doctorController');
+// Open/Public routes
+router.get('/all', doctorController.getAllDoctors);
+=======
 } = require('../controllers/doctorcontroller');
+>>>>>>> main
 
+// Protected administrative actions
+router.post('/add-new', protect, authorize('admin'), doctorController.registerDoctor);
+router.delete('/:id', protect, authorize('admin'), doctorController.removeDoctor);
 // 🌐 GET /api/doctors - Get all doctors (or filter by hospital/specialization)
 router.get('/', getDoctors);
 

@@ -1,22 +1,40 @@
-const twilio = require('twilio');
-const nodemailer = require('nodemailer');
+let twilio = null;
+let nodemailer = null;
+let client = null;
+let transporter = null;
+let fromWhatsApp = null;
 
-// Initialize Twilio Client
-const client = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
-    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-    : null;
-const fromWhatsApp = process.env.TWILIO_WHATSAPP_NUMBER;
+// Safe Twilio Loader
+try {
+    twilio = require('twilio');
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (accountSid && authToken && !accountSid.includes('YOUR') && !authToken.includes('YOUR')) {
+        client = twilio(accountSid, authToken);
+    }
+    fromWhatsApp = process.env.TWILIO_WHATSAPP_NUMBER;
+} catch (e) {
+    console.log('⚠️ Twilio SDK not installed or failed to load. SMS/WhatsApp alerts are disabled.');
+}
 
-// Initialize Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, 
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+// Safe Nodemailer Loader
+try {
+    nodemailer = require('nodemailer');
+    const smtpHost = process.env.SMTP_HOST;
+    if (smtpHost && !smtpHost.includes('YOUR')) {
+        transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            secure: false, 
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
+    }
+} catch (e) {
+    console.log('⚠️ Nodemailer SDK not installed or failed to load. Email alerts are disabled.');
+}
 
 /**
  * Global Notification Engine
@@ -55,7 +73,7 @@ const sendAppointmentAlert = async (data) => {
     }
 
     // --- CHANNEL A: WHATSAPP DISPATCH ---
-    if (client && phone) {
+    if (twilio && client && phone && fromWhatsApp) {
         try {
             const formattedTo = phone.startsWith('whatsapp:') ? phone : `whatsapp:${phone}`;
             const formattedFrom = fromWhatsApp.startsWith('whatsapp:') ? fromWhatsApp : `whatsapp:${fromWhatsApp}`;
@@ -72,7 +90,7 @@ const sendAppointmentAlert = async (data) => {
     }
 
     // --- CHANNEL B: TRANSACTIONAL EMAIL DISPATCH ---
-    if (email) {
+    if (nodemailer && transporter && email) {
         try {
             await transporter.sendMail({
                 from: `"FlexiBook Healthcare" <${process.env.SMTP_USER}>`,

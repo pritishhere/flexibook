@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../models/user');
 
 // ==========================================
 // 1. Get Logged-In User Profile Data

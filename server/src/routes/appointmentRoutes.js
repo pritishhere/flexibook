@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Appointment = require('../models/Appointment');
-const User = require('../models/User'); // Required to push appointment IDs to the user profile
+const User = require('../models/user'); // Required to push appointment IDs to the user profile
 // Import controller modules
 const appointmentController = require('../controllers/appointmentController');
 

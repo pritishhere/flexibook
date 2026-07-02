@@ -1,25 +1,7 @@
 const Appointment = require('../models/Appointment');
-const User = require('../models/User');
+const User = require('../models/user');
 const { sendAppointmentAlert } = require('../services/notificationService');
-const savedAppointment = await newAppointment.save();
 
-        // Relate back to User profile array
-        await User.findByIdAndUpdate(userId, { $push: { appointments: savedAppointment._id } });
-
-        // 🔥 TRIGGER: Fetch User account details (to obtain email/phone strings)
-        const userAccount = await User.findById(userId);
-        const doctorData = await Appointment.findById(savedAppointment._id).populate('doctorId', 'name');
-
-        // Execute asynchronously (fire-and-forget so your controller speeds up response time)
-        sendAppointmentAlert({
-            email: userAccount.email,
-            phone: userAccount.phone,
-            name: userAccount.name,
-            doctorName: doctorData.doctorId?.name || 'Specialist',
-            date: savedAppointment.appointmentDate,
-            tokenNumber: savedAppointment.tokenNumber,
-            type: 'booked' // Calls the confirmation text block
-        });
 // ==========================================
 // 1. Book Appointment & Generate Live Token
 // ==========================================
@@ -75,6 +57,25 @@ exports.bookAppointment = async (req, res) => {
         await User.findByIdAndUpdate(userId, {
             $push: { appointments: savedAppointment._id }
         });
+
+        // 🔥 TRIGGER: Fetch User account details and send notification alerts
+        try {
+            const userAccount = await User.findById(userId);
+            const doctorData = await Appointment.findById(savedAppointment._id).populate('doctorId', 'name');
+
+            // Execute asynchronously (fire-and-forget so your controller speeds up response time)
+            sendAppointmentAlert({
+                email: userAccount.email,
+                phone: userAccount.phone || userAccount.mobile || '',
+                name: userAccount.name,
+                doctorName: doctorData.doctorId?.name || 'Specialist',
+                date: savedAppointment.appointmentDate,
+                tokenNumber: savedAppointment.tokenNumber,
+                type: 'booked' // Calls the confirmation text block
+            });
+        } catch (alertError) {
+            console.error('⚠️ Failed to send appointment alert:', alertError.message);
+        }
 
         res.status(201).json({
             success: true,

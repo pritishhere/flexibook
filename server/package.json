@@ -17,7 +17,9 @@
     "nodemailer": "^9.0.3",
     "nodemon": "^3.0.0",
     "object-assign": "^4.1.1",
-    "twilio": "^6.0.2"
+    "twilio": "^6.0.2",
+    "@google/generative-ai": "^0.21.0",
+    "razorpay": "^2.9.2"
   },
   "keywords": [],
   "author": "",

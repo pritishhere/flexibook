@@ -3,7 +3,9 @@ const router = express.Router();
 const { 
     createDoctor, 
     getDoctors, 
-    getDoctorById 
+    getDoctorById,
+    updateDoctor,
+    deleteDoctor
 } = require('../controllers/doctorcontroller');
 
 // 🌐 GET /api/doctors - Get all doctors (with optional specialization/hospital search query)
@@ -14,5 +16,11 @@ router.post('/', createDoctor);
 
 // 🌐 GET /api/doctors/:id - Get details of a specific doctor
 router.get('/:id', getDoctorById);
+
+// 🌐 PUT /api/doctors/:id - Update details of a specific doctor
+router.put('/:id', updateDoctor);
+
+// 🌐 DELETE /api/doctors/:id - Delete a specific doctor
+router.delete('/:id', deleteDoctor);
 
 module.exports = router;

@@ -1,10 +1,22 @@
-// In-memory data store singleton
-// Used as a fallback when MongoDB is not connected
+const mongoose = require('mongoose');
 
-const inMemoryDb = {
+const dataStore = {
     hospitals: [],
     departments: [],
-    services: []
+    services: [],
+    doctors: [],
+    reviews: [],
+    users: [],
+    transactions: []
 };
 
-module.exports = inMemoryDb;
+// Returns true if mongoose is connected AND we are not overriding it to in-memory mode
+const isDbConnected = () => {
+    return mongoose.connection.readyState === 1 && process.env.USE_IN_MEMORY !== 'true';
+};
+
+module.exports = {
+    ...dataStore,
+    isDbConnected,
+    rawDb: dataStore
+};

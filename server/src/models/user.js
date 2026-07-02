@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Name is required'],
@@ -10,6 +11,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Email is required'],
         unique: true,
+        trim: true,
         lowercase: true,
         match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address']
     },
@@ -20,20 +22,45 @@ const UserSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: [true, 'Phone number is required']
+        default: null
+    },
+    mobile: {
+        type: String,
+        unique: true,
+        sparse: true,
+        default: null
     },
     role: {
         type: String,
-        enum: ['patient', 'admin'],
+        enum: ['patient', 'doctor', 'business', 'admin'],
         default: 'patient'
     },
-    // Keeps track of appointments linked to this user
+    // Keeps track of appointments linked to this user (from teammate branch)
     appointments: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Appointment'
     }]
 }, {
-    timestamps: true // Automatically creates createdAt and updatedAt fields
+    timestamps: true
 });
 
-module.exports = mongoose.model('User', UserSchema);
+// Pre-save hook to hash the password
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) {
+        return next();
+    }
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Method to compare entered password with hashed password
+userSchema.methods.comparePassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);

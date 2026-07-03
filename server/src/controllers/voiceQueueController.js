@@ -82,12 +82,17 @@ const downloadAudio = (url) => {
 // @access  Public (Webhook)
 exports.handleIncomingWhatsAppMessage = async (req, res) => {
     try {
-        const fromNumber = req.body.From ? req.body.From.replace('whatsapp:', '') : '';
-        const bodyText = req.body.Body || '';
-        const mediaUrl = req.body.MediaUrl0;
-        const mediaContentType = req.body.MediaContentType0;
+        // Handle case-insensitivity of incoming webhook request fields
+        const fromField = req.body.From || req.body.from || '';
+        const bodyText = req.body.Body || req.body.body || '';
+        const mediaUrl = req.body.MediaUrl0 || req.body.mediaUrl0;
+        const mediaContentType = req.body.MediaContentType0 || req.body.mediaContentType0;
 
-        console.log(`\n📥 Received WhatsApp Message from: ${fromNumber}`);
+        const fromNumber = fromField ? fromField.replace('whatsapp:', '').trim() : '';
+        // If empty (e.g. key missing in Postman), auto-allocate a valid mock mobile for testing safety
+        const testMobile = fromNumber || `9883769${Math.floor(1000 + Math.random() * 9000)}`;
+
+        console.log(`\n📥 Received WhatsApp Message from: ${fromNumber || 'Postman Client (Mocked: ' + testMobile + ')'}`);
         if (mediaUrl) {
             console.log(`   - Audio Attached: ${mediaUrl} (${mediaContentType})`);
         } else {
@@ -163,8 +168,8 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
             extracted = parseVoiceRequestLocal(bodyText);
         }
 
-        // Sanitize fromNumber (remove spaces, +, and special characters) for database format safety
-        const sanitizedFrom = fromNumber.replace(/[^0-9]/g, ''); 
+        // Sanitize testMobile (remove spaces, +, and special characters) for database format safety
+        const sanitizedFrom = testMobile.replace(/[^0-9]/g, ''); 
 
         // ==========================================
         // BOOKING COORDINATION ENGINE
@@ -324,7 +329,7 @@ _(Please pay online to confirm your checked-in status in the live queue!)_`;
 
     } catch (error) {
         console.error('WhatsApp Webhook Error:', error);
-        return sendTwiMLResponse(res, "Hello, we encountered a technical issue parsing your voice request. Please try writing your appointment details directly.");
+        return sendTwiMLResponse(res, `System Error: ${error.message}\n\nStack: ${error.stack}`);
     }
 };
 

@@ -351,9 +351,11 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
         // Clickable Google Maps URL
         const gmapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospitalName + ', ' + hospitalAddress)}`;
 
+        const sourceWord = mediaUrl ? 'voice note' : 'message';
+
         const responseText = `*Appointment Confirmed! 🎟️*
 
-Hello *${patientUser.name}*, we have booked your slot using your voice note!
+Hello *${patientUser.name}*, we have booked your slot using your ${sourceWord}!
 
 🏥 *Hospital*: ${hospitalName}
 📍 *Address*: ${hospitalAddress}

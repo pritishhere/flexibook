@@ -53,12 +53,25 @@ const parseVoiceRequestLocal = (textQuery) => {
         patientName = nameMatch[1];
     }
 
+    // 5. Resolve Specific Hospital name if requested
+    let hospitalName = null;
+    if (text.includes('aiims')) {
+        hospitalName = 'AIIMS';
+    } else if (text.includes('apollo')) {
+        hospitalName = 'Apollo';
+    } else if (text.includes('metro')) {
+        hospitalName = 'Metro';
+    } else if (text.includes('kolkata')) {
+        hospitalName = 'Kolkata';
+    }
+
     return {
         specialization,
         appointmentDate: appointmentDateStr,
         timeSlot,
         reasonForVisit: textQuery || 'General Checkup',
-        patientName
+        patientName,
+        hospitalName
     };
 };
 
@@ -119,7 +132,8 @@ Extract the details and return them STRICTLY in the following JSON format:
     "appointmentDate": "YYYY-MM-DD format. Parse relative days like 'kal' (tomorrow), 'aaj' (today), relative to current date: ${todayStr}",
     "timeSlot": "morning, afternoon, or evening mapped to: '10:00 AM - 12:00 PM', '02:00 PM - 04:00 PM', or '05:00 PM - 07:00 PM'",
     "reasonForVisit": "short English summary of symptoms (e.g. 'Stomach pain', 'Cold')",
-    "patientName": "patient's name if mentioned, otherwise null"
+    "patientName": "patient's name if mentioned, otherwise null",
+    "hospitalName": "name of a specific clinic or hospital if mentioned (e.g. 'AIIMS', 'Metro', 'Apollo'), otherwise null"
 }
 Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks or blockquotes.
 `;
@@ -197,24 +211,35 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 console.log(`✅ Auto-Registered New Patient: ${patientUser.name}`);
             }
 
-            // 2. Resolve Doctor & Hospital
-            doctor = await Doctor.findOne({ specialization: extracted.specialization }).populate('userId');
-            if (!doctor) {
-                doctor = await Doctor.findOne().populate('userId'); // fallback to first doctor
-            }
-            
-            if (doctor) {
-                hospital = await Hospital.findById(doctor.hospitalId);
+            // 2. Resolve Hospital
+            if (extracted.hospitalName) {
+                hospital = await Hospital.findOne({ name: { $regex: extracted.hospitalName, $options: 'i' } });
             }
             if (!hospital) {
-                hospital = await Hospital.findOne(); // fallback to first hospital
+                hospital = await Hospital.findOne(); // default to first hospital
+            }
+
+            // 3. Resolve Doctor matching specialization at this hospital
+            if (hospital) {
+                doctor = await Doctor.findOne({ specialization: extracted.specialization, hospitalId: hospital._id }).populate('userId');
+            }
+            if (!doctor) {
+                doctor = await Doctor.findOne({ specialization: extracted.specialization }).populate('userId'); // fallback search anywhere
+            }
+            if (!doctor) {
+                doctor = await Doctor.findOne().populate('userId'); // ultimate fallback
+            }
+
+            // Recheck hospital matching the allocated doctor's workspace
+            if (doctor && (!hospital || hospital._id.toString() !== doctor.hospitalId.toString())) {
+                hospital = await Hospital.findById(doctor.hospitalId);
             }
 
             if (!doctor || !hospital) {
                 return sendTwiMLResponse(res, `Hello! We understood your request for a ${extracted.specialization}, but there are no clinics registered on FlexiBook right now.`);
             }
 
-            // 3. Queue Token Allocation
+            // 4. Queue Token Allocation
             const lastApp = await Appointment.findOne({
                 doctor: doctor._id,
                 hospital: hospital._id,
@@ -223,7 +248,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
             tokenNumber = lastApp ? lastApp.tokenNumber + 1 : 1;
 
-            // 4. Save Appointment
+            // 5. Save Appointment
             const appt = await Appointment.create({
                 patient: patientUser._id,
                 doctor: doctor._id,
@@ -252,26 +277,39 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 console.log(`✅ Auto-Registered New Patient (In-Memory): ${patientUser.name}`);
             }
 
-            // 2. Resolve Doctor & Hospital
-            doctor = inMemoryDb.doctors.find(d => d.specialization === extracted.specialization);
+            // 2. Resolve Hospital
+            if (extracted.hospitalName) {
+                hospital = inMemoryDb.hospitals.find(h => h.name.toLowerCase().includes(extracted.hospitalName.toLowerCase()));
+            }
+            if (!hospital) {
+                hospital = inMemoryDb.hospitals[0];
+            }
+
+            // 3. Resolve Doctor
+            if (hospital) {
+                doctor = inMemoryDb.doctors.find(d => d.specialization === extracted.specialization && d.hospitalId === hospital._id);
+            }
             if (!doctor) {
-                doctor = inMemoryDb.doctors[0]; // fallback
+                doctor = inMemoryDb.doctors.find(d => d.specialization === extracted.specialization);
+            }
+            if (!doctor) {
+                doctor = inMemoryDb.doctors[0];
             }
 
             if (doctor) {
                 const docUser = inMemoryDb.users.find(u => u._id === doctor.userId);
-                doctor = { ...doctor, userId: docUser }; // simulate populating
-                hospital = inMemoryDb.hospitals.find(h => h._id === doctor.hospitalId);
+                doctor = { ...doctor, userId: docUser }; // simulate populating docUser object
             }
-            if (!hospital) {
-                hospital = inMemoryDb.hospitals[0]; // fallback
+
+            if (doctor && (!hospital || hospital._id !== doctor.hospitalId)) {
+                hospital = inMemoryDb.hospitals.find(h => h._id === doctor.hospitalId);
             }
 
             if (!doctor || !hospital) {
                 return sendTwiMLResponse(res, `Hello! We understood your request for a ${extracted.specialization}, but there are no clinics registered on FlexiBook right now.`);
             }
 
-            // 3. Queue Token Allocation
+            // 4. Queue Token Allocation
             const targetDateStr = new Date(extracted.appointmentDate).toDateString();
             const sameDayApps = inMemoryDb.appointments.filter(a =>
                 a.doctor === doctor._id &&
@@ -284,7 +322,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
             });
             tokenNumber = maxToken + 1;
 
-            // 4. Save Appointment
+            // 5. Save Appointment
             appointmentId = new mongoose.Types.ObjectId().toString();
             inMemoryDb.appointments.push({
                 _id: appointmentId,
@@ -307,13 +345,19 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
         // ==========================================
         const doctorName = doctor.userId ? doctor.userId.name : 'Doctor';
         const hospitalName = hospital ? hospital.name : 'FlexiBook Clinic';
+        const hospitalAddress = hospital ? (hospital.address || hospital.city || 'Kolkata') : 'Kolkata';
         const formattedDate = new Date(extracted.appointmentDate).toDateString();
+        
+        // Clickable Google Maps URL
+        const gmapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospitalName + ', ' + hospitalAddress)}`;
 
         const responseText = `*Appointment Confirmed! 🎟️*
 
 Hello *${patientUser.name}*, we have booked your slot using your voice note!
 
 🏥 *Hospital*: ${hospitalName}
+📍 *Address*: ${hospitalAddress}
+🗺️ *Navigate (Google Maps)*: ${gmapsLink}
 👨‍⚕️ *Doctor*: ${doctorName} (${extracted.specialization})
 📅 *Date*: ${formattedDate}
 🕒 *Time Slot*: ${extracted.timeSlot}
@@ -341,3 +385,4 @@ const sendTwiMLResponse = (res, messageText) => {
     <Message>${messageText}</Message>
 </Response>`);
 };
+

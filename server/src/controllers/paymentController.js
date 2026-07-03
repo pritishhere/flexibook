@@ -124,7 +124,7 @@ exports.createOrder = async (req, res) => {
 // @access  Public
 exports.verifyPayment = async (req, res) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId } = req.body;
 
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
             return res.status(400).json({
@@ -143,20 +143,107 @@ exports.verifyPayment = async (req, res) => {
             .digest('hex');
 
         if (generatedSignature === razorpay_signature) {
-            // Update Transaction to 'captured'
+            let transactionObj = null;
+
+            // 1. Update Transaction to 'captured'
             if (inMemoryDb.isDbConnected()) {
-                await Transaction.findOneAndUpdate(
+                transactionObj = await Transaction.findOneAndUpdate(
                     { orderId: razorpay_order_id },
                     { status: 'captured', paymentId: razorpay_payment_id },
                     { new: true }
                 );
             } else {
                 // In-Memory Fallback
-                const tx = inMemoryDb.transactions.find(t => t.orderId === razorpay_order_id);
-                if (tx) {
-                    tx.status = 'captured';
-                    tx.paymentId = razorpay_payment_id;
-                    tx.updatedAt = new Date();
+                transactionObj = inMemoryDb.transactions.find(t => t.orderId === razorpay_order_id);
+                if (transactionObj) {
+                    transactionObj.status = 'captured';
+                    transactionObj.paymentId = razorpay_payment_id;
+                    transactionObj.updatedAt = new Date();
+                }
+            }
+
+            // 2. Resolve Appointment ID from request body or transaction receipt
+            let targetAppointmentId = appointmentId;
+            if (!targetAppointmentId && transactionObj && transactionObj.receipt) {
+                const match = transactionObj.receipt.match(/booking_([a-fA-F0-9]{24})/);
+                if (match && match[1]) {
+                    targetAppointmentId = match[1];
+                } else {
+                    const rawMatch = transactionObj.receipt.match(/[a-fA-F0-9]{24}/);
+                    if (rawMatch) targetAppointmentId = rawMatch[0];
+                }
+            }
+
+            // 3. Update Appointment Status & Dispatch Notification Alert
+            if (targetAppointmentId) {
+                if (inMemoryDb.isDbConnected()) {
+                    const Appointment = require('../models/Appointment');
+                    const updatedApp = await Appointment.findByIdAndUpdate(
+                        targetAppointmentId,
+                        { paymentStatus: 'Paid', status: 'Confirmed' },
+                        { new: true }
+                    ).populate('patient').populate({ path: 'doctor', populate: { path: 'userId' } });
+
+                    if (updatedApp) {
+                        try {
+                            const { sendAppointmentAlert } = require('../services/notificationService');
+                            const patientName = updatedApp.patientName || (updatedApp.patient ? updatedApp.patient.name : 'Patient');
+                            const docName = (updatedApp.doctor && updatedApp.doctor.userId) ? updatedApp.doctor.userId.name : 'Doctor';
+
+                            await sendAppointmentAlert({
+                                email: updatedApp.patient ? updatedApp.patient.email : '',
+                                phone: updatedApp.patient ? updatedApp.patient.mobile : '',
+                                name: patientName,
+                                doctorName: docName,
+                                date: updatedApp.appointmentDate,
+                                tokenNumber: updatedApp.tokenNumber,
+                                type: 'booked' // Sends verified confirmation
+                            });
+                        } catch (notifyErr) {
+                            console.error('Payment confirmation alert dispatch failed:', notifyErr.message);
+                        }
+                    }
+                } else {
+                    // In-Memory Fallback
+                    const appIndex = inMemoryDb.appointments.findIndex(a => a._id === targetAppointmentId);
+                    if (appIndex !== -1) {
+                        inMemoryDb.appointments[appIndex].paymentStatus = 'Paid';
+                        inMemoryDb.appointments[appIndex].status = 'Confirmed';
+                        inMemoryDb.appointments[appIndex].updatedAt = new Date();
+
+                        const appt = inMemoryDb.appointments[appIndex];
+                        const patientUser = inMemoryDb.users.find(u => u._id === appt.patient);
+                        const doctorObj = inMemoryDb.doctors.find(d => d._id === appt.doctor);
+                        let docName = 'Doctor';
+                        let patientName = appt.patientName || 'Patient';
+                        let patientEmail = '';
+                        let patientMobile = '';
+
+                        if (patientUser) {
+                            patientName = appt.patientName || patientUser.name;
+                            patientEmail = patientUser.email;
+                            patientMobile = patientUser.mobile;
+                        }
+                        if (doctorObj) {
+                            const docUser = inMemoryDb.users.find(u => u._id === doctorObj.userId);
+                            if (docUser) docName = docUser.name;
+                        }
+
+                        try {
+                            const { sendAppointmentAlert } = require('../services/notificationService');
+                            await sendAppointmentAlert({
+                                email: patientEmail,
+                                phone: patientMobile,
+                                name: patientName,
+                                doctorName: docName,
+                                date: appt.appointmentDate,
+                                tokenNumber: appt.tokenNumber,
+                                type: 'booked'
+                            });
+                        } catch (notifyErr) {
+                            console.error('Payment confirmation alert dispatch failed (In-Memory):', notifyErr.message);
+                        }
+                    }
                 }
             }
 

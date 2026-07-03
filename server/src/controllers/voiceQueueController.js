@@ -12,6 +12,26 @@ const inMemoryDb = require('../utils/inMemoryDb');
 // Initialize Gemini SDK safely
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
+// Calculate current age dynamically from Date of Birth (dob: 'DD-MM-YYYY')
+const calculateAge = (dobString) => {
+    if (!dobString) return null;
+    const parts = dobString.split('-');
+    if (parts.length !== 3) return null;
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    
+    const dob = new Date(year, month, day);
+    const today = new Date();
+    
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+};
+
 // Local fallback engine to understand text requests if Gemini fails/offline
 const parseVoiceRequestLocal = (textQuery) => {
     const text = (textQuery || '').toLowerCase();
@@ -461,9 +481,22 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
         // Styled patient demographics
         let patientProfileStr = `*${finalName}*`;
         const profileParts = [];
-        if (patientUser.dob) profileParts.push(`DOB: ${patientUser.dob}`);
-        if (extracted.patientAge) profileParts.push(`Age: ${extracted.patientAge}`);
-        if (extracted.patientGender) profileParts.push(extracted.patientGender.toUpperCase());
+        
+        // Calculate age dynamically from DOB if present
+        let computedAge = null;
+        if (patientUser.dob) {
+            profileParts.push(`DOB: ${patientUser.dob}`);
+            computedAge = calculateAge(patientUser.dob);
+        }
+        
+        // Fallback to computed age if no explicit age was mentioned in booking text
+        const displayAge = extracted.patientAge || computedAge;
+        if (displayAge) {
+            profileParts.push(`Age: ${displayAge}`);
+        }
+        if (extracted.patientGender) {
+            profileParts.push(extracted.patientGender.toUpperCase());
+        }
         if (profileParts.length > 0) {
             patientProfileStr += ` (${profileParts.join(', ')})`;
         }

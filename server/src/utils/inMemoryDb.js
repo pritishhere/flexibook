@@ -8,7 +8,8 @@ const dataStore = {
     reviews: [],
     users: [],
     transactions: [],
-    complaints: []
+    complaints: [],
+    appointments: []
 };
 
 // Returns true if mongoose is connected AND we are not overriding it to in-memory mode

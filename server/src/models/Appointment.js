@@ -37,6 +37,11 @@ const appointmentSchema = new mongoose.Schema({
         // Updated to include Advanced Phase 3 logic states
         enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled', 'Missed'],
         default: 'Pending'
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['Pending', 'Paid'],
+        default: 'Pending'
     }
 }, { 
     timestamps: true 

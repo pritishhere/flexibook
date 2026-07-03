@@ -18,6 +18,12 @@ router.get('/patient/:patientId', appointmentController.getPatientAppointments);
 // PUT: General manual status update
 router.put('/:appointmentId/status', appointmentController.updateAppointmentStatus);
 
+// GET: Fetch all appointments for a specific hospital (Dashboard view)
+router.get('/hospital/:hospitalId', appointmentController.getHospitalAppointments);
+
+// PUT: Update appointment payment status (Dashboard view)
+router.put('/:appointmentId/payment', appointmentController.updatePaymentStatus);
+
 
 // ==========================================
 // ADVANCED HOSPITAL LOGIC (Live Queue Management)

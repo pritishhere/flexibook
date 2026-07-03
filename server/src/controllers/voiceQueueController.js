@@ -163,6 +163,9 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
             extracted = parseVoiceRequestLocal(bodyText);
         }
 
+        // Sanitize fromNumber (remove spaces, +, and special characters) for database format safety
+        const sanitizedFrom = fromNumber.replace(/[^0-9]/g, ''); 
+
         // ==========================================
         // BOOKING COORDINATION ENGINE
         // ==========================================
@@ -177,12 +180,12 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
         if (dbConnected) {
             // MongoDB Mode
             // 1. Resolve Patient
-            patientUser = await User.findOne({ mobile: fromNumber });
+            patientUser = await User.findOne({ mobile: sanitizedFrom });
             if (!patientUser) {
                 patientUser = await User.create({
-                    name: extracted.patientName || `WhatsApp Patient (${fromNumber.slice(-4)})`,
-                    email: `${fromNumber}@whatsapp.com`,
-                    mobile: fromNumber,
+                    name: extracted.patientName || `WhatsApp Patient (${sanitizedFrom.slice(-4)})`,
+                    email: `${sanitizedFrom}@whatsapp.com`,
+                    mobile: sanitizedFrom,
                     password: new mongoose.Types.ObjectId().toString(), // mock password
                     role: 'patient'
                 });
@@ -231,13 +234,13 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
         } else {
             // In-Memory Fallback Mode
             // 1. Resolve Patient
-            patientUser = inMemoryDb.users.find(u => u.mobile === fromNumber);
+            patientUser = inMemoryDb.users.find(u => u.mobile === sanitizedFrom);
             if (!patientUser) {
                 patientUser = {
                     _id: new mongoose.Types.ObjectId().toString(),
-                    name: extracted.patientName || `WhatsApp Patient (${fromNumber.slice(-4)})`,
-                    email: `${fromNumber}@whatsapp.com`,
-                    mobile: fromNumber,
+                    name: extracted.patientName || `WhatsApp Patient (${sanitizedFrom.slice(-4)})`,
+                    email: `${sanitizedFrom}@whatsapp.com`,
+                    mobile: sanitizedFrom,
                     role: 'patient'
                 };
                 inMemoryDb.users.push(patientUser);
@@ -321,7 +324,7 @@ _(Please pay online to confirm your checked-in status in the live queue!)_`;
 
     } catch (error) {
         console.error('WhatsApp Webhook Error:', error);
-        return sendTwiMLResponse(res, "Hello, we encountered a technical issue parsing your voice note. Please try writing your appointment request in text.");
+        return sendTwiMLResponse(res, "Hello, we encountered a technical issue parsing your voice request. Please try writing your appointment details directly.");
     }
 };
 

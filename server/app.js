@@ -46,6 +46,7 @@ const departmentRoutes = require('./src/routes/departmentRoutes');
 const serviceRoutes = require('./src/routes/serviceRoutes');
 const reviewRoutes = require('./src/routes/reviewRoutes');
 const complaintRoutes = require('./src/routes/complaintRoutes'); // 🎫 Private Complaints & Feedback Route
+const voiceQueueRoutes = require('./src/routes/voiceQueueRoutes'); // 🎙️ AI Voice-to-Queue Webhook Route
 const aiRoutes = require('./src/routes/aiRoutes'); // 🧠 AI Symptom Checker Route
 const paymentRoutes = require('./src/routes/paymentRoutes'); // 💳 Payment Route
 
@@ -62,6 +63,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/complaints', complaintRoutes); // 🎫 Complaints endpoints mounted
+app.use('/api/voice-queue', voiceQueueRoutes); // 🎙️ Webhook endpoint mounted
 app.use('/api/ai', aiRoutes); // 🧠 AI endpoints mounted
 app.use('/api/payments', paymentRoutes); // 💳 Payment endpoints mounted
 

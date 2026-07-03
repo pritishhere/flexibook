@@ -1,39 +1,28 @@
 // src/App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Header } from './components/Header';
-import { Footer } from './components/Footer';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './HomePage';
-import CustomerPage from './CustomerPage';
-import LoginPage from './LoginPage'; 
-import SignUpGateway from './SignUpGateway'; 
-import CustomerRegister from './CustomerRegister'; 
-import BusinessRegistration from "./BusinessRegistration/BusinessRegistration";
+import LoginPage from './LoginPage';
+import CustomerRegister from './CustomerRegister';
+import ForgotPassword from './ForgotPassword'; // Imported newly created recovery component
 
 function App() {
   return (
-    <Router>
-      <Header />
-      
-      <div className="min-h-screen">
-        <Routes>
-          <Route path="/" element={<HomePage />} />     
-          <Route path="/customers" element={<CustomerPage />} />
-          <Route path="/login" element={<LoginPage />} />      
-          
-          {/* Main gateway paths */}
-          <Route path="/business-register" element={<SignUpGateway />} />
-          
-          {/* ALIAS SAFETY NET: This catches /register and sends them to the gateway too */}
-          <Route path="/register" element={<SignUpGateway />} /> 
-          
-          <Route path="/customer-register" element={<CustomerRegister />} />
-          <Route path="/real-business-form" element={<BusinessRegistration />} /> 
-        </Routes>
-      </div>
-      
-      <Footer />
-    </Router>
+    <BrowserRouter>
+      <Routes>
+        {/* Main Application Routing Configuration */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup-gateway" element={<CustomerRegister />} />
+        <Route path="/customer-register" element={<CustomerRegister />} />
+        
+        {/* NEW: Operational endpoint mapping rule */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Catch-all fallback route defaults back to platform landing */}
+        <Route path="*" element={<HomePage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

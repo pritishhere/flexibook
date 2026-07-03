@@ -32,6 +32,18 @@ const appointmentSchema = new mongoose.Schema({
         type: String,
         default: 'General Checkup'
     },
+    patientName: {
+        type: String,
+        default: null
+    },
+    patientAge: {
+        type: Number,
+        default: null
+    },
+    patientGender: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         // Updated to include Advanced Phase 3 logic states

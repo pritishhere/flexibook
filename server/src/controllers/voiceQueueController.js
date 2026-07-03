@@ -65,13 +65,29 @@ const parseVoiceRequestLocal = (textQuery) => {
         hospitalName = 'Kolkata';
     }
 
+    // 6. Resolve Age & Gender
+    let patientAge = null;
+    const ageMatch = text.match(/(\d+)\s*(?:saal|years|yr|age)/i);
+    if (ageMatch && ageMatch[1]) {
+        patientAge = parseInt(ageMatch[1]);
+    }
+
+    let patientGender = null;
+    if (text.includes('female') || text.includes('ladki') || text.includes('mahila') || text.includes('women')) {
+        patientGender = 'female';
+    } else if (text.includes('male') || text.includes('ladka') || text.includes('purush') || text.includes('man')) {
+        patientGender = 'male';
+    }
+
     return {
         specialization,
         appointmentDate: appointmentDateStr,
         timeSlot,
         reasonForVisit: textQuery || 'General Checkup',
         patientName,
-        hospitalName
+        hospitalName,
+        patientAge,
+        patientGender
     };
 };
 
@@ -133,7 +149,9 @@ Extract the details and return them STRICTLY in the following JSON format:
     "timeSlot": "morning, afternoon, or evening mapped to: '10:00 AM - 12:00 PM', '02:00 PM - 04:00 PM', or '05:00 PM - 07:00 PM'",
     "reasonForVisit": "short English summary of symptoms (e.g. 'Stomach pain', 'Cold')",
     "patientName": "patient's name if mentioned, otherwise null",
-    "hospitalName": "name of a specific clinic or hospital if mentioned (e.g. 'AIIMS', 'Metro', 'Apollo'), otherwise null"
+    "hospitalName": "name of a specific clinic or hospital if mentioned (e.g. 'AIIMS', 'Metro', 'Apollo'), otherwise null",
+    "patientAge": "patient's age as integer if mentioned, otherwise null",
+    "patientGender": "one of: male, female, other if mentioned, otherwise null"
 }
 Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks or blockquotes.
 `;
@@ -196,19 +214,21 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
         const dbConnected = mongoose.connection.readyState === 1 && process.env.USE_IN_MEMORY !== 'true';
 
+        const finalName = extracted.patientName || `WhatsApp Patient (${sanitizedFrom.slice(-4)})`;
+
         if (dbConnected) {
             // MongoDB Mode
-            // 1. Resolve Patient
+            // 1. Resolve Patient User Account
             patientUser = await User.findOne({ mobile: sanitizedFrom });
             if (!patientUser) {
                 patientUser = await User.create({
-                    name: extracted.patientName || `WhatsApp Patient (${sanitizedFrom.slice(-4)})`,
+                    name: finalName,
                     email: `${sanitizedFrom}@whatsapp.com`,
                     mobile: sanitizedFrom,
                     password: new mongoose.Types.ObjectId().toString(), // mock password
                     role: 'patient'
                 });
-                console.log(`✅ Auto-Registered New Patient: ${patientUser.name}`);
+                console.log(`✅ Auto-Registered New Patient Account: ${patientUser.name}`);
             }
 
             // 2. Resolve Hospital
@@ -248,7 +268,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
             tokenNumber = lastApp ? lastApp.tokenNumber + 1 : 1;
 
-            // 5. Save Appointment
+            // 5. Save Appointment with clinical details
             const appt = await Appointment.create({
                 patient: patientUser._id,
                 doctor: doctor._id,
@@ -257,18 +277,21 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 timeSlot: extracted.timeSlot,
                 tokenNumber,
                 reasonForVisit: extracted.reasonForVisit,
-                paymentStatus: 'Pending'
+                paymentStatus: 'Pending',
+                patientName: finalName,
+                patientAge: extracted.patientAge || null,
+                patientGender: extracted.patientGender || null
             });
             appointmentId = appt._id;
 
         } else {
             // In-Memory Fallback Mode
-            // 1. Resolve Patient
+            // 1. Resolve Patient User Account
             patientUser = inMemoryDb.users.find(u => u.mobile === sanitizedFrom);
             if (!patientUser) {
                 patientUser = {
                     _id: new mongoose.Types.ObjectId().toString(),
-                    name: extracted.patientName || `WhatsApp Patient (${sanitizedFrom.slice(-4)})`,
+                    name: finalName,
                     email: `${sanitizedFrom}@whatsapp.com`,
                     mobile: sanitizedFrom,
                     role: 'patient'
@@ -335,6 +358,9 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 reasonForVisit: extracted.reasonForVisit,
                 status: 'Pending',
                 paymentStatus: 'Pending',
+                patientName: finalName,
+                patientAge: extracted.patientAge || null,
+                patientGender: extracted.patientGender || null,
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
@@ -353,10 +379,20 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
         const sourceWord = mediaUrl ? 'voice note' : 'message';
 
+        // Styled patient demographics
+        let patientProfileStr = `*${finalName}*`;
+        if (extracted.patientAge || extracted.patientGender) {
+            const parts = [];
+            if (extracted.patientAge) parts.push(`Age: ${extracted.patientAge}`);
+            if (extracted.patientGender) parts.push(extracted.patientGender.toUpperCase());
+            patientProfileStr += ` (${parts.join(', ')})`;
+        }
+
         const responseText = `*Appointment Confirmed! 🎟️*
 
-Hello *${patientUser.name}*, we have booked your slot using your ${sourceWord}!
+Hello, we have booked your slot using your ${sourceWord}!
 
+👤 *Patient*: ${patientProfileStr}
 🏥 *Hospital*: ${hospitalName}
 📍 *Address*: ${hospitalAddress}
 🗺️ *Navigate (Google Maps)*: ${gmapsLink}
@@ -375,7 +411,7 @@ _(Please pay online to confirm your checked-in status in the live queue!)_`;
 
     } catch (error) {
         console.error('WhatsApp Webhook Error:', error);
-        return sendTwiMLResponse(res, `System Error: ${error.message}\n\nStack: ${error.stack}`);
+        return sendTwiMLResponse(res, "Hello, we encountered a technical issue parsing your voice request. Please try writing your appointment details directly.");
     }
 };
 
@@ -387,4 +423,5 @@ const sendTwiMLResponse = (res, messageText) => {
     <Message>${messageText}</Message>
 </Response>`);
 };
+
 

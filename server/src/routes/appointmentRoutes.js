@@ -24,6 +24,9 @@ router.get('/hospital/:hospitalId', appointmentController.getHospitalAppointment
 // PUT: Update appointment payment status (Dashboard view)
 router.put('/:appointmentId/payment', appointmentController.updatePaymentStatus);
 
+// PUT: Reschedule appointment to a new date/timeslot
+router.put('/:appointmentId/reschedule', appointmentController.rescheduleAppointment);
+
 
 // ==========================================
 // ADVANCED HOSPITAL LOGIC (Live Queue Management)

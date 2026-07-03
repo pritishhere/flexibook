@@ -354,3 +354,156 @@ exports.updatePaymentStatus = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error updating payment status", error: error.message });
     }
 };
+
+// ==========================================
+// 9. RESCHEDULE APPOINTMENT
+// ==========================================
+exports.rescheduleAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { newDate, newTimeSlot } = req.body;
+
+        if (!newDate || !newTimeSlot) {
+            return res.status(400).json({ success: false, message: "New date and new time slot are required." });
+        }
+
+        if (inMemoryDb.isDbConnected()) {
+            const appointment = await Appointment.findById(appointmentId)
+                .populate('patient', 'name email mobile')
+                .populate({ path: 'doctor', populate: { path: 'userId', select: 'name' } });
+
+            if (!appointment) {
+                return res.status(404).json({ success: false, message: "Appointment not found." });
+            }
+
+            // Prevent changes if appointment is Completed or Cancelled
+            if (['Completed', 'Cancelled', 'Missed'].includes(appointment.status)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Cannot reschedule appointment with status '${appointment.status}'.` 
+                });
+            }
+
+            // Calculate new token number for the doctor on the new date
+            const lastAppointment = await Appointment.findOne({ 
+                doctor: appointment.doctor._id, 
+                hospital: appointment.hospital, 
+                appointmentDate: new Date(newDate) 
+            }).sort({ tokenNumber: -1 });
+
+            const newTokenNumber = lastAppointment ? lastAppointment.tokenNumber + 1 : 1;
+
+            // Apply updates
+            appointment.appointmentDate = new Date(newDate);
+            appointment.timeSlot = newTimeSlot;
+            appointment.tokenNumber = newTokenNumber;
+            appointment.status = 'Pending'; // Reset check-in state
+
+            await appointment.save();
+
+            // Dispatch Notifications
+            try {
+                const { sendAppointmentAlert } = require('../services/notificationService');
+                const doctorName = (appointment.doctor && appointment.doctor.userId) ? appointment.doctor.userId.name : 'Doctor';
+                const patientName = appointment.patient ? appointment.patient.name : 'Patient';
+
+                await sendAppointmentAlert({
+                    email: appointment.patient ? appointment.patient.email : '',
+                    phone: appointment.patient ? appointment.patient.mobile : '',
+                    name: patientName,
+                    doctorName: doctorName,
+                    date: appointment.appointmentDate,
+                    tokenNumber: appointment.tokenNumber,
+                    type: 'updated'
+                });
+            } catch (err) {
+                console.error('Reschedule Notification Dispatch Failed:', err.message);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Appointment rescheduled successfully!",
+                data: appointment
+            });
+        } else {
+            // In-Memory Fallback
+            const index = inMemoryDb.appointments.findIndex(a => a._id === appointmentId);
+            if (index === -1) {
+                return res.status(404).json({ success: false, message: "Appointment not found." });
+            }
+
+            const appointment = inMemoryDb.appointments[index];
+
+            if (['Completed', 'Cancelled', 'Missed'].includes(appointment.status)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Cannot reschedule appointment with status '${appointment.status}'.` 
+                });
+            }
+
+            // Find new token number
+            const targetDateStr = new Date(newDate).toDateString();
+            const sameDayApps = inMemoryDb.appointments.filter(a => 
+                a.doctor === appointment.doctor && 
+                a.hospital === appointment.hospital && 
+                new Date(a.appointmentDate).toDateString() === targetDateStr
+            );
+
+            let maxToken = 0;
+            sameDayApps.forEach(a => {
+                if (a.tokenNumber > maxToken) maxToken = a.tokenNumber;
+            });
+            const newTokenNumber = maxToken + 1;
+
+            // Update
+            appointment.appointmentDate = new Date(newDate);
+            appointment.timeSlot = newTimeSlot;
+            appointment.tokenNumber = newTokenNumber;
+            appointment.status = 'Pending';
+            appointment.updatedAt = new Date();
+
+            // Populate mock relationships for notification
+            const patientUser = inMemoryDb.users.find(u => u._id === appointment.patient);
+            const docObj = inMemoryDb.doctors.find(d => d._id === appointment.doctor);
+            let doctorName = 'Doctor';
+            let patientName = 'Patient';
+            let email = '';
+            let phone = '';
+
+            if (patientUser) {
+                patientName = patientUser.name;
+                email = patientUser.email;
+                phone = patientUser.mobile;
+            }
+            if (docObj) {
+                const docUser = inMemoryDb.users.find(u => u._id === docObj.userId);
+                if (docUser) doctorName = docUser.name;
+            }
+
+            // Dispatch notification
+            try {
+                const { sendAppointmentAlert } = require('../services/notificationService');
+                await sendAppointmentAlert({
+                    email,
+                    phone,
+                    name: patientName,
+                    doctorName,
+                    date: appointment.appointmentDate,
+                    tokenNumber: appointment.tokenNumber,
+                    type: 'updated'
+                });
+            } catch (err) {
+                console.error('Reschedule Notification Dispatch Failed (In-Memory):', err.message);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Appointment rescheduled successfully!",
+                data: appointment
+            });
+        }
+    } catch (error) {
+        console.error('Reschedule Appointment Error:', error);
+        res.status(500).json({ success: false, message: "Server error rescheduling appointment", error: error.message });
+    }
+};

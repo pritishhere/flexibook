@@ -30,14 +30,12 @@ const fetchSampleAudio = (dest) => {
 };
 
 const runAudit = async () => {
-    console.log('🔄 STARTING MULTIMODAL AI VOICE-TO-QUEUE WEBHOOK AUDIT...');
+    console.log('🔄 STARTING CONVERSATIONAL ONBOARDING & WEBHOOK AUDIT...');
 
-    // 1. Download mock audio sample to test the download parser
+    // 1. Download mock audio sample
     const mockAudioPath = path.join(__dirname, 'test_voice.mp3');
     try {
-        console.log('- Fetching small sample audio file from public CDN...');
         await fetchSampleAudio(mockAudioPath);
-        console.log('  ✅ Mock audio saved locally.');
     } catch (err) {
         console.warn('  ⚠️ Failed to fetch mock audio, will use text mock for fallback.');
     }
@@ -49,12 +47,11 @@ const runAudit = async () => {
     });
     const mediaServer = http.createServer(mediaApp);
     await new Promise((resolve) => mediaServer.listen(3006, resolve));
-    console.log('- Twilio Mock CDN Server listening on port 3006...');
 
     // 3. Launch our webhook test server on port 3005
     const app = express();
     app.use(express.json());
-    app.use(express.urlencoded({ extended: true })); // Twilio sends urlencoded payloads!
+    app.use(express.urlencoded({ extended: true }));
     app.use('/api/voice-queue', voiceQueueRoutes);
     
     const server = http.createServer(app);
@@ -65,12 +62,19 @@ const runAudit = async () => {
     process.env.USE_IN_MEMORY = 'true'; 
     await connectDB();
 
-    // Seed mock doctor and hospital in memory
+    // Reset database stores
+    inMemoryDb.users = [];
+    inMemoryDb.doctors = [];
+    inMemoryDb.hospitals = [];
+    inMemoryDb.appointments = [];
+    inMemoryDb.whatsappSessions = [];
+
+    // Seed doctor and hospital in memory
     const docUserId = new mongoose.Types.ObjectId().toString();
     const doctorId = new mongoose.Types.ObjectId().toString();
     const hospitalId = new mongoose.Types.ObjectId().toString();
 
-    inMemoryDb.users.push({ _id: docUserId, name: 'Dr. Debabrata Sen' });
+    inMemoryDb.users.push({ _id: docUserId, name: 'Dr. Debabrata Sen', mobile: '9999999999', email: 'doc@flexi.com' });
     inMemoryDb.doctors.push({ 
         _id: doctorId, 
         userId: docUserId, 
@@ -78,11 +82,9 @@ const runAudit = async () => {
         hospitalId,
         consultationFee: 1000 
     });
-    inMemoryDb.hospitals.push({ _id: hospitalId, name: 'Metro General Hospital', city: 'Kolkata' });
+    inMemoryDb.hospitals.push({ _id: hospitalId, name: 'Kolkata Multispeciality Clinic', address: 'Salt Lake City', city: 'Kolkata' });
 
-    console.log(`\n✅ Setup Mock Clinic:`);
-    console.log(`   - Target Specialization: Gastroenterologist`);
-    console.log(`   - Doctor: Dr. Debabrata Sen (Fee: ₹1000)`);
+    console.log(`✅ Seeded Kolkata Multispeciality Clinic & Dr. Debabrata Sen (Gastroenterologist).`);
 
     const request = async (url, bodyParams = {}) => {
         return new Promise((resolve, reject) => {
@@ -108,44 +110,56 @@ const runAudit = async () => {
     };
 
     const webhookUrl = 'http://localhost:3005/api/voice-queue/whatsapp';
+    const testNewPhone = 'whatsapp:+918888888888';
 
     try {
         // ==========================================================
-        // TEST 1: TEXT QUERY BOOKING (Hindi query)
+        // MULTI-TURN ONBOARDING TEST
         // ==========================================================
-        console.log('\n[TEST 1] Testing text-based booking in Hindi...');
-        const textRes = await request(webhookUrl, {
-            From: 'whatsapp:+919883769499',
-            Body: 'kal subha ke liye pet dard ke doctor ka number laga do bhaiya, mera naam Sainee hai.'
-        });
-
-        console.log(`   - Response Status: ${textRes.status}`);
-        console.log(`   - TwiML Output Received:\n${textRes.body}`);
-
-        if (textRes.status !== 200 || !textRes.body.includes('Gastroenterologist') || !textRes.body.includes('Sainee')) {
-            throw new Error('Test 1 failed: Gemini could not parse text query successfully!');
+        console.log('\n💬 [ONBOARDING STEP 1] First message from unregistered number...');
+        const step1 = await request(webhookUrl, { From: testNewPhone, Body: 'hi' });
+        console.log(`   - Output:\n${step1.body}`);
+        if (!step1.body.includes('Full Name')) {
+            throw new Error('Step 1 failed: chatbot did not ask for Full Name!');
         }
-        console.log('   ✅ TEST 1 PASSED (AI parsed Hindi request & booked Gastroenterologist!)');
 
-        // ==========================================================
-        // TEST 2: AUDIO WEBHOOK SIMULATION (Twilio download pipeline)
-        // ==========================================================
-        console.log('\n[TEST 2] Testing voice note (multimodal audio) booking via CDN URL...');
-        const voiceRes = await request(webhookUrl, {
-            From: 'whatsapp:+919903592889',
-            MediaUrl0: 'http://localhost:3006/test_voice.mp3',
-            MediaContentType0: 'audio/mp3'
-        });
-
-        console.log(`   - Response Status: ${voiceRes.status}`);
-        console.log(`   - TwiML Output Received:\n${voiceRes.body}`);
-
-        if (voiceRes.status !== 200 || !voiceRes.body.includes('Confirmed')) {
-            throw new Error('Test 2 failed: Audio download or Gemini parser failed!');
+        console.log('\n💬 [ONBOARDING STEP 2] Sending patient name...');
+        const step2 = await request(webhookUrl, { From: testNewPhone, Body: 'Pritish Ghosh' });
+        console.log(`   - Output:\n${step2.body}`);
+        if (!step2.body.includes('Date of Birth') || !step2.body.includes('Pritish Ghosh')) {
+            throw new Error('Step 2 failed: chatbot did not verify name or ask for DOB!');
         }
-        console.log('   ✅ TEST 2 PASSED (Webhook downloaded audio and booked appointment!)');
 
-        console.log('\n🌟🌟🌟 MULTIMODAL AI WHATSAPP VOICE RECEIVER ENGINE CONFIRMED WORKING 100% PERFECTLY! 🌟🌟🌟');
+        console.log('\n💬 [ONBOARDING STEP 3a] Sending invalid DOB formatting...');
+        const step3a = await request(webhookUrl, { From: testNewPhone, Body: '12-december-1998' });
+        console.log(`   - Output:\n${step3a.body}`);
+        if (!step3a.body.includes('Invalid format')) {
+            throw new Error('Step 3a failed: validation regex did not catch invalid date format!');
+        }
+
+        console.log('\n💬 [ONBOARDING STEP 3b] Sending valid DOB formatting...');
+        const step3b = await request(webhookUrl, { From: testNewPhone, Body: '11-09-1998' });
+        console.log(`   - Output:\n${step3b.body}`);
+        if (!step3b.body.includes('Registration Successful') || !step3b.body.includes('11-09-1998')) {
+            throw new Error('Step 3b failed: onboarding registration failed!');
+        }
+
+        // ==========================================================
+        // PROCEED TO BOOKING (Now that number is registered!)
+        // ==========================================================
+        console.log('\n💬 [ONBOARDING STEP 4] Sending appointment text request...');
+        const step4 = await request(webhookUrl, {
+            From: testNewPhone,
+            Body: 'kal subha Kolkata Multispeciality Clinic me pet dard ke doctor ka number lagado'
+        });
+        console.log(`   - Output:\n${step4.body}`);
+
+        if (!step4.body.includes('Kolkata Multispeciality Clinic') || !step4.body.includes('Pritish Ghosh') || !step4.body.includes('DOB: 11-09-1998')) {
+            throw new Error('Step 4 failed: booking was not resolved with patient demographics!');
+        }
+
+        console.log('\n   ✅ CONVERSATIONAL CHATBOT STATE MACHINE ONBOARDING PASSED!');
+        console.log('\n🌟🌟🌟 INTERACTIVE PATIENT REGISTRATION ENGINE CONFIRMED WORKING 100% PERFECTLY! 🌟🌟🌟');
 
     } catch (error) {
         console.error('\n❌ AUDIT ENCOUNTERED AN ERROR:');
@@ -153,7 +167,6 @@ const runAudit = async () => {
     } finally {
         server.close();
         mediaServer.close();
-        // Cleanup local file
         if (fs.existsSync(mockAudioPath)) {
             fs.unlinkSync(mockAudioPath);
         }

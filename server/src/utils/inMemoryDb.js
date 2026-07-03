@@ -9,7 +9,8 @@ const dataStore = {
     users: [],
     transactions: [],
     complaints: [],
-    appointments: []
+    appointments: [],
+    whatsappSessions: []
 };
 
 // Returns true if mongoose is connected AND we are not overriding it to in-memory mode

@@ -6,6 +6,7 @@ const Hospital = require('../models/Hospital');
 const Doctor = require('../models/Doctor');
 const Appointment = require('../models/Appointment');
 const User = require('../models/user');
+const WhatsAppSession = require('../models/WhatsAppSession');
 const inMemoryDb = require('../utils/inMemoryDb');
 
 // Initialize Gemini SDK safely
@@ -113,15 +114,126 @@ exports.handleIncomingWhatsAppMessage = async (req, res) => {
     try {
         // Handle case-insensitivity of incoming webhook request fields
         const fromField = req.body.From || req.body.from || '';
-        const bodyText = req.body.Body || req.body.body || '';
+        const bodyText = (req.body.Body || req.body.body || '').trim();
         const mediaUrl = req.body.MediaUrl0 || req.body.mediaUrl0;
         const mediaContentType = req.body.MediaContentType0 || req.body.mediaContentType0;
 
         const fromNumber = fromField ? fromField.replace('whatsapp:', '').trim() : '';
-        // If empty (e.g. key missing in Postman), auto-allocate a valid mock mobile for testing safety
         const testMobile = fromNumber || `9883769${Math.floor(1000 + Math.random() * 9000)}`;
+        const sanitizedFrom = testMobile.replace(/[^0-9]/g, '');
 
-        console.log(`\n📥 Received WhatsApp Message from: ${fromNumber || 'Postman Client (Mocked: ' + testMobile + ')'}`);
+        console.log(`\n📥 WhatsApp Webhook message from: ${fromNumber || 'Postman (' + testMobile + ')'}`);
+
+        // ==========================================================
+        // PATIENT VERIFICATION & STATE-MACHINE ONBOARDING
+        // ==========================================================
+        const dbConnected = mongoose.connection.readyState === 1 && process.env.USE_IN_MEMORY !== 'true';
+        let patientUser = null;
+
+        if (dbConnected) {
+            patientUser = await User.findOne({ mobile: sanitizedFrom });
+        } else {
+            patientUser = inMemoryDb.users.find(u => u.mobile === sanitizedFrom);
+        }
+
+        // If patient account does NOT exist, execute multi-turn onboarding state machine
+        if (!patientUser) {
+            let session = null;
+
+            if (dbConnected) {
+                session = await WhatsAppSession.findOne({ whatsappNumber: sanitizedFrom });
+            } else {
+                session = inMemoryDb.whatsappSessions.find(s => s.whatsappNumber === sanitizedFrom);
+            }
+
+            // Step 1: No session exists yet -> Ask for Name
+            if (!session) {
+                if (dbConnected) {
+                    await WhatsAppSession.create({ whatsappNumber: sanitizedFrom, step: 'awaiting_name' });
+                } else {
+                    inMemoryDb.whatsappSessions.push({
+                        whatsappNumber: sanitizedFrom,
+                        step: 'awaiting_name',
+                        tempData: { name: '' }
+                    });
+                }
+
+                const onboardingMsg = `Welcome to *FlexiBook!* 🏥
+
+We noticed that your mobile number is not registered in our clinic database.
+
+Please reply with your *Full Name* to start your registration.`;
+                return sendTwiMLResponse(res, onboardingMsg);
+            }
+
+            // Step 2: Session is awaiting name -> Store name, Ask for DOB
+            if (session.step === 'awaiting_name') {
+                if (dbConnected) {
+                    session.tempData = { name: bodyText };
+                    session.step = 'awaiting_dob';
+                    await session.save();
+                } else {
+                    session.tempData.name = bodyText;
+                    session.step = 'awaiting_dob';
+                }
+
+                const dobMsg = `Thank you, *${bodyText}*!
+
+Now, please reply with your *Date of Birth (DOB)* in *DD-MM-YYYY* format (e.g., 25-12-2000).`;
+                return sendTwiMLResponse(res, dobMsg);
+            }
+
+            // Step 3: Session is awaiting DOB -> Validate DOB, Create User Profile
+            if (session.step === 'awaiting_dob') {
+                // DOB format validation (e.g. DD-MM-YYYY)
+                const dobRegex = /^\d{2}-\d{2}-\d{4}$/;
+                if (!dobRegex.test(bodyText)) {
+                    const retryMsg = `⚠️ Invalid format. Please enter your *Date of Birth* in *DD-MM-YYYY* format (e.g., 15-08-1995).`;
+                    return sendTwiMLResponse(res, retryMsg);
+                }
+
+                const savedName = session.tempData.name;
+
+                if (dbConnected) {
+                    patientUser = await User.create({
+                        name: savedName,
+                        email: `${sanitizedFrom}@whatsapp.com`,
+                        mobile: sanitizedFrom,
+                        dob: bodyText,
+                        password: new mongoose.Types.ObjectId().toString(), // mock password
+                        role: 'patient'
+                    });
+                    await WhatsAppSession.deleteOne({ whatsappNumber: sanitizedFrom });
+                    console.log(`✅ Auto-Registered New Patient Account: ${patientUser.name} (DOB: ${bodyText})`);
+                } else {
+                    patientUser = {
+                        _id: new mongoose.Types.ObjectId().toString(),
+                        name: savedName,
+                        email: `${sanitizedFrom}@whatsapp.com`,
+                        mobile: sanitizedFrom,
+                        dob: bodyText,
+                        role: 'patient'
+                    };
+                    inMemoryDb.users.push(patientUser);
+                    
+                    const idx = inMemoryDb.whatsappSessions.findIndex(s => s.whatsappNumber === sanitizedFrom);
+                    if (idx !== -1) inMemoryDb.whatsappSessions.splice(idx, 1);
+                    console.log(`✅ Auto-Registered New Patient (In-Memory): ${patientUser.name} (DOB: ${bodyText})`);
+                }
+
+                const successMsg = `🎉 *Registration Successful!*
+
+Welcome to FlexiBook, *${savedName}* (DOB: ${bodyText}).
+
+Your profile is now securely activated in our system. You can now send any text message or record a voice note to book your doctor's appointment!
+(E.g., *"kal subha pet dard ke doctor ka number lagado"*).`;
+                return sendTwiMLResponse(res, successMsg);
+            }
+        }
+
+        // ==========================================================
+        // PROCEED TO BOOKING LOGIC (For registered users)
+        // ==========================================================
         if (mediaUrl) {
             console.log(`   - Audio Attached: ${mediaUrl} (${mediaContentType})`);
         } else {
@@ -200,38 +312,19 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
             extracted = parseVoiceRequestLocal(bodyText);
         }
 
-        // Sanitize testMobile (remove spaces, +, and special characters) for database format safety
-        const sanitizedFrom = testMobile.replace(/[^0-9]/g, ''); 
-
         // ==========================================
         // BOOKING COORDINATION ENGINE
         // ==========================================
-        let patientUser = null;
         let doctor = null;
         let hospital = null;
         let tokenNumber = 1;
         let appointmentId = '';
 
-        const dbConnected = mongoose.connection.readyState === 1 && process.env.USE_IN_MEMORY !== 'true';
-
-        const finalName = extracted.patientName || `WhatsApp Patient (${sanitizedFrom.slice(-4)})`;
+        const finalName = extracted.patientName || patientUser.name;
 
         if (dbConnected) {
             // MongoDB Mode
-            // 1. Resolve Patient User Account
-            patientUser = await User.findOne({ mobile: sanitizedFrom });
-            if (!patientUser) {
-                patientUser = await User.create({
-                    name: finalName,
-                    email: `${sanitizedFrom}@whatsapp.com`,
-                    mobile: sanitizedFrom,
-                    password: new mongoose.Types.ObjectId().toString(), // mock password
-                    role: 'patient'
-                });
-                console.log(`✅ Auto-Registered New Patient Account: ${patientUser.name}`);
-            }
-
-            // 2. Resolve Hospital
+            // 1. Resolve Hospital
             if (extracted.hospitalName) {
                 hospital = await Hospital.findOne({ name: { $regex: extracted.hospitalName, $options: 'i' } });
             }
@@ -239,7 +332,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 hospital = await Hospital.findOne(); // default to first hospital
             }
 
-            // 3. Resolve Doctor matching specialization at this hospital
+            // 2. Resolve Doctor matching specialization at this hospital
             if (hospital) {
                 doctor = await Doctor.findOne({ specialization: extracted.specialization, hospitalId: hospital._id }).populate('userId');
             }
@@ -259,7 +352,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 return sendTwiMLResponse(res, `Hello! We understood your request for a ${extracted.specialization}, but there are no clinics registered on FlexiBook right now.`);
             }
 
-            // 4. Queue Token Allocation
+            // 3. Queue Token Allocation
             const lastApp = await Appointment.findOne({
                 doctor: doctor._id,
                 hospital: hospital._id,
@@ -268,7 +361,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
             tokenNumber = lastApp ? lastApp.tokenNumber + 1 : 1;
 
-            // 5. Save Appointment with clinical details
+            // 4. Save Appointment with clinical details
             const appt = await Appointment.create({
                 patient: patientUser._id,
                 doctor: doctor._id,
@@ -286,21 +379,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
         } else {
             // In-Memory Fallback Mode
-            // 1. Resolve Patient User Account
-            patientUser = inMemoryDb.users.find(u => u.mobile === sanitizedFrom);
-            if (!patientUser) {
-                patientUser = {
-                    _id: new mongoose.Types.ObjectId().toString(),
-                    name: finalName,
-                    email: `${sanitizedFrom}@whatsapp.com`,
-                    mobile: sanitizedFrom,
-                    role: 'patient'
-                };
-                inMemoryDb.users.push(patientUser);
-                console.log(`✅ Auto-Registered New Patient (In-Memory): ${patientUser.name}`);
-            }
-
-            // 2. Resolve Hospital
+            // 1. Resolve Hospital
             if (extracted.hospitalName) {
                 hospital = inMemoryDb.hospitals.find(h => h.name.toLowerCase().includes(extracted.hospitalName.toLowerCase()));
             }
@@ -308,7 +387,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 hospital = inMemoryDb.hospitals[0];
             }
 
-            // 3. Resolve Doctor
+            // 2. Resolve Doctor
             if (hospital) {
                 doctor = inMemoryDb.doctors.find(d => d.specialization === extracted.specialization && d.hospitalId === hospital._id);
             }
@@ -332,7 +411,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
                 return sendTwiMLResponse(res, `Hello! We understood your request for a ${extracted.specialization}, but there are no clinics registered on FlexiBook right now.`);
             }
 
-            // 4. Queue Token Allocation
+            // 3. Queue Token Allocation
             const targetDateStr = new Date(extracted.appointmentDate).toDateString();
             const sameDayApps = inMemoryDb.appointments.filter(a =>
                 a.doctor === doctor._id &&
@@ -345,7 +424,7 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
             });
             tokenNumber = maxToken + 1;
 
-            // 5. Save Appointment
+            // 4. Save Appointment
             appointmentId = new mongoose.Types.ObjectId().toString();
             inMemoryDb.appointments.push({
                 _id: appointmentId,
@@ -381,11 +460,12 @@ Ensure the output is ONLY a valid JSON object. Do not wrap in markdown backticks
 
         // Styled patient demographics
         let patientProfileStr = `*${finalName}*`;
-        if (extracted.patientAge || extracted.patientGender) {
-            const parts = [];
-            if (extracted.patientAge) parts.push(`Age: ${extracted.patientAge}`);
-            if (extracted.patientGender) parts.push(extracted.patientGender.toUpperCase());
-            patientProfileStr += ` (${parts.join(', ')})`;
+        const profileParts = [];
+        if (patientUser.dob) profileParts.push(`DOB: ${patientUser.dob}`);
+        if (extracted.patientAge) profileParts.push(`Age: ${extracted.patientAge}`);
+        if (extracted.patientGender) profileParts.push(extracted.patientGender.toUpperCase());
+        if (profileParts.length > 0) {
+            patientProfileStr += ` (${profileParts.join(', ')})`;
         }
 
         const responseText = `*Appointment Confirmed! 🎟️*
@@ -411,7 +491,7 @@ _(Please pay online to confirm your checked-in status in the live queue!)_`;
 
     } catch (error) {
         console.error('WhatsApp Webhook Error:', error);
-        return sendTwiMLResponse(res, "Hello, we encountered a technical issue parsing your voice request. Please try writing your appointment details directly.");
+        return sendTwiMLResponse(res, "Hello, we encountered a technical issue parsing your request. Please try again later.");
     }
 };
 
@@ -423,5 +503,3 @@ const sendTwiMLResponse = (res, messageText) => {
     <Message>${messageText}</Message>
 </Response>`);
 };
-
-

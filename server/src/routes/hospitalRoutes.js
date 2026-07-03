@@ -9,7 +9,6 @@ const {
     updateHospital,
     deleteHospital
 } = require('../controllers/hospitalController');
-
 // 🌐 GET /api/hospitals - Get a list of all hospitals (or search by city)
 router.get('/', getAllHospitals);
 

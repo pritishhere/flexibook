@@ -1,45 +1,37 @@
 const multer = require('multer');
 const path = require('path');
 
-// 1. STORAGE CONFIGURATION (File kahan aur kis naam se save hogi)
+// 1. Storage Configuration
 const storage = multer.diskStorage({
-    // Destination set karta hai ki file kis folder mein jayegi
     destination: function (req, file, cb) {
-        cb(null, 'uploads/medical_records/'); 
+        cb(null, 'uploads/'); 
     },
-    
-    // Filename set karta hai ki file ka naya naam kya hoga
     filename: function (req, file, cb) {
-        // Ek hi naam ki 2 files crash na karein, isliye hum time (Date.now) add karte hain
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        // Naya naam = originalFieldname-123456789.pdf
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
-// 2. FILE FILTER (Security Check: Sirf PDF aur Images allow hongi)
+// 2. File Filter (Validation Guard)
 const fileFilter = (req, file, cb) => {
-    // Allowed extensions (Regular Expression)
-    const allowedTypes = /jpeg|jpg|png|pdf/;
-    
-    // Check extension
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    // Check mime type (Security ke liye taaki koi rename karke fake PDF na daale)
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedFileTypes = /jpeg|jpg|png|pdf|doc|docx/;
+    const extName = allowedFileTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimeType = allowedFileTypes.test(file.mimetype);
 
-    if (mimetype && extname) {
-        return cb(null, true); // Guard ne bola: "Theek hai, aage jao!"
+    if (extName && mimeType) {
+        return cb(null, true);
     } else {
-        cb(new Error('Error: Sirf Images (jpeg/jpg/png) aur PDFs hi allow hain!')); // Guard ne rok liya
+        cb(new Error('Only medical files are allowed (.jpeg, .jpg, .png, .pdf, .doc, .docx)'), false);
     }
 };
 
-// 3. UPLOAD INITIALIZATION (Sab kuch ek sath jodna)
+// 3. Multer Instance Initialization
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Max file size limit: 5MB set kiya hai
+    limits: { 
+        fileSize: 10 * 1024 * 1024 // 10MB file limit
+    },
     fileFilter: fileFilter
 });
 
-// Is 'upload' module ko export kar rahe hain taaki isko routes mein use kar sakein
 module.exports = upload;

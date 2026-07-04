@@ -1,7 +1,20 @@
 // src/pages/CustomerPage.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { serviceCategories } from './data/categories';
+
+const mainCategories = serviceCategories.slice(0, 6).map((category) => category.name);
+const otherCategories = serviceCategories.slice(6).map((category) => category.name);
+const allCategoriesList = serviceCategories.map((category) => category.name);
 
 const CustomerPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category');
+  const normalizedCategoryParam = categoryParam?.trim().toLowerCase();
+  const matchedQueryCategory = normalizedCategoryParam
+    ? allCategoriesList.find((category) => category.toLowerCase() === normalizedCategoryParam)
+    : null;
+
   // ================= 1. STATES =================
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState([]); 
@@ -21,13 +34,13 @@ const CustomerPage = () => {
   // 🔥 Full Page Detail State 🔥
   const [activeDetailPage, setActiveDetailPage] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const activeSelectedCategories = selectedCategories.length > 0
+    ? selectedCategories
+    : matchedQueryCategory ? [matchedQueryCategory] : [];
+  const shouldShowOtherCategories = isOthersOpen || otherCategories.includes(matchedQueryCategory);
 
   const itemsPerPage = 4;
 
-  const mainCategories = ['Healthcare', 'Beauty & Wellness', 'Automotive', 'Food & Dining', 'Education', 'Fitness'];
-  const otherCategories = ['Entertainment & Event Ticketing', 'Real Estate & Property Services', 'Home Repair & Maintenance', 'Travel & Booking', 'Courier & Logistics'];
-  const allCategoriesList = [...mainCategories, ...otherCategories];
-  
   const availabilityOptions = ['Available Now', 'Available Today', 'Available Tomorrow', 'Join Queue', 'Fully Booked'];
   const priceOptions = ['Under ₹500', '₹500 - ₹1000', '₹1000 - ₹2000', 'Above ₹2000'];
   const ratingOptions = ['4.5 & Above', '4.0 & Above', '3.5 & Above'];
@@ -301,7 +314,7 @@ const CustomerPage = () => {
     const serviceLocation = locations[index % locations.length];
     const availStatus = availabilityOptions[index % availabilityOptions.length];
 
-    let nextAvailText = '';
+    let nextAvailText;
     if (availStatus === 'Available Now') nextAvailText = 'Available Now';
     else if (availStatus === 'Available Today') nextAvailText = 'Today, 04:30 PM';
     else if (availStatus === 'Available Tomorrow') nextAvailText = 'Tomorrow, 10:00 AM';
@@ -363,7 +376,7 @@ const CustomerPage = () => {
 
   // ================= 5. FILTER ENGINE FOR LIST =================
   const filteredServices = allServices.filter((service) => {
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.some(cat => service.category.includes(cat));
+    const matchesCategory = activeSelectedCategories.length === 0 || activeSelectedCategories.some(cat => service.category.includes(cat));
     let matchesPrice = true;
     if (selectedPrices.length > 0) {
       matchesPrice = selectedPrices.some(range => {
@@ -401,12 +414,30 @@ const CustomerPage = () => {
 
   // ================= 6. HANDLERS =================
   const toggleSection = (section) => setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  const handleCategoryToggle = (category) => { setSelectedCategories(prev => prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]); setCurrentPage(1); };
+  const clearCategoryQueryParam = () => {
+    if (!categoryParam) return;
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('category');
+    setSearchParams(nextSearchParams, { replace: true });
+  };
+
+  const handleCategoryToggle = (category) => {
+    clearCategoryQueryParam();
+    setSelectedCategories(prev => {
+      const currentCategories = prev.length > 0 ? prev : activeSelectedCategories;
+      return currentCategories.includes(category)
+        ? currentCategories.filter(c => c !== category)
+        : [...currentCategories, category];
+    });
+    setCurrentPage(1);
+  };
   const handlePriceToggle = (priceRange) => { setSelectedPrices(prev => prev.includes(priceRange) ? prev.filter(p => p !== priceRange) : [...prev, priceRange]); setCurrentPage(1); };
   const handleAvailabilityToggle = (status) => { setSelectedAvailability(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]); setCurrentPage(1); };
   const handleRatingToggle = (rating) => { setSelectedRatings(prev => prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]); setCurrentPage(1); };
 
   const handleClearAll = () => { 
+    clearCategoryQueryParam();
     setSelectedCategories([]); setSelectedPrices([]); setSelectedAvailability([]); setSelectedRatings([]); 
     setLocationFilter(''); setSelectedState('All India'); setSortBy('Recommended'); setCurrentPage(1); setIsOthersOpen(false); 
   };
@@ -725,7 +756,7 @@ const CustomerPage = () => {
                   <div className="flex flex-col gap-2.5 mb-4 transition-all duration-300">
                     {mainCategories.map((cat, i) => (
                       <label key={i} className="flex items-center gap-3 cursor-pointer group/item select-none">
-                        <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleCategoryToggle(cat)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors duration-150" />
+                        <input type="checkbox" checked={activeSelectedCategories.includes(cat)} onChange={() => handleCategoryToggle(cat)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors duration-150" />
                         <span className="text-sm text-slate-600 group-hover/item:text-slate-900 group-hover/item:pl-1 transition-all duration-200">{cat}</span>
                       </label>
                     ))}
@@ -733,13 +764,13 @@ const CustomerPage = () => {
                     <div className="mt-1">
                       <div className="flex items-center justify-between cursor-pointer group/other py-1" onClick={() => setIsOthersOpen(!isOthersOpen)}>
                         <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition-colors duration-200">Other Services</span>
-                        <svg className={`w-4 h-4 text-slate-400 group-hover/other:text-blue-500 transform transition-transform duration-300 ${isOthersOpen ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg className={`w-4 h-4 text-slate-400 group-hover/other:text-blue-500 transform transition-transform duration-300 ${shouldShowOtherCategories ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                       </div>
-                      {isOthersOpen && (
+                      {shouldShowOtherCategories && (
                         <div className="flex flex-col gap-2.5 mt-2.5 pl-3.5 border-l-2 border-slate-100 focus-within:border-blue-400 transition-all duration-300">
                           {otherCategories.map((cat, i) => (
                             <label key={i} className="flex items-center gap-3 cursor-pointer group/sub select-none">
-                              <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => handleCategoryToggle(cat)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                              <input type="checkbox" checked={activeSelectedCategories.includes(cat)} onChange={() => handleCategoryToggle(cat)} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                               <span className="text-sm text-slate-600 group-hover/sub:text-slate-900 group-hover/sub:pl-1 transition-all duration-200">{cat}</span>
                             </label>
                           ))}

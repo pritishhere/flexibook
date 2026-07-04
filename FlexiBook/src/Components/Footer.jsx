@@ -1,5 +1,34 @@
 // src/components/Footer.jsx
-import React from 'react';
+import { Link } from 'react-router-dom';
+
+const footerColumns = [
+  {
+    title: 'For Customers',
+    links: [
+      { label: 'Browse Services', to: '/customers' },
+      { label: 'Explore Categories', to: '/categories' },
+      { label: 'About FlexiBook', to: '/about' },
+    ],
+  },
+  {
+    title: 'For Businesses',
+    links: [
+      { label: 'Register Business', to: '/business-register' },
+      { label: 'Business Signup', to: '/real-business-form' },
+      { label: 'Customer Directory', to: '/customers' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About Us', to: '/about' },
+      { label: 'Terms of Service', href: '#' },
+      { label: 'Privacy Policy', href: '#' },
+    ],
+  },
+];
+
+const footerLinkClass = 'text-sm text-slate-400 hover:text-blue-400 hover:translate-x-1.5 transition-all duration-300 flex items-center gap-2 group';
 
 export const Footer = () => {
   return (
@@ -40,50 +69,28 @@ export const Footer = () => {
 
           {/* 2. LINKS SECTION */}
           <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-3 gap-8">
-            {/* Column A */}
-            <div>
-              <h4 className="text-white font-semibold mb-4 text-sm tracking-wide uppercase">For Customers</h4>
-              <ul className="flex flex-col gap-3">
-                {['Browse Services', 'Find Businesses', 'FAQ'].map((link, i) => (
-                  <li key={i}>
-                    <a href="#" className="text-sm text-slate-400 hover:text-blue-400 hover:translate-x-1.5 transition-all duration-300 flex items-center gap-2 group">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-300"></span>
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Column B */}
-            <div>
-              <h4 className="text-white font-semibold mb-4 text-sm tracking-wide uppercase">For Businesses</h4>
-              <ul className="flex flex-col gap-3">
-                {['Register Business', 'Dashboard', 'Pricing'].map((link, i) => (
-                  <li key={i}>
-                    <a href="#" className="text-sm text-slate-400 hover:text-blue-400 hover:translate-x-1.5 transition-all duration-300 flex items-center gap-2 group">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-300"></span>
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Column C */}
-            <div className="col-span-2 sm:col-span-1">
-              <h4 className="text-white font-semibold mb-4 text-sm tracking-wide uppercase">Company</h4>
-              <ul className="flex flex-col gap-3">
-                {['About Us', 'Terms of Service', 'Privacy Policy'].map((link, i) => (
-                  <li key={i}>
-                    <a href="#" className="text-sm text-slate-400 hover:text-blue-400 hover:translate-x-1.5 transition-all duration-300 flex items-center gap-2 group">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-300"></span>
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {footerColumns.map((column, columnIndex) => (
+              <div key={column.title} className={columnIndex === 2 ? 'col-span-2 sm:col-span-1' : ''}>
+                <h4 className="text-white font-semibold mb-4 text-sm tracking-wide uppercase">{column.title}</h4>
+                <ul className="flex flex-col gap-3">
+                  {column.links.map((link) => (
+                    <li key={link.label}>
+                      {link.to ? (
+                        <Link to={link.to} className={footerLinkClass}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-300"></span>
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <a href={link.href} className={footerLinkClass}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-300"></span>
+                          {link.label}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
           {/* 3. NEWSLETTER SECTION */}

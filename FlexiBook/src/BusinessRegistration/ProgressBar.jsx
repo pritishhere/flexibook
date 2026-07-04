@@ -802,18 +802,6 @@ export default function App() {
     <div className="min-h-screen bg-[#f8fafc] p-6 md:p-12 flex flex-col items-center font-sans">
       <div className="w-full max-w-4xl mx-auto flex flex-col md:flex-row items-start gap-8">
         
-        {/* Sidebar / Branding area */}
-        <div className="hidden lg:flex flex-col w-64 shrink-0 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl mb-4">🏪</div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Grow Your Business</h2>
-          <p className="text-sm text-slate-500 mb-6">Partner with us and manage appointments, queues and customers easily.</p>
-          <ul className="space-y-4 text-sm text-slate-600">
-            <li className="flex items-center gap-2">✅ Increase customer satisfaction</li>
-            <li className="flex items-center gap-2">⏱️ Reduce waiting time</li>
-            <li className="flex items-center gap-2">📅 Smart scheduling</li>
-            <li className="flex items-center gap-2">📊 Real-time analytics</li>
-          </ul>
-        </div>
 
         {/* Main Content Area */}
         <div className="flex-1 w-full max-w-full">

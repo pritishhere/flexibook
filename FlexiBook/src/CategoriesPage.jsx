@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getCategoryUrl, serviceCategories } from './data/categories';
 
+const bookingHeroImage = 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1800&q=80';
+
 const CategoriesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -26,7 +28,7 @@ const CategoriesPage = () => {
     <div className="min-h-screen bg-slate-50 font-sans">
       <section
         className="relative overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: "url('/customer-bg.jpg')" }}
+        style={{ backgroundImage: `url(${bookingHeroImage})`, backgroundPosition: 'center right' }}
       >
         <div className="absolute inset-0 bg-slate-950/65"></div>
         <div className="relative z-10 max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-16 md:py-24">

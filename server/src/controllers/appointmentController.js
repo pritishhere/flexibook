@@ -1,4 +1,5 @@
 const Appointment = require('../models/Appointment');
+const inMemoryDb = require('../utils/inMemoryDb');
 
 // ==========================================
 // 1. BOOK APPOINTMENT (Auto-Generate Token)
@@ -222,5 +223,287 @@ exports.markNoShow = async (req, res) => {
     } catch (error) {
         console.error('No-Show Error:', error);
         res.status(500).json({ success: false, message: "Server error processing timeout", error: error.message });
+    }
+};
+
+// ==========================================
+// 7. GET HOSPITAL APPOINTMENTS (Dashboard Schedule)
+// ==========================================
+exports.getHospitalAppointments = async (req, res) => {
+    try {
+        const { hospitalId } = req.params;
+        const { date, doctorId } = req.query;
+
+        if (!hospitalId) {
+            return res.status(400).json({ success: false, message: "Hospital ID is required." });
+        }
+
+        if (inMemoryDb.isDbConnected()) {
+            let query = { hospital: hospitalId };
+            if (date) {
+                const startOfDay = new Date(date);
+                startOfDay.setUTCHours(0, 0, 0, 0);
+                const endOfDay = new Date(date);
+                endOfDay.setUTCHours(23, 59, 59, 999);
+                query.appointmentDate = { $gte: startOfDay, $lte: endOfDay };
+            }
+            if (doctorId) {
+                query.doctor = doctorId;
+            }
+
+            const appointments = await Appointment.find(query)
+                .populate('patient', 'name email mobile')
+                .populate({
+                    path: 'doctor',
+                    populate: { path: 'userId', select: 'name' }
+                })
+                .sort({ appointmentDate: 1, tokenNumber: 1 });
+
+            return res.status(200).json({
+                success: true,
+                count: appointments.length,
+                data: appointments
+            });
+        } else {
+            let filtered = inMemoryDb.appointments.filter(a => a.hospital === hospitalId);
+            if (date) {
+                const targetDateStr = new Date(date).toDateString();
+                filtered = filtered.filter(a => new Date(a.appointmentDate).toDateString() === targetDateStr);
+            }
+            if (doctorId) {
+                filtered = filtered.filter(a => a.doctor === doctorId);
+            }
+
+            const populated = filtered.map(a => {
+                const patientUser = inMemoryDb.users.find(u => u._id === a.patient);
+                const docObj = inMemoryDb.doctors.find(d => d._id === a.doctor);
+                let populatedDoctor = a.doctor;
+
+                if (docObj) {
+                    const docUser = inMemoryDb.users.find(u => u._id === docObj.userId);
+                    populatedDoctor = {
+                        ...docObj,
+                        userId: docUser ? { _id: docUser._id, name: docUser.name } : docObj.userId
+                    };
+                }
+
+                return {
+                    ...a,
+                    patient: patientUser ? { _id: patientUser._id, name: patientUser.name, email: patientUser.email, mobile: patientUser.mobile } : a.patient,
+                    doctor: populatedDoctor
+                };
+            }).sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate) || a.tokenNumber - b.tokenNumber);
+
+            return res.status(200).json({
+                success: true,
+                count: populated.length,
+                data: populated
+            });
+        }
+    } catch (error) {
+        console.error('Fetch Hospital Appointments Error:', error);
+        res.status(500).json({ success: false, message: "Server error fetching schedule", error: error.message });
+    }
+};
+
+// ==========================================
+// 8. UPDATE APPOINTMENT PAYMENT STATUS
+// ==========================================
+exports.updatePaymentStatus = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { paymentStatus } = req.body;
+
+        if (!paymentStatus || !['Pending', 'Paid'].includes(paymentStatus)) {
+            return res.status(400).json({ success: false, message: "Invalid paymentStatus. Must be 'Pending' or 'Paid'." });
+        }
+
+        if (inMemoryDb.isDbConnected()) {
+            const updatedAppointment = await Appointment.findByIdAndUpdate(
+                appointmentId,
+                { paymentStatus },
+                { new: true }
+            );
+
+            if (!updatedAppointment) {
+                return res.status(404).json({ success: false, message: "Appointment not found." });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: `Payment status updated to ${paymentStatus}.`,
+                data: updatedAppointment
+            });
+        } else {
+            const index = inMemoryDb.appointments.findIndex(a => a._id === appointmentId);
+            if (index === -1) {
+                return res.status(404).json({ success: false, message: "Appointment not found." });
+            }
+
+            inMemoryDb.appointments[index].paymentStatus = paymentStatus;
+            inMemoryDb.appointments[index].updatedAt = new Date();
+
+            return res.status(200).json({
+                success: true,
+                message: `Payment status updated to ${paymentStatus}.`,
+                data: inMemoryDb.appointments[index]
+            });
+        }
+    } catch (error) {
+        console.error('Update Payment Status Error:', error);
+        res.status(500).json({ success: false, message: "Server error updating payment status", error: error.message });
+    }
+};
+
+// ==========================================
+// 9. RESCHEDULE APPOINTMENT
+// ==========================================
+exports.rescheduleAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { newDate, newTimeSlot } = req.body;
+
+        if (!newDate || !newTimeSlot) {
+            return res.status(400).json({ success: false, message: "New date and new time slot are required." });
+        }
+
+        if (inMemoryDb.isDbConnected()) {
+            const appointment = await Appointment.findById(appointmentId)
+                .populate('patient', 'name email mobile')
+                .populate({ path: 'doctor', populate: { path: 'userId', select: 'name' } });
+
+            if (!appointment) {
+                return res.status(404).json({ success: false, message: "Appointment not found." });
+            }
+
+            // Prevent changes if appointment is Completed or Cancelled
+            if (['Completed', 'Cancelled', 'Missed'].includes(appointment.status)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Cannot reschedule appointment with status '${appointment.status}'.` 
+                });
+            }
+
+            // Calculate new token number for the doctor on the new date
+            const lastAppointment = await Appointment.findOne({ 
+                doctor: appointment.doctor._id, 
+                hospital: appointment.hospital, 
+                appointmentDate: new Date(newDate) 
+            }).sort({ tokenNumber: -1 });
+
+            const newTokenNumber = lastAppointment ? lastAppointment.tokenNumber + 1 : 1;
+
+            // Apply updates
+            appointment.appointmentDate = new Date(newDate);
+            appointment.timeSlot = newTimeSlot;
+            appointment.tokenNumber = newTokenNumber;
+            appointment.status = 'Pending'; // Reset check-in state
+
+            await appointment.save();
+
+            // Dispatch Notifications
+            try {
+                const { sendAppointmentAlert } = require('../services/notificationService');
+                const doctorName = (appointment.doctor && appointment.doctor.userId) ? appointment.doctor.userId.name : 'Doctor';
+                const patientName = appointment.patient ? appointment.patient.name : 'Patient';
+
+                await sendAppointmentAlert({
+                    email: appointment.patient ? appointment.patient.email : '',
+                    phone: appointment.patient ? appointment.patient.mobile : '',
+                    name: patientName,
+                    doctorName: doctorName,
+                    date: appointment.appointmentDate,
+                    tokenNumber: appointment.tokenNumber,
+                    type: 'updated'
+                });
+            } catch (err) {
+                console.error('Reschedule Notification Dispatch Failed:', err.message);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Appointment rescheduled successfully!",
+                data: appointment
+            });
+        } else {
+            // In-Memory Fallback
+            const index = inMemoryDb.appointments.findIndex(a => a._id === appointmentId);
+            if (index === -1) {
+                return res.status(404).json({ success: false, message: "Appointment not found." });
+            }
+
+            const appointment = inMemoryDb.appointments[index];
+
+            if (['Completed', 'Cancelled', 'Missed'].includes(appointment.status)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Cannot reschedule appointment with status '${appointment.status}'.` 
+                });
+            }
+
+            // Find new token number
+            const targetDateStr = new Date(newDate).toDateString();
+            const sameDayApps = inMemoryDb.appointments.filter(a => 
+                a.doctor === appointment.doctor && 
+                a.hospital === appointment.hospital && 
+                new Date(a.appointmentDate).toDateString() === targetDateStr
+            );
+
+            let maxToken = 0;
+            sameDayApps.forEach(a => {
+                if (a.tokenNumber > maxToken) maxToken = a.tokenNumber;
+            });
+            const newTokenNumber = maxToken + 1;
+
+            // Update
+            appointment.appointmentDate = new Date(newDate);
+            appointment.timeSlot = newTimeSlot;
+            appointment.tokenNumber = newTokenNumber;
+            appointment.status = 'Pending';
+            appointment.updatedAt = new Date();
+
+            // Populate mock relationships for notification
+            const patientUser = inMemoryDb.users.find(u => u._id === appointment.patient);
+            const docObj = inMemoryDb.doctors.find(d => d._id === appointment.doctor);
+            let doctorName = 'Doctor';
+            let patientName = 'Patient';
+            let email = '';
+            let phone = '';
+
+            if (patientUser) {
+                patientName = patientUser.name;
+                email = patientUser.email;
+                phone = patientUser.mobile;
+            }
+            if (docObj) {
+                const docUser = inMemoryDb.users.find(u => u._id === docObj.userId);
+                if (docUser) doctorName = docUser.name;
+            }
+
+            // Dispatch notification
+            try {
+                const { sendAppointmentAlert } = require('../services/notificationService');
+                await sendAppointmentAlert({
+                    email,
+                    phone,
+                    name: patientName,
+                    doctorName,
+                    date: appointment.appointmentDate,
+                    tokenNumber: appointment.tokenNumber,
+                    type: 'updated'
+                });
+            } catch (err) {
+                console.error('Reschedule Notification Dispatch Failed (In-Memory):', err.message);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Appointment rescheduled successfully!",
+                data: appointment
+            });
+        }
+    } catch (error) {
+        console.error('Reschedule Appointment Error:', error);
+        res.status(500).json({ success: false, message: "Server error rescheduling appointment", error: error.message });
     }
 };

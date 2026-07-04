@@ -54,6 +54,10 @@ const appointmentSchema = new mongoose.Schema({
         type: String,
         enum: ['Pending', 'Paid'],
         default: 'Pending'
+    },
+    reminderSent: {
+        type: Boolean,
+        default: false
     }
 }, { 
     timestamps: true 

@@ -65,6 +65,11 @@ const sendAppointmentAlert = async (data) => {
             headingColor = '#c0392b';
             messageBody = `Hello ${name}, we regret to inform you that your scheduled appointment with Dr. ${doctorName} on ${formattedDate} has been cancelled. If money was deducted, a refund will process automatically.`;
             break;
+        case 'reminder':
+            subject = 'Upcoming Appointment Reminder ⏰';
+            headingColor = '#3498db';
+            messageBody = `Hello ${name}, this is a friendly reminder for your upcoming appointment with Dr. ${doctorName} at ${formattedDate}. Your queue token is #${tokenNumber}. Please track your live status on our app.`;
+            break;
         case 'your-turn':
             subject = 'Your Turn Has Arrived! 🚨';
             headingColor = '#27ae60';

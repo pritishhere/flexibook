@@ -1,5 +1,5 @@
 // src/components/Header.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 export const Header = () => {
@@ -43,15 +43,15 @@ export const Header = () => {
           <Link to="/customers" className={getDesktopLinkStyle('/customers')}>
             For Customers
           </Link>
-          <a href="#" className="text-sm xl:text-base font-medium text-gray-600 hover:text-blue-600 transition-colors duration-200">
+          <Link to="/business-register" className={getDesktopLinkStyle('/business-register')}>
             For Businesses
-          </a>
-          <a href="#" className="text-sm xl:text-base font-medium text-gray-600 hover:text-blue-600 transition-colors duration-200">
+          </Link>
+          <Link to="/categories" className={getDesktopLinkStyle('/categories')}>
             Categories
-          </a>
-          <a href="#" className="text-sm xl:text-base font-medium text-gray-600 hover:text-blue-600 transition-colors duration-200">
-            Contact Us
-          </a>
+          </Link>
+          <Link to="/about" className={getDesktopLinkStyle('/about')}>
+            About Us
+          </Link>
         </nav>
 
         {/* 3. AUTH BUTTONS */}
@@ -94,9 +94,15 @@ export const Header = () => {
           <Link to="/customers" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/customers')}>
             For Customers
           </Link>
-          <a href="#" className="text-base font-medium text-gray-600 py-2">For Businesses</a>
-          <a href="#" className="text-base font-medium text-gray-600 py-2">Categories</a>
-          <a href="#" className="text-base font-medium text-gray-600 py-2">Contact Us</a>
+          <Link to="/business-register" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/business-register')}>
+            For Businesses
+          </Link>
+          <Link to="/categories" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/categories')}>
+            Categories
+          </Link>
+          <Link to="/about" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/about')}>
+            About Us
+          </Link>
           <hr className="border-gray-100 my-2" />
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Linked Mobile Login Button */}

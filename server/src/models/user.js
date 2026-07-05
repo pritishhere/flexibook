@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
         sparse: true,
         default: null
     },
+    dob: {
+        type: String,
+        default: null
+    },
     role: {
         type: String,
         enum: ['patient', 'doctor', 'business', 'admin'],

@@ -32,10 +32,27 @@ const appointmentSchema = new mongoose.Schema({
         type: String,
         default: 'General Checkup'
     },
+    patientName: {
+        type: String,
+        default: null
+    },
+    patientAge: {
+        type: Number,
+        default: null
+    },
+    patientGender: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         // Updated to include Advanced Phase 3 logic states
         enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled', 'Missed'],
+        default: 'Pending'
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['Pending', 'Paid'],
         default: 'Pending'
     }
 }, { 

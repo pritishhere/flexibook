@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const inMemoryDb = require('../utils/inMemoryDb');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_super_secret_key';
 
@@ -22,8 +23,21 @@ const protect = async (req, res, next) => {
             // Verify the cryptographic signature of the token
             const decoded = jwt.verify(token, JWT_SECRET);
 
-            // Fetch the user from MongoDB using the ID from the token payload (exclude password)
-            req.user = await User.findById(decoded.id).select('-password');
+            // Fetch the user from MongoDB or In-Memory fallback depending on connection state
+            if (inMemoryDb.isDbConnected()) {
+                req.user = await User.findById(decoded.id).select('-password');
+            } else {
+                const memUser = inMemoryDb.users.find(u => u._id === decoded.id);
+                if (memUser) {
+                    req.user = {
+                        id: memUser._id,
+                        _id: memUser._id,
+                        name: memUser.name,
+                        email: memUser.email,
+                        role: memUser.role || 'patient'
+                    };
+                }
+            }
 
             if (!req.user) {
                 return res.status(401).json({ success: false, message: 'Authorization failed. User no longer exists.' });

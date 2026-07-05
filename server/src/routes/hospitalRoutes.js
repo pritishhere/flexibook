@@ -7,10 +7,14 @@ const {
     getAllHospitals, 
     getHospitalById,
     updateHospital,
-    deleteHospital
+    deleteHospital,
+    getHospitalAnalytics
 } = require('../controllers/hospitalController');
 // 🌐 GET /api/hospitals - Get a list of all hospitals (or search by city)
 router.get('/', getAllHospitals);
+
+// 🌐 GET /api/hospitals/:id/analytics - Get business analytics for the hospital (Command Center)
+router.get('/:id/analytics', getHospitalAnalytics);
 
 // 🌐 POST /api/hospitals - Add a new hospital to the database
 router.post('/', createHospital);

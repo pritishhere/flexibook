@@ -1,0 +1,1 @@
+var e=`/assets/family-bg-t21iP-RA.png`;export{e as t};

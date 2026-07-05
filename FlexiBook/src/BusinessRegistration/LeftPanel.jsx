@@ -34,11 +34,11 @@ const LeftPanel = () => {
         </p>
 
         <p className="text-blue-600">
-          📧 business@flexibook.com
+          📧 s27590896@gmail.com
         </p>
 
         <p className="text-blue-600 mt-2">
-          📞 +91 98765 43210
+          📞 +91 8100042924
         </p>
       </div>
 

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Doctor = require('../models/Doctor');
+const DoctorLeave = require('../models/DoctorLeave');
 const inMemoryDb = require('../utils/inMemoryDb');
 
 // @desc    Add a new doctor to a hospital
@@ -279,5 +280,30 @@ exports.deleteDoctor = async (req, res) => {
             message: 'Error deleting doctor',
             error: error.message
         });
+    }
+};
+
+// POST: /api/doctors/leave
+exports.addDoctorLeave = async (req, res) => {
+    try {
+        const { doctorId, date, reason } = req.body;
+
+        // Date ko standard midnight time par set karna zaroori hai taaki match karne mein error na aaye
+        const leaveDate = new Date(date);
+        leaveDate.setHours(0, 0, 0, 0);
+
+        const newLeave = await DoctorLeave.create({
+            doctor: doctorId,
+            date: leaveDate,
+            reason: reason
+        });
+
+        res.status(201).json({
+            success: true,
+            message: `Leave successfully marked for date: ${leaveDate.toDateString()}`,
+            data: newLeave
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 };

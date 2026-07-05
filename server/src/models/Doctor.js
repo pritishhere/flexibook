@@ -34,10 +34,26 @@ const doctorSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Consultation fee is required']
     },
-    availability: {
-        type: [String],
-        default: [] // e.g. ["Monday", "Wednesday", "Friday"]
-    },
+    
+    // 🔥 CTO UPDATE: Smart Scheduling Engine (Day + Time Slot)
+    availability: [
+        {
+            day: { 
+                type: String, 
+                enum: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                required: true
+            },
+            startTime: {
+                type: String, // 24-hour format (e.g., "14:00" for 2 PM)
+                required: true
+            },
+            endTime: {
+                type: String, // 24-hour format (e.g., "17:00" for 5 PM)
+                required: true
+            }
+        }
+    ],
+
     isAvailable: {
         type: Boolean,
         default: true
@@ -46,6 +62,7 @@ const doctorSchema = new mongoose.Schema({
         type: String,
         default: ''
     }
+    
 }, { 
     timestamps: true 
 });

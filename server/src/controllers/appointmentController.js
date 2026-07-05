@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
+const { getIO } = require('../config/socket'); // Socket engine bulaiye
 const Appointment = require('../models/Appointment');
-const inMemoryDb = require('../utils/inMemoryDb');
+const DoctorLeave = require('../models/DoctorLeave');
+const timeToMinutes = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+};
+const inMemoryDb = require('../utils/inMemoryDb'); // Helper: "14:30" ko minutes mein convert karega (14*60 + 30 = 870 mins)
 
 // ==========================================
 // 1. BOOK APPOINTMENT (Auto-Generate Token)
@@ -606,5 +612,152 @@ exports.rescheduleAppointment = async (req, res) => {
     } catch (error) {
         console.error('Reschedule Appointment Error:', error);
         res.status(500).json({ success: false, message: "Server error rescheduling appointment", error: error.message });
+    }
+};
+
+// ==========================================
+// 10. LIVE QUEUE ALERTS (Socket.io Push)
+// ==========================================
+
+const updateAppointmentStatus = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { status } = req.body; // e.g., 'Completed'
+
+        // 1. DB mein status update kiya
+        const appointment = await Appointment.findByIdAndUpdate(appointmentId, { status }, { new: true });
+
+        // 2. Queue ka naya data fetch kiya (Aapko apna logic lagana hoga ETA count karne ka)
+        const updatedQueueData = {
+            message: "A patient just finished! Queue is moving.",
+            currentServingToken: appointment.tokenNumber + 1
+        };
+
+        // 🚨 3. THE MAGIC PUSH: Us doctor ke room mein sabko live update bhej do!
+        const io = getIO();
+        io.to(appointment.doctor.toString()).emit('queue_updated', updatedQueueData);
+
+        res.status(200).json({ success: true, message: 'Status updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+
+// ==========================================
+// 11. DOCTOR LEAVE CHECK (Before Booking)
+// ==========================================
+
+exports.bookAppointment = async (req, res) => {
+    try {
+        const { doctorId, appointmentDate, timeSlot, patientId } = req.body;
+
+        // 🚨 NEW LOGIC: Date normalize karo aur check karo
+        const requestedDate = new Date(appointmentDate);
+        requestedDate.setHours(0, 0, 0, 0);
+
+        const isDoctorOnLeave = await DoctorLeave.findOne({
+            doctor: doctorId,
+            date: requestedDate
+        });
+
+        // Agar DB mein us date ki leave mil gayi, toh turant API rok do!
+        if (isDoctorOnLeave) {
+            return res.status(400).json({
+                success: false,
+                message: 'Sorry! The doctor is on leave on this date. Please select another date.'
+            });
+        }
+    } catch (error) {
+        // Error handling
+    }
+};
+
+// ==========================================
+// 12. Doctor TIME SLOT VALIDATION (BEFORE BOOKING)
+// ==========================================
+
+exports.bookAppointment = async (req, res) => {
+    try {
+        // timeSlot hamesha 24-hour format mein aayega UI se, e.g., "14:30"
+        const { doctorId, hospitalId, appointmentDate, timeSlot, patientId } = req.body;
+
+        const requestedDate = new Date(appointmentDate);
+        requestedDate.setHours(0, 0, 0, 0); // Date ko normalize kiya
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // ❌ CASE 0: Past Date check
+        if (requestedDate < today) {
+            return res.status(400).json({ success: false, message: "Aap beete hue kal (past date) mein booking nahi kar sakte." });
+        }
+
+        // 👨‍⚕️ Fetch Doctor Details
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor nahi mile." });
+        }
+
+        // ❌ CASE 1: Is doctor on leave? (Pichla feature)
+        const isLeave = await DoctorLeave.findOne({ doctor: doctorId, date: requestedDate });
+        if (isLeave) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `We apologize, but Dr. ${doctor.name || 'Doctor'} is on leave on this date. Please select another date.` 
+            });
+        }
+
+        // 🗓️ Find requested Day (e.g., "Monday")
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const requestedDayName = daysOfWeek[requestedDate.getDay()];
+
+        // ❌ CASE 2: Does doctor work on this day?
+        const daySchedule = doctor.availability.find(schedule => schedule.day === requestedDayName);
+        if (!daySchedule) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Professional Alert: Dr. ${doctor.name || 'Doctor'} is not available on ${requestedDayName}s. Please check their schedule on the hospital dashboard.` 
+            });
+        }
+
+        // ❌ CASE 3: Is the timeSlot within the doctor's working hours?
+        const reqMinutes = timeToMinutes(timeSlot); // e.g., "14:30" -> 870
+        const startMinutes = timeToMinutes(daySchedule.startTime); // e.g., "14:00" -> 840
+        const endMinutes = timeToMinutes(daySchedule.endTime); // e.g., "17:00" -> 1020
+
+        if (reqMinutes < startMinutes || reqMinutes > endMinutes) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Invalid Time Slot! The doctor's shift on ${requestedDayName} is only from ${daySchedule.startTime} to ${daySchedule.endTime}.` 
+            });
+        }
+
+        // ✅ ALL TESTS PASSED! Generate Token and Book.
+        // Token number logic (Example: total appointments on that day + 1)
+        const totalAppointmentsToday = await Appointment.countDocuments({ 
+            doctor: doctorId, 
+            appointmentDate: requestedDate 
+        });
+
+        const newAppointment = await Appointment.create({
+            patient: patientId,
+            doctor: doctorId,
+            hospital: hospitalId,
+            appointmentDate: requestedDate,
+            timeSlot: timeSlot,
+            tokenNumber: totalAppointmentsToday + 1,
+            status: 'Pending'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Appointment successfully booked! The doctor will see you at " + timeSlot,
+            data: newAppointment
+        });
+
+    } catch (error) {
+        console.error("Booking Error:", error);
+        res.status(500).json({ success: false, message: "Server error occurred while booking." });
     }
 };

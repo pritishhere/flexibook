@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { getIO } = require('../config/socket'); // Socket engine bulaiye
 const Appointment = require('../models/Appointment');
 const DoctorLeave = require('../models/DoctorLeave');
@@ -14,36 +15,136 @@ exports.bookAppointment = async (req, res) => {
     try {
         const { patient, doctor, hospital, appointmentDate, timeSlot, reasonForVisit } = req.body;
 
-        // Find the last token for this specific doctor on the given date
-        const lastAppointment = await Appointment.findOne({ 
-            doctor: doctor, 
-            hospital: hospital, 
-            appointmentDate: appointmentDate 
-        }).sort({ tokenNumber: -1 });
+        if (inMemoryDb.isDbConnected()) {
+            // Find the last token for this specific doctor on the given date
+            const lastAppointment = await Appointment.findOne({ 
+                doctor: doctor, 
+                hospital: hospital, 
+                appointmentDate: appointmentDate 
+            }).sort({ tokenNumber: -1 });
 
-        // Generate the new token by incrementing the last one
-        const newTokenNumber = lastAppointment ? lastAppointment.tokenNumber + 1 : 1;
+            // Generate the new token by incrementing the last one
+            const newTokenNumber = lastAppointment ? lastAppointment.tokenNumber + 1 : 1;
 
-        const newAppointment = new Appointment({
-            patient,
-            doctor,
-            hospital,
-            appointmentDate,
-            timeSlot,
-            tokenNumber: newTokenNumber,
-            reasonForVisit
-        });
+            const newAppointment = new Appointment({
+                patient,
+                doctor,
+                hospital,
+                appointmentDate,
+                timeSlot,
+                tokenNumber: newTokenNumber,
+                reasonForVisit
+            });
 
-        await newAppointment.save();
+            await newAppointment.save();
 
-        res.status(201).json({
-            success: true,
-            message: "Appointment booked successfully!",
-            data: {
-                tokenNumber: newAppointment.tokenNumber,
-                appointmentDetails: newAppointment
+            // Populate to send email
+            const populatedAppointment = await Appointment.findById(newAppointment._id)
+                .populate('patient')
+                .populate({ path: 'doctor', populate: { path: 'userId' } })
+                .populate('hospital');
+
+            if (populatedAppointment) {
+                try {
+                    const { sendAppointmentAlert } = require('../services/notificationService');
+                    const patientName = populatedAppointment.patientName || (populatedAppointment.patient ? populatedAppointment.patient.name : 'Patient');
+                    const doctorName = (populatedAppointment.doctor && populatedAppointment.doctor.userId) ? populatedAppointment.doctor.userId.name : 'Doctor';
+                    
+                    await sendAppointmentAlert({
+                        email: populatedAppointment.patient ? populatedAppointment.patient.email : '',
+                        phone: '', // Website booking: Email only (no WhatsApp)
+                        name: patientName,
+                        doctorName: doctorName,
+                        date: populatedAppointment.appointmentDate,
+                        tokenNumber: populatedAppointment.tokenNumber,
+                        type: 'booked'
+                    });
+                } catch (notifyErr) {
+                    console.error('Booking confirmation email dispatch failed:', notifyErr.message);
+                }
             }
-        });
+
+            return res.status(201).json({
+                success: true,
+                message: "Appointment booked successfully!",
+                data: {
+                    tokenNumber: newAppointment.tokenNumber,
+                    appointmentDetails: newAppointment
+                }
+            });
+        } else {
+            // In-Memory Fallback Mode
+            const targetDateStr = new Date(appointmentDate).toDateString();
+            const sameDayApps = inMemoryDb.appointments.filter(a => 
+                a.doctor === doctor && 
+                a.hospital === hospital && 
+                new Date(a.appointmentDate).toDateString() === targetDateStr
+            );
+
+            let maxToken = 0;
+            sameDayApps.forEach(a => {
+                if (a.tokenNumber > maxToken) maxToken = a.tokenNumber;
+            });
+            const newTokenNumber = maxToken + 1;
+
+            const appointmentId = new mongoose.Types.ObjectId().toString();
+            const newApp = {
+                _id: appointmentId,
+                patient,
+                doctor,
+                hospital,
+                appointmentDate: new Date(appointmentDate),
+                timeSlot,
+                tokenNumber: newTokenNumber,
+                reasonForVisit,
+                status: 'Pending',
+                paymentStatus: 'Pending',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            inMemoryDb.appointments.push(newApp);
+
+            // Fetch populated details from inMemoryDb
+            const patientUser = inMemoryDb.users.find(u => u._id === patient);
+            const doctorObj = inMemoryDb.doctors.find(d => d._id === doctor);
+            let doctorName = 'Doctor';
+            let patientName = 'Patient';
+            let email = '';
+
+            if (patientUser) {
+                patientName = patientUser.name;
+                email = patientUser.email;
+            }
+            if (doctorObj) {
+                const docUser = inMemoryDb.users.find(u => u._id === doctorObj.userId);
+                if (docUser) doctorName = docUser.name;
+            }
+
+            try {
+                const { sendAppointmentAlert } = require('../services/notificationService');
+                await sendAppointmentAlert({
+                    email,
+                    phone: '', // Website booking: Email only (no WhatsApp)
+                    name: patientName,
+                    doctorName,
+                    date: newApp.appointmentDate,
+                    tokenNumber: newApp.tokenNumber,
+                    type: 'booked'
+                });
+            } catch (notifyErr) {
+                console.error('Booking confirmation email dispatch failed (In-Memory):', notifyErr.message);
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: "Appointment booked successfully! (In-Memory Mode)",
+                data: {
+                    tokenNumber: newApp.tokenNumber,
+                    appointmentDetails: newApp
+                }
+            });
+        }
 
     } catch (error) {
         console.error('Appointment Booking Error:', error);

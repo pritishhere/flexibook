@@ -24,7 +24,7 @@ const familyMemberSchema = new mongoose.Schema({
     // 🔥 THE ANSWER TO YOUR QUESTION: What is their relation?
     relationToUser: {
         type: String,
-        required: true, 
+        required: true,
         // User can type anything here: 'Father', 'Spouse', 'Son', 'Grandfather', 'Friend', etc.
         trim: true
     },
@@ -32,8 +32,8 @@ const familyMemberSchema = new mongoose.Schema({
         type: String,
         default: 'Unknown'
     }
-}, { 
-    timestamps: true 
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('FamilyMember', familyMemberSchema);

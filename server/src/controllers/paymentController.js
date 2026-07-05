@@ -192,7 +192,7 @@ exports.verifyPayment = async (req, res) => {
 
                             await sendAppointmentAlert({
                                 email: updatedApp.patient ? updatedApp.patient.email : '',
-                                phone: updatedApp.patient ? updatedApp.patient.mobile : '',
+                                phone: '', // Payment confirmation: Email only (no WhatsApp)
                                 name: patientName,
                                 doctorName: docName,
                                 date: updatedApp.appointmentDate,
@@ -233,7 +233,7 @@ exports.verifyPayment = async (req, res) => {
                             const { sendAppointmentAlert } = require('../services/notificationService');
                             await sendAppointmentAlert({
                                 email: patientEmail,
-                                phone: patientMobile,
+                                phone: '', // Payment confirmation: Email only (no WhatsApp)
                                 name: patientName,
                                 doctorName: docName,
                                 date: appt.appointmentDate,

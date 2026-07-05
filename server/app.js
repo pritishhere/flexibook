@@ -62,8 +62,10 @@ const serviceRoutes = require('./src/routes/serviceRoutes');
 const reviewRoutes = require('./src/routes/reviewRoutes');
 const complaintRoutes = require('./src/routes/complaintRoutes'); // 🎫 Private Complaints & Feedback Route
 const voiceQueueRoutes = require('./src/routes/voiceQueueRoutes'); // 🎙️ AI Voice-to-Queue Webhook Route
-const aiRoutes = require('./src/routes/aiRoutes'); // 🧠 AI Symptom Checker Route
 const paymentRoutes = require('./src/routes/paymentRoutes'); // 💳 Payment Route
+const aiRoutes = require('./src/routes/aiRoutes'); // 🧠 AI Symptom Checker Route
+const { startReminderScheduler } = require('./src/services/reminderService');
+const { startWhatsAppClient } = require('./src/services/whatsappClient');
 const appointmentRoutes = require('./src/routes/appointmentRoutes'); // 🚨 Wapas sahi jagah import kiya
 
 
@@ -104,4 +106,10 @@ server.listen(PORT, () => {
     console.log(`🚀 Server & WebSockets are running smoothly on port ${PORT}`);
     console.log(`📂 Static uploads are served at: /uploads`);
     console.log(`=========================================`);
+    
+    // Start automated appointment reminders background service
+    startReminderScheduler();
+    
+    // Start free self-hosted WhatsApp Web client
+    startWhatsAppClient();
 });

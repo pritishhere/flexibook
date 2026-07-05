@@ -55,6 +55,10 @@ const appointmentSchema = new mongoose.Schema({
         enum: ['Pending', 'Paid'],
         default: 'Pending'
     },
+    reminderSent: {
+        type: Boolean,
+        default: false
+    },
     virtualAlertSent: {
         type: Boolean,
         default: false 

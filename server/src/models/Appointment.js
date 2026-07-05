@@ -46,14 +46,18 @@ const appointmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        // Updated to include Advanced Phase 3 logic states
-        enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled', 'Missed'],
+        // 🔥 CTO FIX: Added 'In-Queue' for the Virtual Waiting Room tracking
+        enum: ['Pending', 'Confirmed', 'In-Queue', 'In-Progress', 'Completed', 'Cancelled', 'Missed'],
         default: 'Pending'
     },
     paymentStatus: {
         type: String,
         enum: ['Pending', 'Paid'],
         default: 'Pending'
+    },
+    virtualAlertSent: {
+        type: Boolean,
+        default: false 
     }
 }, { 
     timestamps: true 

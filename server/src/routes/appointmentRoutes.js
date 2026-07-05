@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
+const queueController = require('../controllers/queueController');
 
 // Note: Uncomment the auth middleware later when DB and tokens are ready
 // const { protect } = require('../middleware/authMiddleware'); 
@@ -41,5 +42,7 @@ router.put('/:appointmentId/admit', appointmentController.admitPatient);
 // PUT: Assistant action - Mark patient as absent (Skip token)
 router.put('/:appointmentId/no-show', appointmentController.markNoShow);
 
-
+// 🔥 LIVE WEBSOCKET TRIGGERS (Naye Routes)
+router.post('/next-patient', queueController.callNextPatient);
+router.post('/trigger-emergency', queueController.triggerEmergency);
 module.exports = router;

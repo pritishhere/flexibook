@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import heroBg from './family-bg.png';
 import { serviceCategories } from './data/categories';
 
 const valueCards = [
@@ -38,42 +37,86 @@ const flowSteps = [
   },
 ];
 
+const teamMembers = [
+  'Aritra',
+  'Pritam',
+  'Rohit',
+  'Pritish',
+  'Sainee',
+  'Krish',
+];
+
 const AboutPage = () => {
   return (
     <div className="w-full min-h-screen overflow-x-hidden bg-white font-sans">
-      <section
-        className="relative min-h-[72vh] flex items-center bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})` }}
-      >
-        <div className="absolute inset-0 bg-white/90 md:bg-white/80 lg:bg-gradient-to-r lg:from-white/95 lg:via-white/85 lg:to-white/20"></div>
-        <div className="relative z-10 max-w-screen-2xl mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-16 md:py-24">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 font-semibold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 border border-blue-100 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-              Built for smarter appointment days
+      <section className="relative overflow-hidden bg-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_20%,rgba(37,99,235,0.11),transparent_30%),radial-gradient(circle_at_72%_82%,rgba(16,185,129,0.13),transparent_28%)]"></div>
+        <div className="relative z-10 max-w-screen-2xl mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-16 md:py-20">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 font-semibold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 border border-blue-100 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                Built for smarter appointment days
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12] mb-6">
+                We help people skip uncertainty and book time with confidence.
+              </h1>
+
+              <p className="text-base sm:text-lg md:text-xl text-slate-700 leading-relaxed max-w-2xl mb-8 font-medium">
+                FlexiBook brings appointments, live queues, and service discovery into one simple experience for customers and businesses.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  to="/categories"
+                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-lg active:scale-[0.98]"
+                >
+                  Explore Categories
+                </Link>
+                <Link
+                  to="/customers"
+                  className="inline-flex items-center justify-center rounded-lg border-2 border-blue-600 bg-white px-6 py-3 text-sm font-bold text-blue-600 transition-all hover:bg-blue-50 active:scale-[0.98]"
+                >
+                  Browse Services
+                </Link>
+              </div>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12] mb-6">
-              We help people skip uncertainty and book time with confidence.
-            </h1>
+            <div className="relative hidden md:flex min-h-[360px] items-center justify-center">
+              <div className="absolute h-72 w-72 rounded-full border border-blue-100 bg-blue-50/70"></div>
+              <div className="absolute h-52 w-52 rounded-full border border-emerald-100 bg-emerald-50/70"></div>
 
-            <p className="text-base sm:text-lg md:text-xl text-slate-700 leading-relaxed max-w-2xl mb-8 font-medium">
-              FlexiBook brings appointments, live queues, and service discovery into one simple experience for customers and businesses.
-            </p>
+              <div className="relative h-64 w-64 rounded-full border border-slate-200 bg-white/90 shadow-2xl shadow-blue-900/10 backdrop-blur-md">
+                <div className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-3xl bg-blue-600 text-center text-sm font-black leading-tight text-white shadow-xl shadow-blue-200">
+                  Flexi<br />Book
+                </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                to="/categories"
-                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-lg active:scale-[0.98]"
-              >
-                Explore Categories
-              </Link>
-              <Link
-                to="/customers"
-                className="inline-flex items-center justify-center rounded-lg border-2 border-blue-600 bg-white px-6 py-3 text-sm font-bold text-blue-600 transition-all hover:bg-blue-50 active:scale-[0.98]"
-              >
-                Browse Services
-              </Link>
+                {teamMembers.map((member, index) => {
+                  const positions = [
+                    'left-1/2 top-0 -translate-x-1/2 -translate-y-1/2',
+                    'right-0 top-12 translate-x-1/2',
+                    'right-0 bottom-12 translate-x-1/2',
+                    'left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2',
+                    'left-0 bottom-12 -translate-x-1/2',
+                    'left-0 top-12 -translate-x-1/2',
+                  ];
+
+                  return (
+                    <div
+                      key={member}
+                      className={`absolute ${positions[index]} rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 shadow-md shadow-slate-200/70`}
+                    >
+                      {member}
+                    </div>
+                  );
+                })}
+
+                <div className="absolute -bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-600 shadow-lg shadow-blue-100">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  Built together
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -153,15 +196,15 @@ const AboutPage = () => {
         </div>
       </section>
 
-      <section className="bg-[#0B1120] py-16 md:py-20">
+      <section className="bg-white py-16 md:py-20 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-blue-300 mb-3">Ready when you are</p>
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-4">
+              <p className="text-sm font-bold uppercase tracking-wide text-blue-600 mb-3">Ready when you are</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-4">
                 Find the right category and book your next slot.
               </h2>
-              <p className="max-w-2xl text-slate-400 leading-relaxed">
+              <p className="max-w-2xl text-slate-600 leading-relaxed">
                 From healthcare and salons to dining, travel, home services, and logistics, FlexiBook is designed to keep everyday bookings moving.
               </p>
             </div>
@@ -174,7 +217,7 @@ const AboutPage = () => {
               </Link>
               <Link
                 to="/business-register"
-                className="inline-flex items-center justify-center rounded-lg border border-slate-600 px-6 py-3 text-sm font-bold text-slate-100 transition-all hover:border-blue-400 hover:text-blue-300 active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 active:scale-[0.98]"
               >
                 Register Business
               </Link>

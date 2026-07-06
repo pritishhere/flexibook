@@ -6,6 +6,50 @@ import { serviceCategories } from './data/categories';
 const mainCategories = serviceCategories.slice(0, 6).map((category) => category.name);
 const otherCategories = serviceCategories.slice(6).map((category) => category.name);
 const allCategoriesList = serviceCategories.map((category) => category.name);
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const HEALTHCARE_TIME_SLOTS = [
+  '09:00 AM - 10:00 AM',
+  '10:00 AM - 11:00 AM',
+  '11:00 AM - 12:00 PM',
+  '02:00 PM - 03:00 PM',
+  '04:00 PM - 05:00 PM'
+];
+
+const getLocalDateInputValue = (offsetDays = 0) => {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
+
+const getBookingDateOffset = (service = {}) => {
+  const nextAvailable = service.nextAvailable?.toLowerCase() || '';
+  return service.availabilityStatus === 'Available Tomorrow' || nextAvailable.includes('tomorrow') ? 1 : 0;
+};
+
+const createInitialBookingForm = (service = {}) => ({
+  patientName: '',
+  patientEmail: '',
+  patientPhone: '',
+  appointmentDate: getLocalDateInputValue(getBookingDateOffset(service)),
+  timeSlot: service.availabilityStatus === 'Join Queue' ? 'Live Queue' : HEALTHCARE_TIME_SLOTS[0],
+  reasonForVisit: service.availabilityStatus === 'Join Queue'
+    ? 'Joining the live queue for consultation'
+    : 'General consultation'
+});
+
+const getServiceSpecialization = (service = {}) => {
+  const primaryCategory = service.category?.split('•')[0]?.trim() || '';
+  const normalized = primaryCategory.toLowerCase();
+
+  if (normalized.includes('cardiology')) return 'Cardiologist';
+  if (normalized.includes('oncology')) return 'Oncologist';
+  if (normalized.includes('pediatrics')) return 'Pediatrician';
+  if (normalized.includes('diagnostics')) return 'Diagnostic Consultant';
+  if (normalized.includes('multi-specialty')) return 'General Medicine';
+
+  return primaryCategory || 'General Medicine';
+};
 
 const CustomerPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,6 +78,9 @@ const CustomerPage = () => {
   // 🔥 Full Page Detail State 🔥
   const [activeDetailPage, setActiveDetailPage] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [bookingService, setBookingService] = useState(null);
+  const [bookingForm, setBookingForm] = useState(() => createInitialBookingForm());
+  const [bookingStatus, setBookingStatus] = useState({ state: 'idle', message: '', tokenNumber: null });
   const activeSelectedCategories = selectedCategories.length > 0
     ? selectedCategories
     : matchedQueryCategory ? [matchedQueryCategory] : [];
@@ -119,6 +166,80 @@ const CustomerPage = () => {
   useEffect(() => {
     if (activeDetailPage) window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeDetailPage]);
+
+  const isHealthcareService = (service) => service?.category?.toLowerCase().includes('healthcare');
+
+  const handleBookingOpen = (service) => {
+    if (!isHealthcareService(service) || service.availabilityStatus === 'Fully Booked') return;
+
+    setBookingService(service);
+    setBookingForm(createInitialBookingForm(service));
+    setBookingStatus({ state: 'idle', message: '', tokenNumber: null });
+  };
+
+  const handleBookingClose = () => {
+    if (bookingStatus.state === 'loading') return;
+
+    setBookingService(null);
+    setBookingStatus({ state: 'idle', message: '', tokenNumber: null });
+  };
+
+  const handleBookingFieldChange = (e) => {
+    const { name, value } = e.target;
+    setBookingForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!bookingService) return;
+
+    setBookingStatus({ state: 'loading', message: 'Booking your appointment...', tokenNumber: null });
+
+    try {
+      const isQueueBooking = bookingService.availabilityStatus === 'Join Queue';
+      const response = await fetch(`${API_BASE_URL}/appointments/book`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          patientName: bookingForm.patientName.trim(),
+          patientEmail: bookingForm.patientEmail.trim(),
+          patientPhone: bookingForm.patientPhone.trim(),
+          hospitalName: bookingService.name,
+          hospitalCity: bookingService.location,
+          hospitalAddress: `${bookingService.location}, India`,
+          hospitalContactNumber: '9876543210',
+          specialization: getServiceSpecialization(bookingService),
+          consultationFee: bookingService.priceValue || 500,
+          appointmentDate: bookingForm.appointmentDate,
+          timeSlot: isQueueBooking ? 'Live Queue' : bookingForm.timeSlot,
+          reasonForVisit: bookingForm.reasonForVisit.trim() || 'General consultation',
+          bookingMode: isQueueBooking ? 'queue' : 'appointment',
+          sourceServiceId: bookingService.id
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Unable to book this appointment right now.');
+      }
+
+      setBookingStatus({
+        state: 'success',
+        message: data.message || 'Appointment booked successfully.',
+        tokenNumber: data.data?.tokenNumber || null
+      });
+    } catch (error) {
+      setBookingStatus({
+        state: 'error',
+        message: error.message || 'Unable to book this appointment right now.',
+        tokenNumber: null
+      });
+    }
+  };
 
   // ================= 3. MEGA REAL DATA ENGINE =================
   const realHealthcareData = [
@@ -520,6 +641,171 @@ const CustomerPage = () => {
     return pages;
   };
 
+  const renderBookingModal = () => {
+    if (!bookingService) return null;
+
+    const isQueueBooking = bookingService.availabilityStatus === 'Join Queue';
+    const isSubmitting = bookingStatus.state === 'loading';
+    const isBooked = bookingStatus.state === 'success';
+
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+        <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
+                {isQueueBooking ? 'Join healthcare queue' : 'Book healthcare appointment'}
+              </p>
+              <h2 className="mt-1 text-xl font-black text-slate-900">{bookingService.name}</h2>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                {bookingService.location} · {bookingService.price}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleBookingClose}
+              disabled={isSubmitting}
+              className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Close booking form"
+            >
+              ×
+            </button>
+          </div>
+
+          {isBooked ? (
+            <div className="px-6 py-8 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl font-black text-emerald-700">
+                ✓
+              </div>
+              <h3 className="text-2xl font-black text-slate-900">Booking confirmed</h3>
+              <p className="mt-2 text-sm font-medium text-slate-600">{bookingStatus.message}</p>
+              {bookingStatus.tokenNumber && (
+                <div className="mx-auto mt-5 max-w-xs rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-blue-600">Queue token</p>
+                  <p className="mt-1 text-3xl font-black text-blue-700">#{bookingStatus.tokenNumber}</p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleBookingClose}
+                className="mt-6 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleBookingSubmit} className="space-y-5 px-6 py-6">
+              {bookingStatus.state === 'error' && (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {bookingStatus.message}
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-bold text-slate-700">
+                  Patient name
+                  <input
+                    type="text"
+                    name="patientName"
+                    value={bookingForm.patientName}
+                    onChange={handleBookingFieldChange}
+                    required
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    placeholder="Your full name"
+                  />
+                </label>
+
+                <label className="text-sm font-bold text-slate-700">
+                  Email
+                  <input
+                    type="email"
+                    name="patientEmail"
+                    value={bookingForm.patientEmail}
+                    onChange={handleBookingFieldChange}
+                    required
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    placeholder="name@example.com"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-bold text-slate-700">
+                  Phone
+                  <input
+                    type="tel"
+                    name="patientPhone"
+                    value={bookingForm.patientPhone}
+                    onChange={handleBookingFieldChange}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    placeholder="Optional"
+                  />
+                </label>
+
+                <label className="text-sm font-bold text-slate-700">
+                  Date
+                  <input
+                    type="date"
+                    name="appointmentDate"
+                    min={getLocalDateInputValue()}
+                    value={bookingForm.appointmentDate}
+                    onChange={handleBookingFieldChange}
+                    required
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  />
+                </label>
+              </div>
+
+              <label className="block text-sm font-bold text-slate-700">
+                Time slot
+                {isQueueBooking ? (
+                  <input
+                    type="text"
+                    name="timeSlot"
+                    value="Live Queue"
+                    readOnly
+                    className="mt-2 w-full rounded-xl border border-purple-100 bg-purple-50 px-4 py-3 text-sm font-bold text-purple-700 outline-none"
+                  />
+                ) : (
+                  <select
+                    name="timeSlot"
+                    value={bookingForm.timeSlot}
+                    onChange={handleBookingFieldChange}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  >
+                    {HEALTHCARE_TIME_SLOTS.map((slot) => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                  </select>
+                )}
+              </label>
+
+              <label className="block text-sm font-bold text-slate-700">
+                Reason for visit
+                <textarea
+                  name="reasonForVisit"
+                  value={bookingForm.reasonForVisit}
+                  onChange={handleBookingFieldChange}
+                  rows={3}
+                  className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  placeholder="Briefly describe your symptoms or visit reason"
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+              >
+                {isSubmitting ? 'Booking...' : isQueueBooking ? 'Join Queue' : 'Confirm Booking'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // 🔥 7. FULL PAGE DETAIL RENDERER 🔥
   if (activeDetailPage) {
     const s = activeDetailPage;
@@ -621,11 +907,13 @@ const CustomerPage = () => {
                     </div>
                   </div>
                   <button
+                    onClick={() => handleBookingOpen(s)}
                     disabled={s.availabilityStatus === 'Fully Booked'}
-                    className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${s.availabilityStatus === 'Fully Booked'
-                        ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95'
-                      }`}
+                    className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${
+                      s.availabilityStatus === 'Fully Booked'
+                      ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95'
+                    }`}
                   >
                     {s.availabilityStatus === 'Fully Booked' ? 'Unavailable' : 'Book Appointment Now'}
                   </button>
@@ -761,10 +1049,11 @@ const CustomerPage = () => {
             </div>
           </div>
 
-        </div>
-      </div>
-    );
-  }
+	        </div>
+	        {renderBookingModal()}
+	      </div>
+	    );
+	  }
 
   // ================= 8. STANDARD LIST RENDERER (IF NOT ON DETAIL PAGE) =================
   return (
@@ -1026,7 +1315,7 @@ const CustomerPage = () => {
                       </div>
                     </div>
 
-                    <button disabled={service.availabilityStatus === 'Fully Booked'} className={`relative overflow-hidden w-full font-bold py-2.5 rounded-xl transition-all duration-300 text-sm shadow-sm flex items-center justify-center gap-2 group/btn ${service.availabilityStatus === 'Fully Booked' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-[0_8px_20px_-6px_rgba(37,99,235,0.5)] active:scale-[0.97]'}`}>
+	                    <button onClick={(e) => { e.stopPropagation(); handleBookingOpen(service); }} disabled={service.availabilityStatus === 'Fully Booked'} className={`relative overflow-hidden w-full font-bold py-2.5 rounded-xl transition-all duration-300 text-sm shadow-sm flex items-center justify-center gap-2 group/btn ${service.availabilityStatus === 'Fully Booked' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-[0_8px_20px_-6px_rgba(37,99,235,0.5)] active:scale-[0.97]'}`}>
                       <span>{service.availabilityStatus === 'Join Queue' ? 'Join Queue' : service.availabilityStatus === 'Fully Booked' ? 'Unavailable' : 'Book Now'}</span>
                       {service.availabilityStatus !== 'Fully Booked' && (
                         <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -1088,6 +1377,7 @@ const CustomerPage = () => {
           </div>
         </div>
       </div>
+      {renderBookingModal()}
       <style dangerouslySetInnerHTML={{ __html: `.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }` }} />
     </div>
   );

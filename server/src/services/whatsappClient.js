@@ -1,5 +1,19 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcodeTerminal = require('qrcode-terminal');
+let Client = null;
+let LocalAuth = null;
+let qrcodeTerminal = { generate: () => {} };
+
+try {
+    ({ Client, LocalAuth } = require('whatsapp-web.js'));
+} catch (error) {
+    console.log('⚠️ whatsapp-web.js is not installed. WhatsApp Web booking listener is disabled.');
+}
+
+try {
+    qrcodeTerminal = require('qrcode-terminal');
+} catch (error) {
+    console.log('⚠️ qrcode-terminal is not installed. WhatsApp QR display is disabled.');
+}
+
 const fs = require('fs');
 const path = require('path');
 const { handleIncomingWhatsAppMessage } = require('../controllers/voiceQueueController');
@@ -10,6 +24,11 @@ let clientInstance = null;
  * Initializes the free self-hosted WhatsApp Web client.
  */
 const startWhatsAppClient = () => {
+    if (!Client || !LocalAuth) {
+        console.log('ℹ️ Skipping WhatsApp Web Client startup.');
+        return;
+    }
+
     console.log('🔄 Initializing WhatsApp Web Client...');
 
     clientInstance = new Client({

@@ -112,10 +112,6 @@ const AboutPage = () => {
                   );
                 })}
 
-                <div className="absolute -bottom-16 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-600 shadow-lg shadow-blue-100">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                  Built together
-                </div>
               </div>
             </div>
           </div>

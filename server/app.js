@@ -75,6 +75,7 @@ const appointmentRoutes = require('./src/routes/appointmentRoutes'); // 🚨 Wap
 app.use('/api/auth', authRoutes);
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/doctors', doctorRoutes); 
+app.use('/api/appointments', appointmentRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/departments', departmentRoutes);
@@ -84,7 +85,6 @@ app.use('/api/complaints', complaintRoutes); // 🎫 Complaints endpoints mounte
 app.use('/api/voice-queue', voiceQueueRoutes); // 🎙️ Webhook endpoint mounted
 app.use('/api/ai', aiRoutes); // 🧠 AI endpoints mounted
 app.use('/api/payments', paymentRoutes); // 💳 Payment endpoints mounted
-app.use('/api/appointments', appointmentRoutes); // 🚨 Wapas sahi jagah mount kiya
 
 
 // ==========================================

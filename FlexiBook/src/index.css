@@ -1,6 +1,33 @@
 /* src/index.css */
 @import "tailwindcss";
 
+@theme {
+  --color-base: var(--base);
+  --color-surface: var(--surface);
+  --color-textMain: var(--text-main);
+  --color-textMuted: var(--text-muted);
+  --color-borderSoft: var(--border-soft);
+  --color-brand: var(--brand);
+}
+
+:root {
+  --base: #f8fafc;
+  --surface: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-soft: #e2e8f0;
+  --brand: #2563eb;
+}
+
+.dark {
+  --base: #0f172a;
+  --surface: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-soft: #334155;
+  --brand: #60a5fa;
+}
+
 /* =========================================
    1. THE QUANTUM CORE
 ========================================= */

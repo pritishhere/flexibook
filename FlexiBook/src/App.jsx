@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { Header } from './Components/Header';
+import { Header } from './Components/Header'; // 💡 NOTE: Apna ThemeSlider is Header component ke andar lagana!
 import { Footer } from './Components/Footer';
 import Loader from './Components/Loader'; 
 
@@ -70,41 +70,47 @@ const IntelligentLoader = () => {
 
 
 /* ====================================================================
-   👑 4. MAIN APP COMPONENT (With React Suspense)
+   👑 4. MAIN APP COMPONENT (With Semantic Theme & Suspense)
 ==================================================================== */
 function App() {
   return (
-    <Router>
-      <IntelligentLoader />
-      
-      <Header />
+    // 🚀 THE MASTER THEME WRAPPER: 
+    // Isne pure App ko cover kar liya hai. Ab kisi bhi page mein bg color dene ki zaroorat nahi!
+    <div className="min-h-screen w-full flex flex-col bg-base text-textMain transition-colors duration-500 font-sans">
+      <Router>
+        <IntelligentLoader />
+        
+        {/* Header mein apna <ThemeSlider /> zaroor import karke laga lijiye ga */}
+        <Header />
 
-      <div className="min-h-screen">
-        {/* REACT SUSPENSE: Yeh sabse high-level feature hai. 
-            Jab tak 'lazy' components ka internet se data poori tarah 
-            download nahi ho jata, yeh automatically hamara <Loader /> dikhayega! 
-        */}
-        <Suspense fallback={<Loader />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/customers" element={<CustomerPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/login" element={<LoginPage />} />
+        {/* Main Content Area (flex-grow pushes footer to the bottom automatically) */}
+        <main className="flex-grow">
+          {/* REACT SUSPENSE: Yeh sabse high-level feature hai. 
+              Jab tak 'lazy' components ka internet se data poori tarah 
+              download nahi ho jata, yeh automatically hamara <Loader /> dikhayega! 
+          */}
+          <Suspense fallback={<Loader />}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/customers" element={<CustomerPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/login" element={<LoginPage />} />
 
-            {/* Main gateway paths */}
-            <Route path="/business-register" element={<SignUpGateway />} />
-            <Route path="/register" element={<SignUpGateway />} />
-            <Route path="/customer-register" element={<CustomerRegister />} />
-            <Route path="/real-business-form" element={<BusinessRegistration />} />
-            <Route path="/business/dashboard" element={<BusinessDashboard />} />
-            <Route path="/doctor/portal" element={<DoctorPortal />} />
-          </Routes>
-        </Suspense>
-      </div>
+              {/* Main gateway paths */}
+              <Route path="/business-register" element={<SignUpGateway />} />
+              <Route path="/register" element={<SignUpGateway />} />
+              <Route path="/customer-register" element={<CustomerRegister />} />
+              <Route path="/real-business-form" element={<BusinessRegistration />} />
+              <Route path="/business/dashboard" element={<BusinessDashboard />} />
+              <Route path="/doctor/portal" element={<DoctorPortal />} />
+            </Routes>
+          </Suspense>
+        </main>
 
-      <Footer />
-    </Router>
+        <Footer />
+      </Router>
+    </div>
   );
 }
 

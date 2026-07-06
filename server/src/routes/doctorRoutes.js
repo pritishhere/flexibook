@@ -7,7 +7,7 @@ const {
     updateDoctor,
     deleteDoctor,
     addDoctorLeave
-} = require('../controllers/doctorController');
+} = require('../controllers/doctorcontroller');
 
 // 🌐 GET /api/doctors - Get all doctors (with optional specialization/hospital search query)
 router.get('/', getDoctors);

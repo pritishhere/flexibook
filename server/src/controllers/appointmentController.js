@@ -1,26 +1,264 @@
 const mongoose = require('mongoose');
-const { getIO } = require('../config/socket'); // Socket engine bulaiye
 const Appointment = require('../models/Appointment');
-const DoctorLeave = require('../models/DoctorLeave');
-const timeToMinutes = (timeStr) => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
+const User = require('../models/user');
+const Hospital = require('../models/Hospital');
+const Doctor = require('../models/Doctor');
+const inMemoryDb = require('../utils/inMemoryDb');
+
+const DEFAULT_DOCTOR_PASSWORD = 'FlexiBook@123';
+const DEFAULT_PATIENT_PASSWORD = 'Patient@123';
+const DEFAULT_HEALTHCARE_SPECIALIZATION = 'General Medicine';
+const DEFAULT_HOSPITAL_CONTACT = '9876543210';
+const DEFAULT_DOCTOR_AVAILABILITY = [
+    { day: 'Monday', startTime: '09:00', endTime: '17:00' },
+    { day: 'Tuesday', startTime: '09:00', endTime: '17:00' },
+    { day: 'Wednesday', startTime: '09:00', endTime: '17:00' },
+    { day: 'Thursday', startTime: '09:00', endTime: '17:00' },
+    { day: 'Friday', startTime: '09:00', endTime: '17:00' },
+    { day: 'Saturday', startTime: '09:00', endTime: '14:00' }
+];
+
+const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const slugify = (value = 'flexibook') =>
+    value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'flexibook';
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+
+const resolveMongoBookingTargets = async (body) => {
+    let { patient, doctor, hospital } = body;
+    const {
+        patientName,
+        patientEmail,
+        patientPhone,
+        hospitalName,
+        hospitalCity,
+        hospitalAddress,
+        hospitalContactNumber,
+        specialization,
+        consultationFee
+    } = body;
+
+    if (!patient) {
+        const email = normalizeEmail(patientEmail);
+        if (!patientName || !email) {
+            throw Object.assign(new Error('Patient name and email are required to book an appointment.'), { statusCode: 400 });
+        }
+
+        let patientUser = await User.findOne({ email });
+        if (!patientUser) {
+            patientUser = await User.create({
+                name: patientName.trim(),
+                email,
+                phone: patientPhone || '',
+                password: DEFAULT_PATIENT_PASSWORD,
+                role: 'patient'
+            });
+        }
+        patient = patientUser._id;
+    }
+
+    if (!hospital) {
+        if (!hospitalName) {
+            throw Object.assign(new Error('Hospital name is required to book an appointment.'), { statusCode: 400 });
+        }
+
+        const hospitalQuery = {
+            name: new RegExp(`^${escapeRegex(hospitalName.trim())}$`, 'i')
+        };
+        if (hospitalCity) {
+            hospitalQuery.city = new RegExp(`^${escapeRegex(hospitalCity.trim())}$`, 'i');
+        }
+
+        let hospitalDoc = await Hospital.findOne(hospitalQuery);
+        if (!hospitalDoc) {
+            hospitalDoc = await Hospital.create({
+                name: hospitalName.trim(),
+                address: hospitalAddress || `${hospitalCity || 'Kolkata'}, India`,
+                city: hospitalCity || 'Kolkata',
+                contactNumber: hospitalContactNumber || DEFAULT_HOSPITAL_CONTACT,
+                isVerified: true
+            });
+        }
+        hospital = hospitalDoc._id;
+    }
+
+    if (!doctor) {
+        let doctorDoc = await Doctor.findOne({ hospitalId: hospital, isAvailable: true });
+        if (!doctorDoc) {
+            const doctorEmail = `doctor.${slugify(hospitalName)}.${hospital.toString()}@flexibook.local`;
+            let doctorUser = await User.findOne({ email: doctorEmail });
+            if (!doctorUser) {
+                doctorUser = await User.create({
+                    name: `Dr. ${hospitalName || 'FlexiBook'} Care Team`,
+                    email: doctorEmail,
+                    password: DEFAULT_DOCTOR_PASSWORD,
+                    role: 'doctor'
+                });
+            }
+
+            doctorDoc = await Doctor.create({
+                userId: doctorUser._id,
+                hospitalId: hospital,
+                specialization: specialization || DEFAULT_HEALTHCARE_SPECIALIZATION,
+                qualification: 'MBBS',
+                experience: 10,
+                fees: Number(consultationFee) || 500,
+                availability: DEFAULT_DOCTOR_AVAILABILITY,
+                isAvailable: true
+            });
+        }
+        doctor = doctorDoc._id;
+    }
+
+    return { patient, doctor, hospital };
 };
-const inMemoryDb = require('../utils/inMemoryDb'); // Helper: "14:30" ko minutes mein convert karega (14*60 + 30 = 870 mins)
+
+const resolveInMemoryBookingTargets = (body) => {
+    let { patient, doctor, hospital } = body;
+    const {
+        patientName,
+        patientEmail,
+        patientPhone,
+        hospitalName,
+        hospitalCity,
+        hospitalAddress,
+        hospitalContactNumber,
+        specialization,
+        consultationFee
+    } = body;
+
+    if (!patient) {
+        const email = normalizeEmail(patientEmail);
+        if (!patientName || !email) {
+            throw Object.assign(new Error('Patient name and email are required to book an appointment.'), { statusCode: 400 });
+        }
+
+        let patientUser = inMemoryDb.users.find(u => u.email && u.email.toLowerCase() === email);
+        if (!patientUser) {
+            patientUser = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                name: patientName.trim(),
+                email,
+                phone: patientPhone || '',
+                password: DEFAULT_PATIENT_PASSWORD,
+                role: 'patient',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            inMemoryDb.users.push(patientUser);
+        }
+        patient = patientUser._id;
+    }
+
+    if (!hospital) {
+        if (!hospitalName) {
+            throw Object.assign(new Error('Hospital name is required to book an appointment.'), { statusCode: 400 });
+        }
+
+        let hospitalDoc = inMemoryDb.hospitals.find(h =>
+            h.name &&
+            h.name.toLowerCase() === hospitalName.trim().toLowerCase() &&
+            (!hospitalCity || (h.city && h.city.toLowerCase() === hospitalCity.trim().toLowerCase()))
+        );
+
+        if (!hospitalDoc) {
+            hospitalDoc = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                name: hospitalName.trim(),
+                address: hospitalAddress || `${hospitalCity || 'Kolkata'}, India`,
+                city: hospitalCity || 'Kolkata',
+                contactNumber: hospitalContactNumber || DEFAULT_HOSPITAL_CONTACT,
+                rating: 0,
+                isVerified: true,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            inMemoryDb.hospitals.push(hospitalDoc);
+        }
+        hospital = hospitalDoc._id;
+    }
+
+    if (!doctor) {
+        let doctorDoc = inMemoryDb.doctors.find(d => d.hospitalId === hospital && d.isAvailable !== false);
+        if (!doctorDoc) {
+            const doctorUser = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                name: `Dr. ${hospitalName || 'FlexiBook'} Care Team`,
+                email: `doctor.${slugify(hospitalName)}.${hospital}@flexibook.local`,
+                password: DEFAULT_DOCTOR_PASSWORD,
+                role: 'doctor',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            inMemoryDb.users.push(doctorUser);
+
+            doctorDoc = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                userId: doctorUser._id,
+                hospitalId: hospital,
+                specialization: specialization || DEFAULT_HEALTHCARE_SPECIALIZATION,
+                qualification: 'MBBS',
+                experience: 10,
+                fees: Number(consultationFee) || 500,
+                availability: DEFAULT_DOCTOR_AVAILABILITY,
+                isAvailable: true,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            inMemoryDb.doctors.push(doctorDoc);
+        }
+        doctor = doctorDoc._id;
+    }
+
+    return { patient, doctor, hospital };
+};
 
 // ==========================================
 // 1. BOOK APPOINTMENT (Auto-Generate Token)
 // ==========================================
 exports.bookAppointment = async (req, res) => {
     try {
-        const { patient, doctor, hospital, appointmentDate, timeSlot, reasonForVisit } = req.body;
+        let { patient, doctor, hospital, appointmentDate, timeSlot, reasonForVisit, bookingMode } = req.body;
+
+        if (!appointmentDate || !timeSlot) {
+            return res.status(400).json({
+                success: false,
+                message: 'Appointment date and time slot are required.'
+            });
+        }
+
+        if (!patient || !doctor || !hospital) {
+            const resolvedTargets = inMemoryDb.isDbConnected()
+                ? await resolveMongoBookingTargets(req.body)
+                : resolveInMemoryBookingTargets(req.body);
+
+            patient = patient || resolvedTargets.patient;
+            doctor = doctor || resolvedTargets.doctor;
+            hospital = hospital || resolvedTargets.hospital;
+        }
+
+        if (!patient || !doctor || !hospital) {
+            return res.status(400).json({
+                success: false,
+                message: 'Patient, doctor, and hospital details are required to book an appointment.'
+            });
+        }
+
+        const appointmentDateValue = new Date(appointmentDate);
+        const visitReason = reasonForVisit || (bookingMode === 'queue' ? 'Joined live queue' : 'General Checkup');
 
         if (inMemoryDb.isDbConnected()) {
             // Find the last token for this specific doctor on the given date
             const lastAppointment = await Appointment.findOne({ 
                 doctor: doctor, 
                 hospital: hospital, 
-                appointmentDate: appointmentDate 
+                appointmentDate: appointmentDateValue
             }).sort({ tokenNumber: -1 });
 
             // Generate the new token by incrementing the last one
@@ -30,10 +268,10 @@ exports.bookAppointment = async (req, res) => {
                 patient,
                 doctor,
                 hospital,
-                appointmentDate,
+                appointmentDate: appointmentDateValue,
                 timeSlot,
                 tokenNumber: newTokenNumber,
-                reasonForVisit
+                reasonForVisit: visitReason
             });
 
             await newAppointment.save();
@@ -74,7 +312,7 @@ exports.bookAppointment = async (req, res) => {
             });
         } else {
             // In-Memory Fallback Mode
-            const targetDateStr = new Date(appointmentDate).toDateString();
+            const targetDateStr = appointmentDateValue.toDateString();
             const sameDayApps = inMemoryDb.appointments.filter(a => 
                 a.doctor === doctor && 
                 a.hospital === hospital && 
@@ -93,10 +331,10 @@ exports.bookAppointment = async (req, res) => {
                 patient,
                 doctor,
                 hospital,
-                appointmentDate: new Date(appointmentDate),
+                appointmentDate: appointmentDateValue,
                 timeSlot,
                 tokenNumber: newTokenNumber,
-                reasonForVisit,
+                reasonForVisit: visitReason,
                 status: 'Pending',
                 paymentStatus: 'Pending',
                 createdAt: new Date(),
@@ -148,7 +386,11 @@ exports.bookAppointment = async (req, res) => {
 
     } catch (error) {
         console.error('Appointment Booking Error:', error);
-        res.status(500).json({ success: false, message: "Server error during booking", error: error.message });
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode ? error.message : "Server error during booking",
+            error: error.message
+        });
     }
 };
 
@@ -612,152 +854,5 @@ exports.rescheduleAppointment = async (req, res) => {
     } catch (error) {
         console.error('Reschedule Appointment Error:', error);
         res.status(500).json({ success: false, message: "Server error rescheduling appointment", error: error.message });
-    }
-};
-
-// ==========================================
-// 10. LIVE QUEUE ALERTS (Socket.io Push)
-// ==========================================
-
-const updateAppointmentStatus = async (req, res) => {
-    try {
-        const { appointmentId } = req.params;
-        const { status } = req.body; // e.g., 'Completed'
-
-        // 1. DB mein status update kiya
-        const appointment = await Appointment.findByIdAndUpdate(appointmentId, { status }, { new: true });
-
-        // 2. Queue ka naya data fetch kiya (Aapko apna logic lagana hoga ETA count karne ka)
-        const updatedQueueData = {
-            message: "A patient just finished! Queue is moving.",
-            currentServingToken: appointment.tokenNumber + 1
-        };
-
-        // 🚨 3. THE MAGIC PUSH: Us doctor ke room mein sabko live update bhej do!
-        const io = getIO();
-        io.to(appointment.doctor.toString()).emit('queue_updated', updatedQueueData);
-
-        res.status(200).json({ success: true, message: 'Status updated' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-};
-
-
-// ==========================================
-// 11. DOCTOR LEAVE CHECK (Before Booking)
-// ==========================================
-
-exports.bookAppointment = async (req, res) => {
-    try {
-        const { doctorId, appointmentDate, timeSlot, patientId } = req.body;
-
-        // 🚨 NEW LOGIC: Date normalize karo aur check karo
-        const requestedDate = new Date(appointmentDate);
-        requestedDate.setHours(0, 0, 0, 0);
-
-        const isDoctorOnLeave = await DoctorLeave.findOne({
-            doctor: doctorId,
-            date: requestedDate
-        });
-
-        // Agar DB mein us date ki leave mil gayi, toh turant API rok do!
-        if (isDoctorOnLeave) {
-            return res.status(400).json({
-                success: false,
-                message: 'Sorry! The doctor is on leave on this date. Please select another date.'
-            });
-        }
-    } catch (error) {
-        // Error handling
-    }
-};
-
-// ==========================================
-// 12. Doctor TIME SLOT VALIDATION (BEFORE BOOKING)
-// ==========================================
-
-exports.bookAppointment = async (req, res) => {
-    try {
-        // timeSlot hamesha 24-hour format mein aayega UI se, e.g., "14:30"
-        const { doctorId, hospitalId, appointmentDate, timeSlot, patientId } = req.body;
-
-        const requestedDate = new Date(appointmentDate);
-        requestedDate.setHours(0, 0, 0, 0); // Date ko normalize kiya
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // ❌ CASE 0: Past Date check
-        if (requestedDate < today) {
-            return res.status(400).json({ success: false, message: "Aap beete hue kal (past date) mein booking nahi kar sakte." });
-        }
-
-        // 👨‍⚕️ Fetch Doctor Details
-        const doctor = await Doctor.findById(doctorId);
-        if (!doctor) {
-            return res.status(404).json({ success: false, message: "Doctor nahi mile." });
-        }
-
-        // ❌ CASE 1: Is doctor on leave? (Pichla feature)
-        const isLeave = await DoctorLeave.findOne({ doctor: doctorId, date: requestedDate });
-        if (isLeave) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `We apologize, but Dr. ${doctor.name || 'Doctor'} is on leave on this date. Please select another date.` 
-            });
-        }
-
-        // 🗓️ Find requested Day (e.g., "Monday")
-        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const requestedDayName = daysOfWeek[requestedDate.getDay()];
-
-        // ❌ CASE 2: Does doctor work on this day?
-        const daySchedule = doctor.availability.find(schedule => schedule.day === requestedDayName);
-        if (!daySchedule) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Professional Alert: Dr. ${doctor.name || 'Doctor'} is not available on ${requestedDayName}s. Please check their schedule on the hospital dashboard.` 
-            });
-        }
-
-        // ❌ CASE 3: Is the timeSlot within the doctor's working hours?
-        const reqMinutes = timeToMinutes(timeSlot); // e.g., "14:30" -> 870
-        const startMinutes = timeToMinutes(daySchedule.startTime); // e.g., "14:00" -> 840
-        const endMinutes = timeToMinutes(daySchedule.endTime); // e.g., "17:00" -> 1020
-
-        if (reqMinutes < startMinutes || reqMinutes > endMinutes) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Invalid Time Slot! The doctor's shift on ${requestedDayName} is only from ${daySchedule.startTime} to ${daySchedule.endTime}.` 
-            });
-        }
-
-        // ✅ ALL TESTS PASSED! Generate Token and Book.
-        // Token number logic (Example: total appointments on that day + 1)
-        const totalAppointmentsToday = await Appointment.countDocuments({ 
-            doctor: doctorId, 
-            appointmentDate: requestedDate 
-        });
-
-        const newAppointment = await Appointment.create({
-            patient: patientId,
-            doctor: doctorId,
-            hospital: hospitalId,
-            appointmentDate: requestedDate,
-            timeSlot: timeSlot,
-            tokenNumber: totalAppointmentsToday + 1,
-            status: 'Pending'
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Appointment successfully booked! The doctor will see you at " + timeSlot,
-            data: newAppointment
-        });
-
-    } catch (error) {
-        console.error("Booking Error:", error);
-        res.status(500).json({ success: false, message: "Server error occurred while booking." });
     }
 };

@@ -17,19 +17,19 @@ const CustomerPage = () => {
 
   // ================= 1. STATES =================
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategories, setSelectedCategories] = useState([]); 
-  const [selectedPrices, setSelectedPrices] = useState([]);         
-  const [selectedAvailability, setSelectedAvailability] = useState([]); 
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedPrices, setSelectedPrices] = useState([]);
+  const [selectedAvailability, setSelectedAvailability] = useState([]);
   const [selectedRatings, setSelectedRatings] = useState([]);
-  
+
   const [selectedState, setSelectedState] = useState('All India');
-  const [locationFilter, setLocationFilter] = useState('');         
-  const [sortBy, setSortBy] = useState('Recommended');               
-  
+  const [locationFilter, setLocationFilter] = useState('');
+  const [sortBy, setSortBy] = useState('Recommended');
+
   const [openSections, setOpenSections] = useState({
     categories: true, location: true, sortBy: true, availability: true, price: true, ratings: true
   });
-  const [isOthersOpen, setIsOthersOpen] = useState(false); 
+  const [isOthersOpen, setIsOthersOpen] = useState(false);
 
   // 🔥 Full Page Detail State 🔥
   const [activeDetailPage, setActiveDetailPage] = useState(null);
@@ -46,11 +46,11 @@ const CustomerPage = () => {
   const ratingOptions = ['4.5 & Above', '4.0 & Above', '3.5 & Above'];
 
   const indianStates = [
-    "All India", "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
-    "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli", "Daman and Diu", "Delhi", "Goa", "Gujarat", 
-    "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala", "Ladakh", 
-    "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", 
-    "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", 
+    "All India", "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+    "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli", "Daman and Diu", "Delhi", "Goa", "Gujarat",
+    "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala", "Ladakh",
+    "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
+    "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
     "Uttar Pradesh", "Uttarakhand", "West Bengal"
   ];
 
@@ -59,6 +59,62 @@ const CustomerPage = () => {
     'Chennai': 'Tamil Nadu', 'Pune': 'Maharashtra', 'Gurugram': 'Haryana', 'Noida': 'Uttar Pradesh',
     'Vellore': 'Tamil Nadu', 'Pan India': 'All India'
   };
+
+  const [dbHospitals, setDbHospitals] = useState([]);
+
+  useEffect(() => {
+    const fetchDbHospitals = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/hospitals');
+        const json = await response.json();
+        if (json.success && json.data) {
+          const mapped = json.data.map(h => {
+            let cat = 'Healthcare';
+            let icon = '🏥';
+            if (h.sector === 'salon') {
+              cat = 'Beauty & Wellness';
+              icon = '💇';
+            } else if (h.sector === 'dining') {
+              cat = 'Food & Dining';
+              icon = '🍔';
+            } else if (h.sector === 'travel') {
+              cat = 'Travel & Booking';
+              icon = '✈️';
+            } else if (h.sector === 'logistics') {
+              cat = 'Courier & Logistics';
+              icon = '📦';
+            } else if (h.sector === 'other') {
+              cat = 'Services';
+              icon = '✨';
+            }
+
+            return {
+              id: h._id,
+              name: h.name,
+              verified: h.isVerified,
+              category: `${h.sector ? h.sector.charAt(0).toUpperCase() + h.sector.slice(1) : 'General'} • ${cat}`,
+              rating: h.rating ? h.rating.toFixed(1) : '4.5',
+              reviews: '120',
+              distance: 'Local',
+              location: h.city,
+              desc: h.address,
+              tags: [cat, h.city],
+              availabilityStatus: 'Available Now',
+              nextAvailable: 'Available Now',
+              priceValue: 0,
+              price: 'Free Consultation',
+              image: h.images && h.images.length > 0 ? h.images[0] : 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=400&q=80',
+              icon: icon
+            };
+          });
+          setDbHospitals(mapped);
+        }
+      } catch (err) {
+        console.log('Could not load dynamic organizations from local backend server:', err.message);
+      }
+    };
+    fetchDbHospitals();
+  }, []);
 
   useEffect(() => {
     if (activeDetailPage) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -75,7 +131,7 @@ const CustomerPage = () => {
     { id: 7, name: 'Narayana Health City', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.7', reviews: '8.9k', distance: '9.2 km away', location: 'Bangalore', desc: 'Affordable high-quality medical care including India’s largest bone marrow transplant unit.', tags: ['Affordable', 'BMT Unit'], availabilityStatus: 'Available Now', nextAvailable: 'Available Now', priceValue: 600, price: '₹600 Consultation', image: 'https://images.unsplash.com/photo-1502740479091-635887520276?auto=format&fit=crop&w=400&q=80' },
     { id: 8, name: 'Max Super Speciality', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.6', reviews: '7.5k', distance: '4.8 km away', location: 'New Delhi', desc: 'Leading healthcare provider offering comprehensive medical services across multiple specialties.', tags: ['Premium', 'Private'], availabilityStatus: 'Available Tomorrow', nextAvailable: 'Tomorrow, 10:15 AM', priceValue: 1200, price: '₹1200 Consultation', image: 'https://images.unsplash.com/photo-1551076805-e1869043e560?auto=format&fit=crop&w=400&q=80' },
     { id: 9, name: 'Manipal Hospitals', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.7', reviews: '10.2k', distance: '6.1 km away', location: 'Bangalore', desc: 'Patient-first healthcare enterprise offering tech-enabled medical facilities and expert doctors.', tags: ['Tech Enabled', 'Private'], availabilityStatus: 'Available Today', nextAvailable: 'Today, 02:30 PM', priceValue: 800, price: '₹800 Consultation', image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=400&q=80' },
-    { id: 10, name: 'Kokilaben Dhirubhai Ambani', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.8', reviews: '9.3k', distance: '7.5 km away', location: 'Mumbai', desc: 'State-of-the-art multi-specialty hospital with full-time specialist system and robotic surgery.', tags: ['Premium Care', 'Robotics'], availabilityStatus: 'Join Queue', nextAvailable: 'Queue: 2 people ahead', priceValue: 2000, price: '₹2000 Consultation', image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80' }, 
+    { id: 10, name: 'Kokilaben Dhirubhai Ambani', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.8', reviews: '9.3k', distance: '7.5 km away', location: 'Mumbai', desc: 'State-of-the-art multi-specialty hospital with full-time specialist system and robotic surgery.', tags: ['Premium Care', 'Robotics'], availabilityStatus: 'Join Queue', nextAvailable: 'Queue: 2 people ahead', priceValue: 2000, price: '₹2000 Consultation', image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80' },
     { id: 11, name: 'Sir Ganga Ram Hospital', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.8', reviews: '14.6k', distance: '3.8 km away', location: 'New Delhi', desc: 'Leading trust hospital providing top-tier medical services with highly experienced consultants.', tags: ['Trust Hospital', 'Experienced'], availabilityStatus: 'Available Now', nextAvailable: 'Available Now', priceValue: 800, price: '₹800 Consultation', image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=400&q=80' },
     { id: 12, name: 'KIMS Hospitals', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.6', reviews: '5.8k', distance: '4.0 km away', location: 'Hyderabad', desc: 'Krishna Institute of Medical Sciences. Fast-growing hospital chain with advanced trauma care.', tags: ['Trauma Care', 'Private'], availabilityStatus: 'Available Today', nextAvailable: 'Today, 06:00 PM', priceValue: 700, price: '₹700 Consultation', image: 'https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=400&q=80' },
     { id: 13, name: 'Hinduja Hospital', verified: true, category: 'Multi-Specialty • Healthcare', rating: '4.7', reviews: '8.1k', distance: '6.5 km away', location: 'Mumbai', desc: 'Ultra-modern tertiary care hospital with a legacy of providing high-quality healthcare.', tags: ['Legacy', 'Tertiary Care'], availabilityStatus: 'Available Tomorrow', nextAvailable: 'Tomorrow, 11:00 AM', priceValue: 1000, price: '₹1000 Consultation', image: 'https://images.unsplash.com/photo-1519494080410-f9aa76cb4283?auto=format&fit=crop&w=400&q=80' },
@@ -341,7 +397,7 @@ const CustomerPage = () => {
     };
   });
 
-  const allServices = [...realHealthcareData, ...realBeautyData, ...mappedRemainingData];
+  const allServices = [...dbHospitals, ...realHealthcareData, ...realBeautyData, ...mappedRemainingData];
 
   // 🔥 4. AI-DRIVEN DYNAMIC TEAM ENGINE FOR FULL PAGE TABS 🔥
   const getDynamicTeam = (category) => {
@@ -409,7 +465,7 @@ const CustomerPage = () => {
   const sortedServices = [...filteredServices].sort((a, b) => {
     if (sortBy === 'Highest Rated') return b.rating - a.rating;
     if (sortBy === 'Nearest First') return parseFloat(a.distance) - parseFloat(b.distance);
-    return 0; 
+    return 0;
   });
 
   // ================= 6. HANDLERS =================
@@ -436,12 +492,12 @@ const CustomerPage = () => {
   const handleAvailabilityToggle = (status) => { setSelectedAvailability(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]); setCurrentPage(1); };
   const handleRatingToggle = (rating) => { setSelectedRatings(prev => prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]); setCurrentPage(1); };
 
-  const handleClearAll = () => { 
+  const handleClearAll = () => {
     clearCategoryQueryParam();
-    setSelectedCategories([]); setSelectedPrices([]); setSelectedAvailability([]); setSelectedRatings([]); 
-    setLocationFilter(''); setSelectedState('All India'); setSortBy('Recommended'); setCurrentPage(1); setIsOthersOpen(false); 
+    setSelectedCategories([]); setSelectedPrices([]); setSelectedAvailability([]); setSelectedRatings([]);
+    setLocationFilter(''); setSelectedState('All India'); setSortBy('Recommended'); setCurrentPage(1); setIsOthersOpen(false);
   };
-  
+
   const handleLocationEnter = (e) => { if (e.key === 'Enter') { e.preventDefault(); setCurrentPage(1); e.target.blur(); } };
   const handleNextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
   const handlePrevPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
@@ -470,13 +526,13 @@ const CustomerPage = () => {
     const isHealth = s.category.toLowerCase().includes('healthcare');
     const isBeauty = s.category.toLowerCase().includes('beauty');
     const teamLabel = isHealth ? 'Doctors' : isBeauty ? 'Stylists' : 'Experts';
-    
+
     // Generate Fake Gallery Images
     const galleryImg2 = getImageUrl(s.category.split(' • ')[1], s.id + 1) || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400';
     const galleryImg3 = getImageUrl(s.category.split(' • ')[1], s.id + 2) || 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=400';
 
     // Get 4 Related Facilities
-    const relatedFacilities = allServices.filter(item => 
+    const relatedFacilities = allServices.filter(item =>
       item.category === s.category && item.id !== s.id
     ).slice(0, 4);
 
@@ -497,33 +553,33 @@ const CustomerPage = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          
+
           {/* TOP SECTION: Gallery & Booking Card */}
           <div className="flex flex-col lg:flex-row gap-6 mb-8">
-            
+
             {/* Left: Gallery Grid */}
             <div className="flex-1 grid grid-cols-3 gap-2 sm:gap-4 h-[300px] sm:h-[400px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-white p-2">
               <div className="col-span-2 relative rounded-xl overflow-hidden cursor-pointer group">
-                 {s.image ? <img src={s.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Main" /> : <div className="w-full h-full bg-slate-200"></div>}
-                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                {s.image ? <img src={s.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Main" /> : <div className="w-full h-full bg-slate-200"></div>}
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
               </div>
               <div className="col-span-1 grid grid-rows-2 gap-2 sm:gap-4">
-                 <div className="relative rounded-xl overflow-hidden cursor-pointer group">
-                    <img src={galleryImg2} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sub 1" />
-                 </div>
-                 <div className="relative rounded-xl overflow-hidden cursor-pointer group">
-                    <img src={galleryImg3} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sub 2" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
-                      <span className="text-white font-bold text-sm sm:text-lg">+12 Photos</span>
-                    </div>
-                 </div>
+                <div className="relative rounded-xl overflow-hidden cursor-pointer group">
+                  <img src={galleryImg2} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sub 1" />
+                </div>
+                <div className="relative rounded-xl overflow-hidden cursor-pointer group">
+                  <img src={galleryImg3} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Sub 2" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
+                    <span className="text-white font-bold text-sm sm:text-lg">+12 Photos</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Right: Premium Booking Card (Gradient like screenshot) */}
             <div className="w-full lg:w-[400px] bg-gradient-to-br from-emerald-50 via-teal-50/30 to-blue-50 rounded-2xl p-6 shadow-sm border border-emerald-100 flex flex-col relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/50 rounded-full blur-3xl -mr-10 -mt-10"></div>
-              
+
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-2">
                   <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">{s.name}</h1>
@@ -545,7 +601,7 @@ const CustomerPage = () => {
                 </div>
 
                 <div className="space-y-2 mb-6 text-sm text-slate-700 font-medium">
-                  <p className="flex items-start gap-2"><span className="text-slate-400 mt-0.5">📍</span> <span>{s.location} India, 110029<br/><span className="text-blue-600 text-xs cursor-pointer hover:underline" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ', ' + s.location)}`, '_blank')}>Get Directions</span></span></p>
+                  <p className="flex items-start gap-2"><span className="text-slate-400 mt-0.5">📍</span> <span>{s.location} India, 110029<br /><span className="text-blue-600 text-xs cursor-pointer hover:underline" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ', ' + s.location)}`, '_blank')}>Get Directions</span></span></p>
                   <p className="flex items-center gap-2"><span className="text-slate-400">📞</span> +91-98765 43210</p>
                   <p className="flex items-center gap-2"><span className="text-slate-400">✉️</span> contact@{s.name.replace(/\s+/g, '').toLowerCase()}.com</p>
                 </div>
@@ -553,25 +609,23 @@ const CustomerPage = () => {
                 {/* Booking Box */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 mt-auto">
                   <div className="flex justify-between items-center mb-3">
-                     <span className={`text-xs font-bold px-2 py-1 rounded-md border ${
-                         s.availabilityStatus === 'Available Now' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
-                         s.availabilityStatus === 'Fully Booked' ? 'bg-red-50 text-red-700 border-red-100' :
-                         'bg-blue-50 text-blue-700 border-blue-100'
-                       }`}>
-                         {s.availabilityStatus}
-                     </span>
-                     <div className="text-right">
-                       <p className="text-[10px] text-slate-400 font-bold uppercase">Next Slot</p>
-                       <p className="text-sm font-black text-slate-800">{s.nextAvailable}</p>
-                     </div>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-md border ${s.availabilityStatus === 'Available Now' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                        s.availabilityStatus === 'Fully Booked' ? 'bg-red-50 text-red-700 border-red-100' :
+                          'bg-blue-50 text-blue-700 border-blue-100'
+                      }`}>
+                      {s.availabilityStatus}
+                    </span>
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Next Slot</p>
+                      <p className="text-sm font-black text-slate-800">{s.nextAvailable}</p>
+                    </div>
                   </div>
-                  <button 
-                    disabled={s.availabilityStatus === 'Fully Booked'} 
-                    className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${
-                      s.availabilityStatus === 'Fully Booked' 
-                      ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95'
-                    }`}
+                  <button
+                    disabled={s.availabilityStatus === 'Fully Booked'}
+                    className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${s.availabilityStatus === 'Fully Booked'
+                        ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95'
+                      }`}
                   >
                     {s.availabilityStatus === 'Fully Booked' ? 'Unavailable' : 'Book Appointment Now'}
                   </button>
@@ -585,7 +639,7 @@ const CustomerPage = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
             <div className="flex border-b border-slate-200 overflow-x-auto hide-scrollbar">
               {['overview', 'departments', teamLabel.toLowerCase(), 'reviews'].map((tab) => (
-                <button 
+                <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-6 py-4 text-sm font-bold capitalize whitespace-nowrap border-b-2 transition-colors ${activeTab === tab ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
@@ -601,7 +655,7 @@ const CustomerPage = () => {
                 <div className="animate-fade-in">
                   <h3 className="text-xl font-black text-slate-900 mb-4">About {s.name}</h3>
                   <p className="text-slate-600 leading-relaxed mb-8">{s.desc} We are committed to providing the highest quality of service with state-of-the-art infrastructure and highly experienced professionals. Our customer-first approach ensures a seamless experience.</p>
-                  
+
                   <div className="grid sm:grid-cols-2 gap-6">
                     {getDynamicDetails(s.category).map((detail, idx) => (
                       <div key={idx} className="bg-slate-50 rounded-xl p-5 border border-slate-100">
@@ -621,10 +675,10 @@ const CustomerPage = () => {
               {activeTab === 'departments' && (
                 <div className="animate-fade-in grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {['General', 'Emergency', 'Specialized Care', 'Consultation'].map((dept, i) => (
-                     <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center hover:border-blue-300 transition-colors cursor-pointer">
-                        <div className="w-12 h-12 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full mx-auto mb-3 text-xl">🏢</div>
-                        <h4 className="font-bold text-slate-800 text-sm">{dept}</h4>
-                     </div>
+                    <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center hover:border-blue-300 transition-colors cursor-pointer">
+                      <div className="w-12 h-12 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full mx-auto mb-3 text-xl">🏢</div>
+                      <h4 className="font-bold text-slate-800 text-sm">{dept}</h4>
+                    </div>
                   ))}
                 </div>
               )}
@@ -632,22 +686,22 @@ const CustomerPage = () => {
               {/* Tab: Team (Doctors/Stylists) */}
               {activeTab === teamLabel.toLowerCase() && (
                 <div className="animate-fade-in">
-                   <h3 className="text-xl font-black text-slate-900 mb-6">Our Top {teamLabel}</h3>
-                   <div className="grid sm:grid-cols-2 gap-6">
-                     {getDynamicTeam(s.category).map((member, i) => (
-                       <div key={i} className="flex gap-4 p-4 border border-slate-200 rounded-xl hover:shadow-md transition-shadow bg-white">
-                         <img src={member.image} alt={member.name} className="w-20 h-20 rounded-full object-cover border border-slate-100 shadow-sm" />
-                         <div>
-                           <h4 className="font-bold text-slate-900 text-base">{member.name}</h4>
-                           <p className="text-xs font-semibold text-blue-600 mb-1">{member.title}</p>
-                           <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500 mb-2">
-                             <span className="text-yellow-400">★ 4.8</span> | <span>{member.exp}</span>
-                           </div>
-                           <p className="text-xs text-slate-600 line-clamp-2">{member.desc}</p>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-6">Our Top {teamLabel}</h3>
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    {getDynamicTeam(s.category).map((member, i) => (
+                      <div key={i} className="flex gap-4 p-4 border border-slate-200 rounded-xl hover:shadow-md transition-shadow bg-white">
+                        <img src={member.image} alt={member.name} className="w-20 h-20 rounded-full object-cover border border-slate-100 shadow-sm" />
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-base">{member.name}</h4>
+                          <p className="text-xs font-semibold text-blue-600 mb-1">{member.title}</p>
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500 mb-2">
+                            <span className="text-yellow-400">★ 4.8</span> | <span>{member.exp}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-2">{member.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -663,16 +717,16 @@ const CustomerPage = () => {
                   </div>
                   {/* Dummy Reviews */}
                   {[
-                    {name: 'Rahul Sharma', date: '2 days ago', text: 'Excellent service! The staff was very polite and the facility was extremely clean.'},
-                    {name: 'Priya Patel', date: '1 week ago', text: 'Highly recommended. I booked through FlexiBook and didn\'t have to wait in line at all.'}
+                    { name: 'Rahul Sharma', date: '2 days ago', text: 'Excellent service! The staff was very polite and the facility was extremely clean.' },
+                    { name: 'Priya Patel', date: '1 week ago', text: 'Highly recommended. I booked through FlexiBook and didn\'t have to wait in line at all.' }
                   ].map((rev, i) => (
                     <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                       <div className="flex justify-between items-center mb-2">
-                          <span className="font-bold text-slate-800 text-sm">{rev.name}</span>
-                          <span className="text-xs text-slate-400 font-medium">{rev.date}</span>
-                       </div>
-                       <div className="text-yellow-400 text-xs mb-2">★★★★★</div>
-                       <p className="text-sm text-slate-600">{rev.text}</p>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-bold text-slate-800 text-sm">{rev.name}</span>
+                        <span className="text-xs text-slate-400 font-medium">{rev.date}</span>
+                      </div>
+                      <div className="text-yellow-400 text-xs mb-2">★★★★★</div>
+                      <p className="text-sm text-slate-600">{rev.text}</p>
                     </div>
                   ))}
                 </div>
@@ -685,8 +739,8 @@ const CustomerPage = () => {
             <h3 className="text-xl font-black text-slate-900 mb-6">Related Facilities Nearby</h3>
             <div className="flex overflow-x-auto gap-5 pb-4 hide-scrollbar">
               {relatedFacilities.length > 0 ? relatedFacilities.map(rel => (
-                <div 
-                  key={rel.id} 
+                <div
+                  key={rel.id}
                   onClick={() => { setActiveDetailPage(rel); setActiveTab('overview'); }}
                   className="min-w-[260px] max-w-[260px] bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group shrink-0"
                 >
@@ -718,7 +772,7 @@ const CustomerPage = () => {
       <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[12px] z-0"></div>
 
       <div className="relative z-10 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        
+
         {/* Top Search Bar */}
         <div className="bg-white/95 backdrop-blur-md p-2 rounded-xl shadow-sm border border-slate-200/60 flex flex-col md:flex-row items-center gap-2 mb-8 focus-within:shadow-md transition-shadow duration-300">
           <div className="flex-1 flex items-center px-4 py-2 w-full">
@@ -737,7 +791,7 @@ const CustomerPage = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          
+
           {/* SIDEBAR */}
           <div className="w-full lg:w-64 shrink-0">
             <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-sm border border-slate-200/60 p-5 sticky top-28 transition-all duration-300">
@@ -790,8 +844,8 @@ const CustomerPage = () => {
                 </div>
                 {openSections.location && (
                   <div className="flex items-center border border-slate-200 rounded-lg p-1 bg-slate-50/50 hover:bg-white focus-within:bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all duration-200 mb-4 shadow-inner focus-within:shadow-none">
-                     <span className="text-slate-400 text-sm ml-2">📍</span>
-                     <input type="text" placeholder="Search City..." value={locationFilter} onChange={(e) => { setLocationFilter(e.target.value); setCurrentPage(1); }} onKeyDown={handleLocationEnter} className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2 py-0.5" />
+                    <span className="text-slate-400 text-sm ml-2">📍</span>
+                    <input type="text" placeholder="Search City..." value={locationFilter} onChange={(e) => { setLocationFilter(e.target.value); setCurrentPage(1); }} onKeyDown={handleLocationEnter} className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2 py-0.5" />
                   </div>
                 )}
               </div>
@@ -892,7 +946,7 @@ const CustomerPage = () => {
               {currentServices.length > 0 ? currentServices.map((service) => (
                 // 🔥 RESTORED PREMIUM HOVER ANIMATIONS HERE 🔥
                 <div key={service.id} className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/50 p-4 sm:p-5 flex flex-col md:flex-row gap-5 hover:-translate-y-1.5 hover:shadow-[0_12px_30px_-10px_rgba(37,99,235,0.2)] hover:border-blue-300/50 transition-all duration-400 ease-out group/card relative overflow-hidden">
-                  
+
                   <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="w-full md:w-48 h-40 bg-slate-50 rounded-xl shrink-0 relative flex items-center justify-center border border-slate-100 overflow-hidden shadow-inner">
@@ -918,7 +972,7 @@ const CustomerPage = () => {
                         )}
                       </div>
                       <p className="text-sm text-slate-500 mb-2 font-medium">{service.category}</p>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
                         <div className="flex items-center gap-1 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-100/50">
                           <span className="text-yellow-500 text-xs">★</span>
@@ -953,16 +1007,15 @@ const CustomerPage = () => {
 
                   <div className="w-full md:w-48 flex flex-col items-start md:items-end justify-between border-t border-slate-100 md:border-t-0 md:border-l md:border-slate-100/80 pt-4 md:pt-0 md:pl-5 mt-4 md:mt-0">
                     <div className="w-full flex justify-between md:justify-end items-start mb-4">
-                       <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm ${
-                         service.availabilityStatus === 'Available Now' ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-emerald-700 border-emerald-100' : 
-                         service.availabilityStatus === 'Available Today' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-100' :
-                         service.availabilityStatus === 'Join Queue' ? 'bg-gradient-to-r from-purple-50 to-fuchsia-50 text-purple-700 border-purple-100' :
-                         'bg-slate-50 text-slate-500 border-slate-200'
-                       }`}>
-                         {service.availabilityStatus}
-                       </span>
+                      <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm ${service.availabilityStatus === 'Available Now' ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-emerald-700 border-emerald-100' :
+                          service.availabilityStatus === 'Available Today' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-100' :
+                            service.availabilityStatus === 'Join Queue' ? 'bg-gradient-to-r from-purple-50 to-fuchsia-50 text-purple-700 border-purple-100' :
+                              'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}>
+                        {service.availabilityStatus}
+                      </span>
                     </div>
-                    
+
                     <div className="w-full flex flex-row md:flex-col justify-between md:items-end gap-2 mb-5">
                       <div className="text-left md:text-right">
                         <p className="text-xs text-slate-400 mb-0.5 uppercase tracking-wider font-semibold">Next Available</p>
@@ -984,10 +1037,10 @@ const CustomerPage = () => {
                 </div>
               )) : (
                 <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-sm border border-slate-200 p-10 text-center flex flex-col items-center justify-center animate-fade-in">
-                   <span className="text-4xl mb-4">🔮</span>
-                   <h3 className="text-lg font-bold text-slate-900 mb-2">No Match Found</h3>
-                   <p className="text-sm text-slate-500 mb-4">We couldn't find any service matching these specific filters.</p>
-                   <button onClick={handleClearAll} className="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm shadow-sm active:scale-95">Clear All Filters</button>
+                  <span className="text-4xl mb-4">🔮</span>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">No Match Found</h3>
+                  <p className="text-sm text-slate-500 mb-4">We couldn't find any service matching these specific filters.</p>
+                  <button onClick={handleClearAll} className="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm shadow-sm active:scale-95">Clear All Filters</button>
                 </div>
               )}
             </div>
@@ -1002,9 +1055,9 @@ const CustomerPage = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex items-center gap-1.5">
                     <button onClick={handlePrevPage} disabled={currentPage === 1} className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-medium transition-colors bg-white/95 ${currentPage === 1 ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 shadow-sm'}`}>{"<"}</button>
-                    
+
                     {getPageNumbers().map((page, index) => (
-                      <button 
+                      <button
                         key={index}
                         onClick={() => typeof page === 'number' && setCurrentPage(page)}
                         disabled={page === '...'}
@@ -1016,11 +1069,11 @@ const CustomerPage = () => {
 
                     <button onClick={handleNextPage} disabled={currentPage === totalPages} className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-medium transition-colors bg-white/95 ${currentPage === totalPages ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 shadow-sm'}`}>{">"}</button>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 pl-0 sm:pl-4 sm:border-l border-slate-300">
                     <span className="text-sm text-slate-500 font-medium">Go to:</span>
-                    <select 
-                      value={currentPage} 
+                    <select
+                      value={currentPage}
                       onChange={handleDropdownChange}
                       className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer bg-white/95 shadow-sm"
                     >
@@ -1035,7 +1088,7 @@ const CustomerPage = () => {
           </div>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{__html: `.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}} />
+      <style dangerouslySetInnerHTML={{ __html: `.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }` }} />
     </div>
   );
 };

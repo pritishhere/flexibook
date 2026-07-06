@@ -19,6 +19,8 @@ const LoginPage = lazy(() => import('./LoginPage'));
 const SignUpGateway = lazy(() => import('./SignUpGateway'));
 const CustomerRegister = lazy(() => import('./CustomerRegister'));
 const BusinessRegistration = lazy(() => import('./BusinessRegistration/BusinessRegistration'));
+const BusinessDashboard = lazy(() => import('./BusinessDashboard'));
+const DoctorPortal = lazy(() => import('./DoctorPortal'));
 
 
 /* ====================================================================
@@ -95,6 +97,8 @@ function App() {
             <Route path="/register" element={<SignUpGateway />} />
             <Route path="/customer-register" element={<CustomerRegister />} />
             <Route path="/real-business-form" element={<BusinessRegistration />} />
+            <Route path="/business/dashboard" element={<BusinessDashboard />} />
+            <Route path="/doctor/portal" element={<DoctorPortal />} />
           </Routes>
         </Suspense>
       </div>

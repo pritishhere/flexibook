@@ -1,22 +1,56 @@
 const mongoose = require('mongoose');
 const Doctor = require('../models/Doctor');
 const DoctorLeave = require('../models/DoctorLeave');
+const User = require('../models/user');
 const inMemoryDb = require('../utils/inMemoryDb');
 
 // @desc    Add a new doctor to a hospital
 exports.createDoctor = async (req, res) => {
     try {
-        const { userId, hospitalId, departmentId, specialization, experience, consultationFee, availability } = req.body;
+        const { userId, name, email, password, hospitalId, departmentId, specialization, experience, consultationFee, availability } = req.body;
+
+        let resolvedUserId = userId;
 
         if (mongoose.connection.readyState === 1) {
+            // MongoDB Path
+            if (!resolvedUserId) {
+                if (!name || !email || !password) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'To onboard a doctor, please provide either a userId OR (name, email, password)'
+                    });
+                }
+
+                // Check if user already exists
+                let doctorUser = await User.findOne({ email: email.toLowerCase() });
+                if (doctorUser) {
+                    if (doctorUser.role !== 'doctor') {
+                        return res.status(400).json({
+                            success: false,
+                            message: `Email "${email}" is already registered as a ${doctorUser.role}. Cannot onboard as doctor.`
+                        });
+                    }
+                    resolvedUserId = doctorUser._id;
+                } else {
+                    // Create User account
+                    doctorUser = await User.create({
+                        name,
+                        email,
+                        password,
+                        role: 'doctor'
+                    });
+                    resolvedUserId = doctorUser._id;
+                }
+            }
+
             const newDoctor = await Doctor.create({
-                userId,         // Doctor's basic info (name, email) comes from the User model
-                hospitalId,     // Hospital where they work
-                departmentId,   // Optional department ID
+                userId: resolvedUserId,
+                hospitalId,
+                departmentId,
                 specialization,
                 experience,
                 fees: consultationFee,
-                availability    // e.g., ["Monday", "Wednesday", "Friday"]
+                availability
             });
 
             return res.status(201).json({
@@ -25,17 +59,50 @@ exports.createDoctor = async (req, res) => {
                 data: newDoctor
             });
         } else {
-            // In-Memory Fallback
-            if (!userId || !hospitalId || !specialization || !experience || !consultationFee) {
+            // In-Memory Fallback Path
+            if (!resolvedUserId) {
+                if (!name || !email || !password) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'To onboard a doctor, please provide either a userId OR (name, email, password)'
+                    });
+                }
+
+                // Search in-memory users
+                let doctorUser = inMemoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+                if (doctorUser) {
+                    if (doctorUser.role !== 'doctor') {
+                        return res.status(400).json({
+                            success: false,
+                            message: `Email "${email}" is already registered as a ${doctorUser.role}.`
+                        });
+                    }
+                    resolvedUserId = doctorUser._id;
+                } else {
+                    resolvedUserId = new mongoose.Types.ObjectId().toString();
+                    doctorUser = {
+                        _id: resolvedUserId,
+                        name,
+                        email: email.toLowerCase(),
+                        password, // in test/memory, we store it raw or dummy
+                        role: 'doctor',
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    };
+                    inMemoryDb.users.push(doctorUser);
+                }
+            }
+
+            if (!resolvedUserId || !hospitalId || !specialization || !experience || !consultationFee) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Validation failed: userId, hospitalId, specialization, experience, and consultationFee are required'
+                    message: 'Validation failed: hospitalId, specialization, experience, and consultationFee are required'
                 });
             }
 
             const newDoctor = {
                 _id: new mongoose.Types.ObjectId().toString(),
-                userId: userId.toString(),
+                userId: resolvedUserId.toString(),
                 hospitalId: hospitalId.toString(),
                 departmentId: departmentId ? departmentId.toString() : null,
                 specialization,
@@ -256,6 +323,11 @@ exports.deleteDoctor = async (req, res) => {
                 return res.status(404).json({ success: false, message: 'Doctor not found' });
             }
 
+            // Cascade delete user account
+            if (doctor.userId) {
+                await User.findByIdAndDelete(doctor.userId);
+            }
+
             return res.status(200).json({
                 success: true,
                 message: 'Doctor deleted successfully (MongoDB)'
@@ -267,7 +339,16 @@ exports.deleteDoctor = async (req, res) => {
                 return res.status(404).json({ success: false, message: 'Doctor not found' });
             }
 
+            const doctor = inMemoryDb.doctors[index];
+
+            // Remove doctor profile
             inMemoryDb.doctors.splice(index, 1);
+
+            // Cascade delete user account
+            const userIndex = inMemoryDb.users.findIndex(u => u._id === doctor.userId);
+            if (userIndex !== -1) {
+                inMemoryDb.users.splice(userIndex, 1);
+            }
 
             return res.status(200).json({
                 success: true,

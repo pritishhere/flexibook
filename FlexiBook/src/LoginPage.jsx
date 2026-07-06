@@ -43,14 +43,25 @@ const LoginPage = () => {
     e.preventDefault();
     setAlert({ type: '', message: '' }); 
 
-    if (loginMode === 'email' && email === 'test@example.com' && password === 'password123') {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (loginMode === 'email' && normalizedEmail === 'patient@example.com' && password === 'password123') {
+      setAlert({ type: 'success', message: 'Login successful! Welcome back, Patient...' });
+      setTimeout(() => navigate('/customers'), 1500);
+    } else if (loginMode === 'email' && normalizedEmail === 'business@example.com' && password === 'password123') {
+      setAlert({ type: 'success', message: 'Login successful! Loading Business Command Center...' });
+      setTimeout(() => navigate('/business/dashboard'), 1500);
+    } else if (loginMode === 'email' && normalizedEmail === 'doctor@example.com' && password === 'password123') {
+      setAlert({ type: 'success', message: 'Login successful! Opening Doctor Portal...' });
+      setTimeout(() => navigate('/doctor/portal'), 1500);
+    } else if (loginMode === 'email' && normalizedEmail === 'test@example.com' && password === 'password123') {
       setAlert({ type: 'success', message: 'Login successful! Redirecting...' });
       setTimeout(() => navigate('/'), 1500);
     } else if (loginMode === 'phone' && phone === '9876543210' && password === 'password123') {
       setAlert({ type: 'success', message: 'Login successful! Redirecting...' });
       setTimeout(() => navigate('/'), 1500);
     } else {
-      setAlert({ type: 'error', message: 'Invalid credentials. Please try again.' });
+      setAlert({ type: 'error', message: 'Invalid credentials. Please try again. Use doctor@example.com, business@example.com or patient@example.com with password123 to test!' });
     }
   };
 

@@ -83,7 +83,7 @@ const AboutPage = () => {
               </div>
             </div>
 
-            <div className="relative hidden md:flex min-h-[360px] items-center justify-center">
+            <div className="relative hidden md:flex min-h-[400px] items-center justify-center">
               <div className="absolute h-72 w-72 rounded-full border border-blue-100 bg-blue-50/70"></div>
               <div className="absolute h-52 w-52 rounded-full border border-emerald-100 bg-emerald-50/70"></div>
 
@@ -112,7 +112,7 @@ const AboutPage = () => {
                   );
                 })}
 
-                <div className="absolute -bottom-8 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-600 shadow-lg shadow-blue-100">
+                <div className="absolute -bottom-16 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-600 shadow-lg shadow-blue-100">
                   <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
                   Built together
                 </div>

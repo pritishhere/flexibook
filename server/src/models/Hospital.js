@@ -30,6 +30,16 @@ const hospitalSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    ownerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    sector: {
+        type: String,
+        enum: ['healthcare', 'salon', 'dining', 'travel', 'logistics', 'other'],
+        default: 'healthcare'
+    },
     isVerified: {
         type: Boolean,
         default: false 

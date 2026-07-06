@@ -9,7 +9,7 @@ const inMemoryDb = require('../utils/inMemoryDb');
 exports.createHospital = async (req, res) => {
     try {
         // Extract data sent from the frontend
-        const { name, address, city, contactNumber, emergencyNumber } = req.body;
+        const { name, address, city, contactNumber, emergencyNumber, ownerId, sector } = req.body;
 
         if (mongoose.connection.readyState === 1) {
             // Create and save the new hospital in the database
@@ -18,7 +18,9 @@ exports.createHospital = async (req, res) => {
                 address,
                 city,
                 contactNumber,
-                emergencyNumber
+                emergencyNumber,
+                ownerId: ownerId || null,
+                sector: sector || 'healthcare'
             });
 
             return res.status(201).json({
@@ -42,6 +44,8 @@ exports.createHospital = async (req, res) => {
                 city,
                 contactNumber,
                 emergencyNumber: emergencyNumber || '',
+                ownerId: ownerId || null,
+                sector: sector || 'healthcare',
                 rating: 0,
                 isVerified: false,
                 createdAt: new Date(),
@@ -68,12 +72,18 @@ exports.createHospital = async (req, res) => {
 // @desc    Get all hospitals (For Patient App Home Screen)
 exports.getAllHospitals = async (req, res) => {
     try {
-        const { city } = req.query;
+        const { city, sector, ownerId } = req.query;
         
         if (mongoose.connection.readyState === 1) {
             let query = {};
             if (city) {
                 query.city = { $regex: city, $options: 'i' }; 
+            }
+            if (sector) {
+                query.sector = sector.toLowerCase();
+            }
+            if (ownerId) {
+                query.ownerId = ownerId;
             }
             const hospitals = await Hospital.find(query);
 
@@ -86,8 +96,18 @@ exports.getAllHospitals = async (req, res) => {
             // Use In-Memory fallback
             let filteredHospitals = inMemoryDb.hospitals;
             if (city) {
-                filteredHospitals = inMemoryDb.hospitals.filter(h => 
+                filteredHospitals = filteredHospitals.filter(h => 
                     h.city && h.city.toLowerCase().includes(city.toLowerCase())
+                );
+            }
+            if (sector) {
+                filteredHospitals = filteredHospitals.filter(h => 
+                    h.sector && h.sector.toLowerCase() === sector.toLowerCase()
+                );
+            }
+            if (ownerId) {
+                filteredHospitals = filteredHospitals.filter(h => 
+                    h.ownerId === ownerId
                 );
             }
 

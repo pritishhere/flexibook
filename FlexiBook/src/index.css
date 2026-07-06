@@ -17,6 +17,9 @@
   --text-muted: #64748b;
   --border-soft: #e2e8f0;
   --brand: #2563eb;
+  --ultra-glass-bg: rgba(255, 255, 255, 0.65);
+  --surface-card: rgba(255, 255, 255, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.8);
 }
 
 .dark {
@@ -26,6 +29,9 @@
   --text-muted: #94a3b8;
   --border-soft: #334155;
   --brand: #60a5fa;
+  --ultra-glass-bg: rgba(15, 23, 42, 0.65);
+  --surface-card: rgba(30, 41, 59, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.05);
 }
 
 /* =========================================

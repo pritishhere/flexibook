@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import React, { useContext } from 'react';
+import { ThemeContext } from '../ThemeContext';
 
 
 export const Header = () => {

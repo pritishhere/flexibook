@@ -21,6 +21,7 @@
   --surface-card: rgba(255, 255, 255, 0.75);
   --border-glass: rgba(255, 255, 255, 0.8);
   --hover-bg: #f1f5f9;
+  --surface-opacity-95: rgba(255, 255, 255, 0.95);
 }
 
 .dark {
@@ -34,6 +35,27 @@
   --surface-card: rgba(30, 41, 59, 0.75);
   --border-glass: rgba(255, 255, 255, 0.05);
   --hover-bg: #334155;
+  --surface-opacity-95: rgba(30, 41, 59, 0.95);
+}
+
+/* Custom CSS Color Fallbacks for App */
+.bg-base {
+  background-color: var(--base) !important;
+}
+.bg-surface {
+  background-color: var(--surface) !important;
+}
+.bg-surface\/95 {
+  background-color: var(--surface-opacity-95) !important;
+}
+.text-textMain {
+  color: var(--text-main) !important;
+}
+.text-textMuted {
+  color: var(--text-muted) !important;
+}
+.border-borderSoft {
+  border-color: var(--border-soft) !important;
 }
 
 /* =========================================

@@ -4,7 +4,12 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { Header } from './Components/Header';
 import { Footer } from './Components/Footer';
 import Loader from './Components/Loader'; 
-import IntroSplash from './Components/IntroSplash'; // 🔴 INTRO COMPONENT IMPORT KIYA
+import IntroSplash from './Components/IntroSplash'; 
+import SignUpPage from './SignUpPage'; 
+
+// 2. Apne <Routes> tags ke andar purane signup route ko hatakar ye NAYA link daaliye:
+
+
 
 /* ====================================================================
    🔥 1. ENTERPRISE CODE SPLITTING (Lazy Loading)
@@ -13,8 +18,7 @@ const HomePage = lazy(() => import('./HomePage'));
 const CustomerPage = lazy(() => import('./CustomerPage'));
 const AboutPage = lazy(() => import('./AboutPage'));
 const CategoriesPage = lazy(() => import('./CategoriesPage'));
-const LoginPage = lazy(() => import('./LoginPage'));
-const SignUpGateway = lazy(() => import('./SignUpGateway'));
+const Login = lazy(() => import('./Login'));
 const CustomerRegister = lazy(() => import('./CustomerRegister'));
 const BusinessRegistration = lazy(() => import('./BusinessRegistration/BusinessRegistration'));
 const BusinessDashboard = lazy(() => import('./BusinessDashboard'));
@@ -98,9 +102,10 @@ function App() {
                 <Route path="/customers" element={<CustomerPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/business-register" element={<SignUpGateway />} />
-                <Route path="/register" element={<SignUpGateway />} />
+                <Route path="/Login" element={<Login />} />
+                <Route path="/signup" element={<SignUpPage />} />
+                <Route path="/business-register" element={<BusinessRegistration />} />
+                <Route path="/register" element={<BusinessRegistration />} />
                 <Route path="/customer-register" element={<CustomerRegister />} />
                 <Route path="/real-business-form" element={<BusinessRegistration />} />
                 <Route path="/business/dashboard" element={<BusinessDashboard />} />

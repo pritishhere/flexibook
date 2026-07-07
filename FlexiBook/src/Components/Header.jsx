@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+const handleLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = '/login';
+};
+
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation(); 
@@ -59,7 +65,7 @@ export const Header = () => {
             </button>
           </Link>
           
-          <Link to="/business-register">
+          <Link to="signup" className={getDesktopLinkStyle('/signup')}>
             <button className="text-sm xl:text-base font-semibold bg-blue-600 text-white px-5 xl:px-7 py-2 xl:py-2.5 rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-200">
               Sign Up
             </button>
@@ -107,7 +113,7 @@ export const Header = () => {
               </button>
             </Link>
             
-            <Link to="/business-register" onClick={() => setIsOpen(false)} className="w-full">
+            <Link to="/signup" onClick={() => setIsOpen(false)} className="w-full">
               <button className="w-full text-center text-base font-semibold bg-blue-600 text-white py-3 rounded-lg">
                 Sign Up
               </button>

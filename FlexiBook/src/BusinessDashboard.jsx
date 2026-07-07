@@ -153,21 +153,21 @@ const BusinessDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col md:flex-row">
+    <div className="min-h-screen bg-base text-textMain font-sans flex flex-col md:flex-row transition-colors duration-500">
       {/* Sidebar Panel */}
-      <aside className="w-full md:w-64 bg-slate-950 border-r border-slate-800 p-6 flex flex-col gap-6">
+      <aside className="w-full md:w-64 bg-surface border-r border-borderSoft p-6 flex flex-col gap-6 transition-colors duration-500">
         <div>
           <h2 className="text-xl font-black text-blue-500 tracking-wider">FLEXIBOOK</h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Command Center</p>
+          <p className="text-xs text-textMuted font-bold uppercase tracking-widest mt-1">Command Center</p>
         </div>
 
         {/* Selected Hospital drop-down */}
-        <div className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex flex-col gap-1.5">
-          <label className="text-[10px] font-black uppercase text-slate-400">Managing Business</label>
+        <div className="bg-base border border-borderSoft p-3 rounded-lg flex flex-col gap-1.5 transition-colors duration-500">
+          <label className="text-[10px] font-black uppercase text-textMuted">Managing Business</label>
           <select 
             value={selectedHospitalId} 
             onChange={(e) => setSelectedHospitalId(e.target.value)} 
-            className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200 outline-none"
+            className="w-full bg-surface border border-borderSoft rounded p-1.5 text-xs text-textMain outline-none transition-colors duration-500"
           >
             {hospitals.map(h => (
               <option key={h._id} value={h._id}>{h.name}</option>
@@ -178,13 +178,13 @@ const BusinessDashboard = () => {
         <nav className="flex flex-col gap-2 mt-4">
           <button 
             onClick={() => setActiveTab('overview')} 
-            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}
+            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-md' : 'text-textMuted hover:bg-base hover:text-textMain'}`}
           >
             📊 Analytics Overview
           </button>
           <button 
             onClick={() => setActiveTab('doctors')} 
-            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'doctors' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}
+            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'doctors' ? 'bg-blue-600 text-white shadow-md' : 'text-textMuted hover:bg-base hover:text-textMain'}`}
           >
             👨‍⚕️ Manage Doctors
           </button>
@@ -193,10 +193,10 @@ const BusinessDashboard = () => {
 
       {/* Main Workspace content */}
       <main className="flex-1 p-6 md:p-10">
-        <header className="flex justify-between items-center mb-8 border-b border-slate-800 pb-5">
+        <header className="flex justify-between items-center mb-8 border-b border-borderSoft pb-5 transition-colors duration-500">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Organization Dashboard</h1>
-            <p className="text-sm text-slate-400 mt-1">Control your business, schedules, and personnel slots instantly.</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-textMain">Organization Dashboard</h1>
+            <p className="text-sm text-textMuted mt-1">Control your business, schedules, and personnel slots instantly.</p>
           </div>
           <span className="bg-blue-500/10 text-blue-400 text-xs font-black uppercase tracking-wider px-3.5 py-1.5 border border-blue-500/20 rounded-full">
             Role: Business Owner
@@ -219,19 +219,19 @@ const BusinessDashboard = () => {
                 { title: 'Registered Doctors', value: doctors.length, icon: '👨‍⚕️', change: 'Live status synced' },
                 { title: 'Average Rating', value: '★ 4.8', icon: '⭐', change: 'Based on 45 reviews' }
               ].map((card, i) => (
-                <div key={i} className="bg-slate-950 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all shadow-sm">
+                <div key={i} className="bg-surface border border-borderSoft rounded-2xl p-6 relative overflow-hidden group hover:border-blue-300 transition-all shadow-sm transition-colors duration-500">
                   <div className="absolute top-0 right-0 p-4 text-3xl opacity-20">{card.icon}</div>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{card.title}</p>
-                  <h3 className="text-2xl sm:text-3xl font-black text-white mt-2 mb-1">{card.value}</h3>
+                  <p className="text-xs text-textMuted font-bold uppercase tracking-wider">{card.title}</p>
+                  <h3 className="text-2xl sm:text-3xl font-black text-textMain mt-2 mb-1">{card.value}</h3>
                   <p className="text-[10px] text-emerald-400 font-semibold">{card.change}</p>
                 </div>
               ))}
             </div>
 
             {/* Quick Summary list */}
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
-              <h3 className="text-lg font-black text-white mb-4">Clinic Operations Summary</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
+            <div className="bg-surface border border-borderSoft rounded-2xl p-6 transition-colors duration-500">
+              <h3 className="text-lg font-black text-textMain mb-4">Clinic Operations Summary</h3>
+              <p className="text-sm text-textMuted leading-relaxed">
                 Your clinics are running smoothly. The automated WhatsApp Web reminder service is active and checking upcoming patient slots. All checkup data created by business dashboards dynamically syncs to search portals immediately.
               </p>
             </div>
@@ -243,13 +243,13 @@ const BusinessDashboard = () => {
           <div className="animate-fade-in grid xl:grid-cols-3 gap-8">
             {/* Left 2 Cols: Doctors list */}
             <div className="xl:col-span-2 space-y-6">
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
-                <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2">
+              <div className="bg-surface border border-borderSoft rounded-2xl p-6 transition-colors duration-500">
+                <h3 className="text-lg font-black text-textMain mb-5 flex items-center gap-2">
                   <span>👨‍⚕️ Active Onboarded Doctors</span>
-                  <span className="bg-slate-800 text-slate-300 text-xs px-2.5 py-0.5 rounded-full font-bold">{doctors.length}</span>
+                  <span className="bg-base text-textMuted text-xs px-2.5 py-0.5 rounded-full font-bold transition-colors duration-500">{doctors.length}</span>
                 </h3>
 
-                {loading && <p className="text-sm text-slate-400 animate-pulse">Updating doctor listings...</p>}
+                {loading && <p className="text-sm text-textMuted animate-pulse">Updating doctor listings...</p>}
                 
                 {!loading && doctors.length === 0 ? (
                   <div className="text-center py-10 text-slate-500">
@@ -259,14 +259,14 @@ const BusinessDashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {doctors.map((doc) => (
-                      <div key={doc._id} className="bg-slate-900 border border-slate-800/80 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-700 transition-colors">
+                      <div key={doc._id} className="bg-base border border-borderSoft rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-blue-300 transition-colors duration-500">
                         <div>
-                          <h4 className="font-bold text-white text-base flex items-center gap-2">
+                          <h4 className="font-bold text-textMain text-base flex items-center gap-2">
                             {doc.userId ? doc.userId.name : 'Unknown Doctor'}
                             <span className="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/20">{doc.specialization}</span>
                           </h4>
-                          <p className="text-xs text-slate-400 mt-1">Email: {doc.userId ? doc.userId.email : 'N/A'}</p>
-                          <div className="flex gap-4 mt-2.5 text-xs text-slate-300 font-semibold">
+                          <p className="text-xs text-textMuted mt-1">Email: {doc.userId ? doc.userId.email : 'N/A'}</p>
+                          <div className="flex gap-4 mt-2.5 text-xs text-textMuted font-semibold">
                             <span>💼 Experience: {doc.experience} Years</span>
                             <span>💵 Consultation Fee: ₹{doc.fees}</span>
                           </div>
@@ -275,7 +275,7 @@ const BusinessDashboard = () => {
                           {doc.availability && doc.availability.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-3">
                               {doc.availability.map((s, idx) => (
-                                <span key={idx} className="bg-slate-800 text-[10px] text-slate-400 px-2 py-0.5 rounded border border-slate-700 font-medium">
+                                <span key={idx} className="bg-surface text-[10px] text-textMuted px-2 py-0.5 rounded border border-borderSoft font-medium transition-colors duration-500">
                                   {s.day} ({s.startTime}-{s.endTime})
                                 </span>
                               ))}
@@ -298,53 +298,53 @@ const BusinessDashboard = () => {
 
             {/* Right Col: Onboard doctor form */}
             <div className="xl:col-span-1">
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
-                <h3 className="text-lg font-black text-white mb-5">📋 Onboard New Doctor</h3>
+              <div className="bg-surface border border-borderSoft rounded-2xl p-6 transition-colors duration-500">
+                <h3 className="text-lg font-black text-textMain mb-5">📋 Onboard New Doctor</h3>
                 
                 <form onSubmit={handleSubmitDoctor} className="space-y-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Full Name</label>
+                    <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Full Name</label>
                     <input 
                       type="text" 
                       required
                       placeholder="e.g. Dr. Amit Roy"
                       value={doctorForm.name} 
                       onChange={(e) => setDoctorForm({...doctorForm, name: e.target.value})}
-                      className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                      className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Email Address</label>
+                    <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Email Address</label>
                     <input 
                       type="email" 
                       required
                       placeholder="e.g. doctor@hospital.com"
                       value={doctorForm.email} 
                       onChange={(e) => setDoctorForm({...doctorForm, email: e.target.value})}
-                      className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                      className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Portal Password</label>
+                    <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Portal Password</label>
                     <input 
                       type="password" 
                       required
                       placeholder="At least 6 characters"
                       value={doctorForm.password} 
                       onChange={(e) => setDoctorForm({...doctorForm, password: e.target.value})}
-                      className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                      className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Specialty</label>
+                      <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Specialty</label>
                       <select
                         value={doctorForm.specialization} 
                         onChange={(e) => setDoctorForm({...doctorForm, specialization: e.target.value})}
-                        className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                        className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                       >
                         <option value="General Physician">General Physician</option>
                         <option value="Cardiologist">Cardiologist</option>
@@ -356,34 +356,34 @@ const BusinessDashboard = () => {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Experience (Yrs)</label>
+                      <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Experience (Yrs)</label>
                       <input 
                         type="number" 
                         required
                         placeholder="e.g. 8"
                         value={doctorForm.experience} 
                         onChange={(e) => setDoctorForm({...doctorForm, experience: e.target.value})}
-                        className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                        className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                       />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Consultation Fee (₹)</label>
+                    <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Consultation Fee (₹)</label>
                     <input 
                       type="number" 
                       required
                       placeholder="e.g. 500"
                       value={doctorForm.consultationFee} 
                       onChange={(e) => setDoctorForm({...doctorForm, consultationFee: e.target.value})}
-                      className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                      className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                     />
                   </div>
 
                   {/* Availability Slots Builder */}
-                  <div className="border-t border-slate-800 pt-4 space-y-3">
+                  <div className="border-t border-borderSoft pt-4 space-y-3 transition-colors duration-500">
                     <div className="flex justify-between items-center">
-                      <label className="text-xs text-slate-300 font-bold uppercase tracking-wider">Working Shifts</label>
+                      <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Working Shifts</label>
                       <button 
                         type="button" 
                         onClick={handleAddSlot}
@@ -394,7 +394,7 @@ const BusinessDashboard = () => {
                     </div>
 
                     {doctorForm.slots.map((s, idx) => (
-                      <div key={idx} className="bg-slate-900 p-3 rounded-lg border border-slate-850 space-y-2 relative">
+                      <div key={idx} className="bg-base p-3 rounded-lg border border-borderSoft space-y-2 relative transition-colors duration-500">
                         {doctorForm.slots.length > 1 && (
                           <button 
                             type="button" 
@@ -408,7 +408,7 @@ const BusinessDashboard = () => {
                           <select 
                             value={s.day} 
                             onChange={(e) => handleSlotChange(idx, 'day', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-xs text-slate-300 p-1.5 rounded"
+                            className="bg-surface border border-borderSoft text-xs text-textMain p-1.5 rounded transition-colors duration-500"
                           >
                             {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
                               <option key={d} value={d}>{d}</option>
@@ -419,14 +419,14 @@ const BusinessDashboard = () => {
                             placeholder="09:00"
                             value={s.startTime}
                             onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-xs text-center text-slate-300 p-1.5 rounded"
+                            className="bg-surface border border-borderSoft text-xs text-center text-textMain p-1.5 rounded transition-colors duration-500"
                           />
                           <input 
                             type="text" 
                             placeholder="13:00"
                             value={s.endTime}
                             onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-xs text-center text-slate-300 p-1.5 rounded"
+                            className="bg-surface border border-borderSoft text-xs text-center text-textMain p-1.5 rounded transition-colors duration-500"
                           />
                         </div>
                       </div>

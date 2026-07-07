@@ -69,10 +69,10 @@ const LoginPage = () => {
     width: '100%', 
     padding: fieldName === 'password' ? '12px 45px 12px 16px' : '12px 16px', // Extra right padding for password eye icon
     marginTop: '6px',
-    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid #cbd5e1', 
+    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid var(--border-soft)', 
     borderRadius: '8px',
-    backgroundColor: '#ffffff', 
-    color: '#0f172a', 
+    backgroundColor: 'var(--surface)', 
+    color: 'var(--text-main)', 
     fontSize: '14px',
     outline: 'none',
     boxSizing: 'border-box',
@@ -98,9 +98,9 @@ const LoginPage = () => {
         width: '100%',
         maxWidth: '440px', 
         padding: '40px 36px', 
-        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        border: '1px solid var(--border-glass)', 
         borderRadius: '20px',
-        backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+        backgroundColor: 'var(--surface-card)', 
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
@@ -112,11 +112,11 @@ const LoginPage = () => {
         <Link 
           to="/" 
           style={{
-            position: 'absolute', top: '26px', left: '26px', color: '#475569', 
+            position: 'absolute', top: '26px', left: '26px', color: 'var(--text-muted)', 
             display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s, color 0.2s'
           }}
           onMouseOver={(e) => { e.currentTarget.style.color = '#2563eb'; e.currentTarget.style.transform = 'translateX(-3px)'; }}
-          onMouseOut={(e) => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.transform = 'translateX(0)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'translateX(0)'; }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="21" y1="12" x2="3" y2="12"></line>
@@ -124,19 +124,19 @@ const LoginPage = () => {
           </svg>
         </Link>
 
-        <h2 style={{ textAlign: 'center', marginBottom: '6px', color: '#0f172a', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.025em', marginTop: '16px' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '6px', color: 'var(--text-main)', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.025em', marginTop: '16px' }}>
           Welcome Back
         </h2>
-        <p style={{ textAlign: 'center', color: '#475569', fontSize: '14px', marginTop: '0', marginBottom: '24px', fontWeight: '400' }}>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', marginTop: '0', marginBottom: '24px', fontWeight: '400' }}>
           Please sign in to your FlexiBook account
         </p>
 
         {/* Toggle Tab Switcher */}
-        <div style={{ display: 'flex', backgroundColor: 'rgba(15, 23, 42, 0.08)', padding: '4px', borderRadius: '10px', marginBottom: '24px' }}>
-          <button type="button" onClick={() => setLoginMode('email')} style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s ease', backgroundColor: loginMode === 'email' ? '#ffffff' : 'transparent', color: loginMode === 'email' ? '#0f172a' : '#64748b', boxShadow: loginMode === 'email' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+        <div style={{ display: 'flex', backgroundColor: 'var(--hover-bg)', padding: '4px', borderRadius: '10px', marginBottom: '24px' }}>
+          <button type="button" onClick={() => setLoginMode('email')} style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s ease', backgroundColor: loginMode === 'email' ? 'var(--surface)' : 'transparent', color: loginMode === 'email' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: loginMode === 'email' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
             Email Address
           </button>
-          <button type="button" onClick={() => setLoginMode('phone')} style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s ease', backgroundColor: loginMode === 'phone' ? '#ffffff' : 'transparent', color: loginMode === 'phone' ? '#0f172a' : '#64748b', boxShadow: loginMode === 'phone' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+          <button type="button" onClick={() => setLoginMode('phone')} style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s ease', backgroundColor: loginMode === 'phone' ? 'var(--surface)' : 'transparent', color: loginMode === 'phone' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: loginMode === 'phone' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
             Phone Number
           </button>
         </div>
@@ -151,7 +151,7 @@ const LoginPage = () => {
         <form onSubmit={onSubmit}>
           {loginMode === 'email' ? (
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Email Address</label>
+              <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Email Address</label>
               <input 
                 ref={emailRef}
                 type="email" name="email" value={email} onChange={onChange} 
@@ -161,7 +161,7 @@ const LoginPage = () => {
             </div>
           ) : (
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Phone Number</label>
+              <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Phone Number</label>
               <input 
                 ref={phoneRef}
                 type="tel" name="phone" value={phone} onChange={onChange} 
@@ -173,7 +173,7 @@ const LoginPage = () => {
 
           {/* Password Field with View/Hide Mask Toggle */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Password</label>
+            <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Password</label>
             <div style={{ position: 'relative', width: '100%' }}>
               <input 
                 type={showPassword ? "text" : "password"} 
@@ -202,7 +202,7 @@ const LoginPage = () => {
 
           {/* Remember Me & Forgot Password Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', fontSize: '14px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', cursor: 'pointer', fontWeight: '500' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: '500' }}>
               <input 
                 type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
                 style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
@@ -219,7 +219,7 @@ const LoginPage = () => {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '28px', fontSize: '14px', color: '#64748b' }}>
+        <div style={{ textAlign: 'center', marginTop: '28px', fontSize: '14px', color: 'var(--text-muted)' }}>
           Don't have an account?{' '}
           <Link to="/business-register" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }} onMouseOver={(e) => e.target.style.textDecoration = 'underline'} onMouseOut={(e) => e.target.style.textDecoration = 'none'}>
             Sign Up

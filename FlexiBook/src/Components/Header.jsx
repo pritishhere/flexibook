@@ -1,7 +1,6 @@
-// src/components/Header.jsx
-import { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import React from 'react';
+import { ThemeContext } from '../ThemeContext';
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,6 +54,7 @@ export const Header = () => {
 
         {/* 3. AUTH BUTTONS */}
         <div className="hidden lg:flex flex-1 justify-end items-center gap-3 xl:gap-5 pr-2 sm:pr-4">
+          <ThemeSlider />
           <Link to="/login" className={getDesktopLinkStyle('/login')}>
             <button className="text-sm xl:text-base font-semibold text-gray-800 hover:text-blue-600 transition-colors">
               Login
@@ -101,6 +101,10 @@ export const Header = () => {
             About Us
           </Link>
           <hr className="border-gray-100 my-2" />
+          
+          <div className="flex justify-center my-1">
+            <ThemeSlider />
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link to="/login" onClick={() => setIsOpen(false)} className="w-full">
@@ -118,5 +122,42 @@ export const Header = () => {
         </div>
       )}
     </header>
+  );
+};
+
+const ThemeSlider = () => {
+  const { isDarkMode, setDark, setLight } = useContext(ThemeContext);
+
+  return (
+    <div className="relative flex items-center bg-base rounded-full p-1 w-44 h-12 shadow-inner border border-borderSoft transition-colors duration-500">
+      
+      {/* 🔴 THE SLIDING PILL */}
+      <div 
+        className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-surface rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${
+          isDarkMode ? 'translate-x-[100%]' : 'translate-x-0'
+        }`}
+      ></div>
+
+      {/* ☀️ LIGHT BUTTON */}
+      <button 
+        onClick={setLight}
+        className={`flex-1 flex justify-center items-center z-10 transition-colors duration-500 font-bold text-sm outline-none ${
+          !isDarkMode ? 'text-brand' : 'text-textMuted hover:text-textMain'
+        }`}
+      >
+        <span className="mr-2 text-lg">☀️</span> Light
+      </button>
+
+      {/* 🌙 DARK BUTTON */}
+      <button 
+        onClick={setDark}
+        className={`flex-1 flex justify-center items-center z-10 transition-colors duration-500 font-bold text-sm outline-none ${
+          isDarkMode ? 'text-emerald-400' : 'text-textMuted hover:text-textMain'
+        }`}
+      >
+        <span className="mr-2 text-lg">🌙</span> Dark
+      </button>
+
+    </div>
   );
 };

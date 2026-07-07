@@ -147,62 +147,59 @@ const HomePage = () => {
           position: absolute;
           border-radius: 50%;
           filter: blur(80px);
-          opacity: 0.6;
           animation: float 20s infinite ease-in-out alternate;
         }
-        .orb-1 { width: 600px; height: 600px; background: rgba(59, 130, 246, 0.3); top: -200px; left: -100px; }
-        .orb-2 { width: 500px; height: 500px; background: rgba(16, 185, 129, 0.2); bottom: -100px; right: -100px; animation-delay: -5s; }
-        .orb-3 { width: 400px; height: 400px; background: rgba(99, 102, 241, 0.2); top: 30%; left: 40%; animation-delay: -10s; }
+        /* 🔥 FIX 1: Orb ko niche kiya (top: 0px) aur opacity kam ki taaki header line se na takraye */
+        .orb-1 { width: 600px; height: 600px; background: rgba(59, 130, 246, 0.15); top: 0px; left: -100px; opacity: 0.8; }
+        .orb-2 { width: 500px; height: 500px; background: rgba(16, 185, 129, 0.2); bottom: -100px; right: -100px; animation-delay: -5s; opacity: 0.6; }
+        .orb-3 { width: 400px; height: 400px; background: rgba(99, 102, 241, 0.2); top: 30%; left: 40%; animation-delay: -10s; opacity: 0.6; }
         
         @keyframes float {
           0% { transform: translate(0, 0) scale(1); }
           100% { transform: translate(100px, 150px) scale(1.2); }
         }
 
-        /* Glass Section Container */
+        /* 🔥 FIX 2: Glass Section Container ko ekdum smooth blend kar diya */
         .ultra-glass {
-          background: var(--ultra-glass-bg);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border-top: 1px solid var(--border-glass);
-          box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.02);
+          /* Backdrop blur hata kar smooth gradient lagaya jisse harsh line gayab ho jayegi */
+          background: linear-gradient(to bottom, rgba(248, 250, 252, 0) 0%, rgba(248, 250, 252, 0.9) 15%, rgba(248, 250, 252, 1) 100%);
         }
 
         /* Floating Command Center */
         .command-center {
-          background: var(--surface) !important;
+          background: #ffffff !important;
           border-radius: 24px;
           box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02), inset 0 2px 4px rgba(255,255,255,1);
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
         }
         .command-center input {
-          color: var(--text-main) !important;
+          color: #0f172a !important;
           background: transparent !important;
         }
         .command-center input::placeholder {
-          color: var(--text-muted) !important;
+          color: #64748b !important;
           opacity: 0.8;
         }
         .command-center .input-group:hover {
-          background: var(--hover-bg) !important;
+          background: #f8fafc !important;
         }
         .command-center .dropdown-card {
-          background: var(--surface) !important;
-          border: 1px solid var(--border-soft) !important;
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
         }
         .command-center .dropdown-item {
-          color: var(--text-main) !important;
+          color: #0f172a !important;
         }
         .command-center .dropdown-item:hover {
-          background: var(--hover-bg) !important;
+          background: #f8fafc !important;
         }
         .command-center .dropdown-item p {
-          color: var(--text-main) !important;
+          color: #0f172a !important;
         }
         .command-center .dropdown-item p.text-slate-500,
         .command-center .dropdown-item p.text-slate-400 {
-          color: var(--text-muted) !important;
+          color: #64748b !important;
         }
         .command-center::before {
           content: '';
@@ -244,7 +241,7 @@ const HomePage = () => {
         /* Hero Premium Cards */
         .premium-card {
           position: relative;
-          background: var(--surface-card);
+          background: rgba(255, 255, 255, 0.8);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-radius: 20px;
@@ -271,7 +268,7 @@ const HomePage = () => {
         .icon-box { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .premium-card:hover .icon-box { transform: scale(1.12) rotate(5deg); }
 
-        /* ================= 🔴 NEW: PREMIUM SAAS BENTO CARDS (Why Choose Us) ================= */
+        /* ================= 🔴 PREMIUM SAAS BENTO CARDS (Why Choose Us) ================= */
         .bento-premium {
           position: relative;
           background: rgba(255, 255, 255, 0.65);
@@ -286,7 +283,6 @@ const HomePage = () => {
           z-index: 1;
         }
         
-        /* Glass Sweep on Hover */
         .bento-premium::before {
           content: '';
           position: absolute;
@@ -301,7 +297,6 @@ const HomePage = () => {
           left: 150%;
         }
 
-        /* Dynamic Colored Shadows based on Theme */
         .bento-premium:hover {
           transform: translateY(-8px);
           background: rgba(255, 255, 255, 0.95);
@@ -311,13 +306,12 @@ const HomePage = () => {
         .bento-premium.orange:hover { border-color: rgba(249, 115, 22, 0.3); box-shadow: 0 20px 40px -15px rgba(249, 115, 22, 0.15), inset 0 0 0 1px #fff; }
         .bento-premium.purple:hover { border-color: rgba(168, 85, 247, 0.3); box-shadow: 0 20px 40px -15px rgba(168, 85, 247, 0.15), inset 0 0 0 1px #fff; }
 
-        /* Smooth Icon Pop */
         .bento-icon-box {
           transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .bento-premium:hover .bento-icon-box {
           transform: scale(1.15);
-          box-shadow: 0 10px 25px -5px currentColor; /* Creates a glow of the icon's color */
+          box-shadow: 0 10px 25px -5px currentColor;
         }
       `}</style>
 
@@ -326,7 +320,9 @@ const HomePage = () => {
         className="fixed inset-0 w-full h-full bg-cover bg-no-repeat bg-[center_right_-15rem] lg:bg-center -z-10 pointer-events-none"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/90 md:via-[#f8fafc]/80 to-transparent"></div>
+        {/* 🔥 FIX 3: from-[#f8fafc] ko from-white kar diya aur upar ek top-fade laga diya jisse header perfectly blend hoga! */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 md:via-white/80 to-transparent"></div>
+        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-white to-transparent"></div>
       </div>
 
       {/* ================= BACKGROUND AURORA MESH ================= */}
@@ -352,12 +348,12 @@ const HomePage = () => {
             </div>
             
             {/* Monumental Title */}
-            <h1 className="reveal-2 text-5xl sm:text-6xl md:text-7xl lg:text-[5rem] font-black text-textMain tracking-tighter mb-5 leading-[1.05]">
+            <h1 className="reveal-2 text-5xl sm:text-6xl md:text-7xl lg:text-[5rem] font-black text-slate-900 tracking-tighter mb-5 leading-[1.05]">
               Book Anything. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500">Wait For Nothing.</span>
             </h1>
             
-            <p className="reveal-2 text-base sm:text-lg text-textMuted mb-10 max-w-lg leading-relaxed font-medium">
+            <p className="reveal-2 text-base sm:text-lg text-slate-600 mb-10 max-w-lg leading-relaxed font-medium">
               Join millions experiencing the future of queue management. Smart, instant, and effortlessly beautiful.
             </p>
 
@@ -378,7 +374,7 @@ const HomePage = () => {
                   type="text" value={searchQuery} onChange={handleServiceChange}
                   onFocus={() => setShowServiceDropdown(true)} onBlur={() => setTimeout(() => setShowServiceDropdown(false), 200)}
                   placeholder="What service do you need?" 
-                  className="w-full outline-none text-textMain bg-transparent text-sm sm:text-base font-semibold placeholder:text-textMuted" autoComplete="off"
+                  className="w-full outline-none text-slate-900 bg-transparent text-sm sm:text-base font-semibold placeholder:text-slate-500" autoComplete="off"
                 />
                 
                 {showServiceDropdown && searchQuery.trim().length > 0 && (
@@ -421,7 +417,7 @@ const HomePage = () => {
                   type="text" value={locationQuery} onChange={handleLocationChange}
                   onFocus={() => setShowLocationDropdown(true)} onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
                   placeholder="Where? (e.g. City)" 
-                  className="w-full outline-none text-textMain bg-transparent text-sm sm:text-base font-semibold placeholder:text-textMuted" autoComplete="off"
+                  className="w-full outline-none text-slate-900 bg-transparent text-sm sm:text-base font-semibold placeholder:text-slate-500" autoComplete="off"
                 />
 
                 <button type="button" onClick={handleDetectLocation} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 p-1.5 rounded-lg transition-all duration-300" title="Detect Location">
@@ -450,8 +446,8 @@ const HomePage = () => {
                             <li key={idx} onMouseDown={() => { setLocationQuery(`${addressParts[0]}, ${addressParts.slice(1, 3).join(", ")}`); setShowLocationDropdown(false); }} className="dropdown-item px-4 py-2 hover:bg-white/80 rounded-xl cursor-pointer flex items-start gap-3 transition-colors group">
                               <span className="text-slate-300 mt-0.5 group-hover:text-emerald-500 transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
                               <div>
-                                <p className="text-textMain font-bold text-sm">{addressParts[0]}</p>
-                                <p className="text-textMuted text-[11px] mt-0.5 font-medium">{addressParts.slice(1, 3).join(", ")}</p>
+                                <p className="text-slate-900 font-bold text-sm">{addressParts[0]}</p>
+                                <p className="text-slate-500 text-[11px] mt-0.5 font-medium">{addressParts.slice(1, 3).join(", ")}</p>
                               </div>
                             </li>
                           )
@@ -480,9 +476,9 @@ const HomePage = () => {
                 <div className="icon-box w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 text-blue-600 rounded-[14px] flex items-center justify-center shrink-0 text-2xl mb-4 shadow-inner relative z-10">
                   👤
                 </div>
-                <h4 className="font-black text-textMain text-xl mb-2 group-hover:text-blue-600 transition-colors relative z-10">I'm a Customer</h4>
-                <p className="text-sm text-textMuted mb-5 font-medium leading-relaxed relative z-10">Book elite appointments or join live queues instantly with zero wait times.</p>
-                <div className="flex items-center text-xs font-bold text-textMain group-hover:text-blue-600 transition-colors bg-surface w-fit px-4 py-2 rounded-full border border-borderSoft group-hover:border-blue-300 relative z-10">
+                <h4 className="font-black text-slate-900 text-xl mb-2 group-hover:text-blue-600 transition-colors relative z-10">I'm a Customer</h4>
+                <p className="text-sm text-slate-600 mb-5 font-medium leading-relaxed relative z-10">Book elite appointments or join live queues instantly with zero wait times.</p>
+                <div className="flex items-center text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors bg-white w-fit px-4 py-2 rounded-full border border-gray-200 group-hover:border-blue-300 relative z-10">
                   Get Started <span className="ml-2 group-hover:translate-x-1.5 transition-transform duration-300 text-sm">🚀</span>
                 </div>
               </div>
@@ -494,9 +490,9 @@ const HomePage = () => {
                 <div className="icon-box w-12 h-12 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 text-emerald-600 rounded-[14px] flex items-center justify-center shrink-0 text-2xl mb-4 shadow-inner relative z-10">
                   🏪
                 </div>
-                <h4 className="font-black text-textMain text-xl mb-2 group-hover:text-emerald-600 transition-colors relative z-10">Business Owner</h4>
-                <p className="text-sm text-textMuted mb-5 font-medium leading-relaxed relative z-10">Manage appointments and scale your operations beautifully with smart tools.</p>
-                <div className="flex items-center text-xs font-bold text-textMain group-hover:text-emerald-600 transition-colors bg-surface w-fit px-4 py-2 rounded-full border border-borderSoft group-hover:border-emerald-300 relative z-10">
+                <h4 className="font-black text-slate-900 text-xl mb-2 group-hover:text-emerald-600 transition-colors relative z-10">Business Owner</h4>
+                <p className="text-sm text-slate-600 mb-5 font-medium leading-relaxed relative z-10">Manage appointments and scale your operations beautifully with smart tools.</p>
+                <div className="flex items-center text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors bg-white w-fit px-4 py-2 rounded-full border border-gray-200 group-hover:border-emerald-300 relative z-10">
                   Register Now <span className="ml-2 group-hover:translate-x-1.5 transition-transform duration-300 text-sm">✨</span>
                 </div>
               </div>
@@ -514,8 +510,8 @@ const HomePage = () => {
           {/* Header Area with Trust Badges */}
           <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-textMain mb-4 tracking-tight drop-shadow-sm">Why Choose Us?</h2>
-              <p className="text-textMuted max-w-xl text-lg font-medium">A modern solution designed to save time for you and your business.</p>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-4 tracking-tight drop-shadow-sm">Why Choose Us?</h2>
+              <p className="text-slate-600 max-w-xl text-lg font-medium">A modern solution designed to save time for you and your business.</p>
             </div>
             
             {/* Elegant Floating Badges */}

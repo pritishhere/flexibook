@@ -1,30 +1,26 @@
 // src/components/Header.jsx
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import React, { useContext } from 'react';
-import { ThemeContext } from '../ThemeContext';
-
+import React from 'react';
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation(); // Ye detect karega ki aap kis URL par hain
+  const location = useLocation(); 
 
-  // Ek chota sa function jo check karega ki link active hai ya nahi
   const getDesktopLinkStyle = (path) => {
     return location.pathname === path
-      ? "text-sm xl:text-base font-bold text-blue-600 border-b-2 border-blue-600 pb-1" // Active Style (Blue aur neeche ek line)
-      : "text-sm xl:text-base font-medium text-textMuted hover:text-blue-600 transition-colors duration-200"; // Normal Style
+      ? "text-sm xl:text-base font-bold text-blue-600 border-b-2 border-blue-600 pb-1" 
+      : "text-sm xl:text-base font-medium text-gray-600 hover:text-blue-600 transition-colors duration-200"; 
   };
 
   const getMobileLinkStyle = (path) => {
     return location.pathname === path
-      ? "text-base font-bold text-blue-600 py-2" // Active Style Mobile
-      : "text-base font-medium text-textMuted py-2"; // Normal Style Mobile
+      ? "text-base font-bold text-blue-600 py-2" 
+      : "text-base font-medium text-gray-600 py-2"; 
   }; 
   
-
   return (
-    <header className={"w-full bg-surface/95 backdrop-blur-md border-b border-borderSoft sticky top-0 z-50 shadow-sm transition-colors duration-500 "}>
+    <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm transition-colors duration-500">
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-20 md:h-24 flex items-center justify-between">
         
         {/* 1. LOGO SECTION */}
@@ -38,7 +34,7 @@ export const Header = () => {
           </Link>
         </div>
 
-        {/* 2. NAVIGATION LINKS - Dynamic styling ke saath */}
+        {/* 2. NAVIGATION LINKS */}
         <nav className="flex-none hidden lg:flex items-center justify-center gap-6 xl:gap-10 mt-1">
           <Link to="/" className={getDesktopLinkStyle('/')}>
             Home
@@ -59,17 +55,12 @@ export const Header = () => {
 
         {/* 3. AUTH BUTTONS */}
         <div className="hidden lg:flex flex-1 justify-end items-center gap-3 xl:gap-5 pr-2 sm:pr-4">
-          {/* Theme Slider */}
-          <ThemeSlider />
-          
-          {/* Linked Desktop Login Button */}
           <Link to="/login" className={getDesktopLinkStyle('/login')}>
-            <button className="text-sm xl:text-base font-semibold text-textMain hover:text-blue-600 transition-colors">
+            <button className="text-sm xl:text-base font-semibold text-gray-800 hover:text-blue-600 transition-colors">
               Login
             </button>
           </Link>
           
-          {/* FIXED: Wrapped Desktop Sign Up Button in a Link to /business-register */}
           <Link to="/business-register">
             <button className="text-sm xl:text-base font-semibold bg-blue-600 text-white px-5 xl:px-7 py-2 xl:py-2.5 rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-200">
               Sign Up
@@ -93,7 +84,7 @@ export const Header = () => {
 
       {/* MOBILE DROPDOWN MENU */}
       {isOpen && (
-        <div className="lg:hidden bg-surface border-t border-borderSoft px-6 py-6 flex flex-col gap-4 shadow-inner">
+        <div className="lg:hidden bg-white border-t border-gray-100 px-6 py-6 flex flex-col gap-4 shadow-inner">
           <Link to="/" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/')}>
             Home
           </Link>
@@ -110,21 +101,14 @@ export const Header = () => {
             About Us
           </Link>
           <hr className="border-gray-100 my-2" />
-          
-          {/* Theme Slider for mobile view */}
-          <div className="flex justify-center my-1">
-            <ThemeSlider />
-          </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Linked Mobile Login Button */}
             <Link to="/login" onClick={() => setIsOpen(false)} className="w-full">
-              <button className="w-full text-center text-base font-semibold text-textMain py-3 border border-borderSoft rounded-lg">
+              <button className="w-full text-center text-base font-semibold text-gray-800 py-3 border border-gray-200 rounded-lg">
                 Login
               </button>
             </Link>
             
-            {/* FIXED: Wrapped Mobile Sign Up Button in a Link and close dropdown on click */}
             <Link to="/business-register" onClick={() => setIsOpen(false)} className="w-full">
               <button className="w-full text-center text-base font-semibold bg-blue-600 text-white py-3 rounded-lg">
                 Sign Up

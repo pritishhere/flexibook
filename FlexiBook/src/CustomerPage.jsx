@@ -14,6 +14,28 @@ const HEALTHCARE_TIME_SLOTS = [
   '02:00 PM - 03:00 PM',
   '04:00 PM - 05:00 PM'
 ];
+const MONGO_OBJECT_ID_REGEX = /^[a-f0-9]{24}/i;
+const DEFAULT_DETAIL_PROFILE = {
+  status: 'idle',
+  hospital: null,
+  doctors: [],
+  departments: [],
+  services: [],
+  reviews: [],
+  serverMatched: false,
+  error: ''
+};
+const HOSPITAL_GALLERY_FALLBACKS = [
+  'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1538108149393-cefb617ce8ce?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=900&q=80'
+];
+const DOCTOR_PHOTO_FALLBACKS = [
+  'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=150&q=80',
+  'https://images.unsplash.com/photo-1594824436951-7f12bcce0a52?auto=format&fit=crop&w=150&q=80',
+  'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=150&q=80',
+  'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=150&q=80'
+];
 
 const getLocalDateInputValue = (offsetDays = 0) => {
   const date = new Date();
@@ -25,6 +47,50 @@ const getLocalDateInputValue = (offsetDays = 0) => {
 const getBookingDateOffset = (service = {}) => {
   const nextAvailable = service.nextAvailable?.toLowerCase() || '';
   return service.availabilityStatus === 'Available Tomorrow' || nextAvailable.includes('tomorrow') ? 1 : 0;
+};
+
+const normalizeLookupValue = (value = '') => value
+  .toString()
+  .toLowerCase()
+  .replace(/&/g, 'and')
+  .replace(/[^a-z0-9]/g, '');
+
+const fetchApiData = async (path, signal) => {
+  const response = await fetch(API_BASE_URL + path, { signal });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data.message || data.error || 'Unable to load server details.');
+  }
+
+  return data.data ?? [];
+};
+
+const resolveBackendHospitalId = async (service, signal) => {
+  const serviceId = String(service.id || '');
+  if (serviceId.length === 24 && MONGO_OBJECT_ID_REGEX.test(serviceId)) {
+    return service.id;
+  }
+
+  const cityQuery = service.location ? '?city=' + encodeURIComponent(service.location) : '';
+  const hospitals = await fetchApiData('/hospitals' + cityQuery, signal);
+  const hospitalList = Array.isArray(hospitals) ? hospitals : [];
+  const targetName = normalizeLookupValue(service.name);
+  const targetCity = normalizeLookupValue(service.location);
+  const exactMatch = hospitalList.find((hospital) => {
+    const hospitalName = normalizeLookupValue(hospital.name);
+    const hospitalCity = normalizeLookupValue(hospital.city);
+    return hospitalName === targetName && (!targetCity || hospitalCity === targetCity);
+  });
+
+  if (exactMatch?._id) return exactMatch._id;
+
+  const looseMatch = hospitalList.find((hospital) => {
+    const hospitalName = normalizeLookupValue(hospital.name);
+    return hospitalName.includes(targetName) || targetName.includes(hospitalName);
+  });
+
+  return looseMatch?._id || null;
 };
 
 const createInitialBookingForm = (service = {}) => ({
@@ -81,6 +147,7 @@ const CustomerPage = () => {
   const [bookingService, setBookingService] = useState(null);
   const [bookingForm, setBookingForm] = useState(() => createInitialBookingForm());
   const [bookingStatus, setBookingStatus] = useState({ state: 'idle', message: '', tokenNumber: null });
+  const [detailProfile, setDetailProfile] = useState(DEFAULT_DETAIL_PROFILE);
   const activeSelectedCategories = selectedCategories.length > 0
     ? selectedCategories
     : matchedQueryCategory ? [matchedQueryCategory] : [];
@@ -168,6 +235,73 @@ const CustomerPage = () => {
   }, [activeDetailPage]);
 
   const isHealthcareService = (service) => service?.category?.toLowerCase().includes('healthcare');
+
+  useEffect(() => {
+    if (!activeDetailPage || !isHealthcareService(activeDetailPage)) {
+      setDetailProfile(DEFAULT_DETAIL_PROFILE);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const loadHospitalProfile = async () => {
+      setDetailProfile({ ...DEFAULT_DETAIL_PROFILE, status: 'loading' });
+
+      try {
+        const hospitalId = await resolveBackendHospitalId(activeDetailPage, controller.signal);
+
+        if (!hospitalId) {
+          if (isMounted) {
+            setDetailProfile({
+              ...DEFAULT_DETAIL_PROFILE,
+              status: 'fallback',
+              error: 'No matching backend hospital was found for this card.'
+            });
+          }
+          return;
+        }
+
+        const [hospitalResult, doctorsResult, departmentsResult, servicesResult, reviewsResult] = await Promise.allSettled([
+          fetchApiData('/hospitals/' + hospitalId, controller.signal),
+          fetchApiData('/doctors?hospitalId=' + encodeURIComponent(hospitalId), controller.signal),
+          fetchApiData('/departments?hospitalId=' + encodeURIComponent(hospitalId), controller.signal),
+          fetchApiData('/services?hospitalId=' + encodeURIComponent(hospitalId), controller.signal),
+          fetchApiData('/reviews?hospitalId=' + encodeURIComponent(hospitalId), controller.signal)
+        ]);
+
+        if (!isMounted) return;
+
+        setDetailProfile({
+          status: 'success',
+          hospital: hospitalResult.status === 'fulfilled' ? hospitalResult.value : null,
+          doctors: doctorsResult.status === 'fulfilled' && Array.isArray(doctorsResult.value) ? doctorsResult.value : [],
+          departments: departmentsResult.status === 'fulfilled' && Array.isArray(departmentsResult.value) ? departmentsResult.value : [],
+          services: servicesResult.status === 'fulfilled' && Array.isArray(servicesResult.value) ? servicesResult.value : [],
+          reviews: reviewsResult.status === 'fulfilled' && Array.isArray(reviewsResult.value) ? reviewsResult.value : [],
+          serverMatched: true,
+          error: ''
+        });
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+
+        if (isMounted) {
+          setDetailProfile({
+            ...DEFAULT_DETAIL_PROFILE,
+            status: 'fallback',
+            error: error.message || 'Unable to load backend hospital details.'
+          });
+        }
+      }
+    };
+
+    loadHospitalProfile();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [activeDetailPage]);
 
   const handleBookingOpen = (service) => {
     if (!isHealthcareService(service) || service.availabilityStatus === 'Fully Booked') return;
@@ -806,6 +940,359 @@ const CustomerPage = () => {
     );
   };
 
+  const renderHealthcareDetailPage = (s, galleryImg2, galleryImg3, relatedFacilities) => {
+    const hospital = detailProfile.hospital || {};
+    const hospitalName = hospital.name || s.name;
+    const hospitalCity = hospital.city || s.location;
+    const hospitalAddress = hospital.address || hospitalCity + ' India, 110029';
+    const contactNumber = hospital.contactNumber || '+91-98765 43210';
+    const hospitalImages = [
+      s.image,
+      ...(Array.isArray(hospital.images) ? hospital.images : []),
+      galleryImg2,
+      galleryImg3,
+      ...HOSPITAL_GALLERY_FALLBACKS
+    ].filter(Boolean);
+    const mainImage = hospitalImages[0];
+    const sideImageOne = hospitalImages[1] || mainImage;
+    const sideImageTwo = hospitalImages[2] || mainImage;
+    const backendDoctors = Array.isArray(detailProfile.doctors) ? detailProfile.doctors : [];
+    const fallbackTeam = getDynamicTeam(s.category);
+    const doctorCards = backendDoctors.length > 0
+      ? backendDoctors.map((doctor, index) => ({
+          id: doctor._id || index,
+          name: doctor.userId?.name || 'Dr. ' + hospitalName + ' Care Team',
+          title: doctor.specialization || 'General Medicine',
+          rating: '4.8',
+          ratingsCount: '512 patient ratings',
+          exp: doctor.experience ? doctor.experience + ' years of experience' : 'Experienced consultant',
+          desc: (doctor.qualification ? doctor.qualification + '. ' : '') + 'Available for consultations, procedures, and patient care.',
+          image: doctor.photo || DOCTOR_PHOTO_FALLBACKS[index % DOCTOR_PHOTO_FALLBACKS.length],
+          tags: [doctor.specialization || 'Healthcare', doctor.fees ? 'Fee ₹' + doctor.fees : 'Consultation'].filter(Boolean)
+        }))
+      : fallbackTeam.map((doctor, index) => ({
+          id: index,
+          name: doctor.name,
+          title: doctor.title,
+          rating: '4.8',
+          ratingsCount: '512 patient ratings',
+          exp: doctor.exp,
+          desc: doctor.desc,
+          image: doctor.image,
+          tags: ['Govt Hospital', 'Sub-specialties']
+        }));
+    const departmentCards = detailProfile.departments.length > 0
+      ? detailProfile.departments.map((dept) => ({
+          id: dept._id || dept.name,
+          name: dept.name,
+          desc: dept.description || 'Specialized care department',
+          active: dept.isActive !== false
+        }))
+      : ['General Medicine', 'Emergency', 'Cardiology', 'Diagnostics'].map((name, index) => ({
+          id: name,
+          name,
+          desc: index === 1 ? 'Fast triage and urgent care support' : 'Specialized care and consultation support',
+          active: true
+        }));
+    const serviceCards = detailProfile.services.length > 0
+      ? detailProfile.services.map((service) => ({
+          id: service._id || service.name,
+          name: service.name,
+          desc: service.description || 'Hospital service',
+          price: service.price !== undefined ? '₹' + service.price : s.price,
+          duration: service.duration ? service.duration + ' min' : 'On request'
+        }))
+      : (s.tags || []).map((tag) => ({
+          id: tag,
+          name: tag,
+          desc: 'Available through ' + hospitalName,
+          price: s.price,
+          duration: 'On request'
+        }));
+    const reviewCards = detailProfile.reviews.length > 0
+      ? detailProfile.reviews.map((review) => {
+          const createdAt = review.createdAt ? new Date(review.createdAt) : null;
+          const reviewDate = createdAt && !Number.isNaN(createdAt.getTime())
+            ? createdAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+            : 'Recent visit';
+
+          return {
+            id: review._id || review.comment,
+            name: review.userId?.name || 'Verified patient',
+            date: reviewDate,
+            rating: review.rating || 5,
+            text: review.comment || 'Good experience with the hospital team.'
+          };
+        })
+      : [
+          { id: 'fallback-review-1', name: 'Rahul Sharma', date: '2 days ago', rating: 5, text: 'Excellent service. The staff was polite and the facility was clean.' },
+          { id: 'fallback-review-2', name: 'Priya Patel', date: '1 week ago', rating: 5, text: 'Booked through FlexiBook and the visit felt much smoother than waiting in line.' }
+        ];
+    const detailTabs = [
+      { id: 'overview', label: 'Overview' },
+      { id: 'departments', label: 'Departments' },
+      { id: 'doctors', label: 'Doctors' },
+      { id: 'reviews', label: 'Patient Reviews' }
+    ];
+    const reviewBars = [
+      { label: '24.5k', width: '88%' },
+      { label: '20.5k', width: '74%' },
+      { label: '15k', width: '52%' },
+      { label: '8k', width: '34%' }
+    ];
+    const isFullyBooked = s.availabilityStatus === 'Fully Booked';
+
+    return (
+      <div className='min-h-screen bg-slate-100 pb-12 font-sans animate-fade-in'>
+        <div className='bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-40 shadow-sm'>
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 text-sm'>
+            <button onClick={() => setActiveDetailPage(null)} className='text-blue-600 font-semibold hover:underline flex items-center gap-1'>
+              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M15 19l-7-7 7-7'></path></svg>
+              Back to Search
+            </button>
+            <span className='text-slate-300'>/</span>
+            <span className='text-slate-500'>For Customers</span>
+            <span className='text-slate-300'>/</span>
+            <span className='font-bold text-slate-900 truncate'>{hospitalName}, {hospitalCity}</span>
+            {detailProfile.status === 'loading' && <span className='ml-auto text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full'>Loading server details</span>}
+            {detailProfile.status === 'fallback' && <span className='ml-auto text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-1 rounded-full'>Preview details</span>}
+          </div>
+        </div>
+
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 grid lg:grid-cols-[minmax(0,0.95fr)_minmax(430px,1fr)] gap-6'>
+          <section className='space-y-6 min-w-0'>
+            <div className='relative h-[320px] sm:h-[430px] overflow-hidden rounded-xl border border-slate-200 bg-slate-900 shadow-sm'>
+              <img src={mainImage} alt={hospitalName} className='absolute inset-0 w-full h-full object-cover' />
+              <div className='absolute inset-0 bg-gradient-to-r from-slate-950/45 via-slate-950/10 to-slate-950/55'></div>
+              <div className='absolute inset-y-8 left-4 hidden w-28 overflow-hidden rounded-lg border border-white/20 bg-white/10 opacity-70 md:block'>
+                <img src={sideImageOne} alt='Gallery preview' className='w-full h-full object-cover' />
+              </div>
+              <div className='absolute inset-y-8 right-4 hidden w-28 overflow-hidden rounded-lg border border-white/20 bg-white/10 opacity-70 md:block'>
+                <img src={sideImageTwo} alt='Gallery preview' className='w-full h-full object-cover' />
+              </div>
+              <button className='absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-lg bg-white/80 text-slate-700 shadow-sm border border-white/60 flex items-center justify-center hover:bg-white' aria-label='Previous image'>
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M15 19l-7-7 7-7'></path></svg>
+              </button>
+              <button className='absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-lg bg-white/80 text-slate-700 shadow-sm border border-white/60 flex items-center justify-center hover:bg-white' aria-label='Next image'>
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 5l7 7-7 7'></path></svg>
+              </button>
+              <div className='absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2'>
+                {[0, 1, 2, 3].map((dot) => (
+                  <span key={dot} className={'h-2 rounded-full bg-white/80 ' + (dot === 1 ? 'w-9' : 'w-2 opacity-60')}></span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className='text-xl font-black text-slate-900 mb-4'>Related Facilities Nearby</h2>
+              <div className='grid sm:grid-cols-2 xl:grid-cols-4 gap-3'>
+                {relatedFacilities.length > 0 ? relatedFacilities.map((rel, index) => (
+                  <button
+                    key={rel.id}
+                    type='button'
+                    onClick={() => { setActiveDetailPage(rel); setActiveTab('overview'); }}
+                    className='text-left rounded-xl border border-slate-200 bg-white p-2 shadow-sm hover:border-blue-300 hover:shadow-md transition-all'
+                  >
+                    <div className='relative h-28 rounded-lg overflow-hidden bg-slate-100 mb-2'>
+                      {rel.image ? <img src={rel.image} alt={rel.name} className='w-full h-full object-cover' /> : <div className='w-full h-full flex items-center justify-center text-2xl'>{rel.icon}</div>}
+                      <span className='absolute top-2 right-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold px-1.5 py-0.5 rounded'>{index === 0 ? 'Nearest' : rel.availabilityStatus}</span>
+                    </div>
+                    <h3 className='font-black text-sm text-slate-900 line-clamp-2'>{rel.name}</h3>
+                    <p className='text-xs text-slate-500 mt-1'>{rel.category.split(' • ')[0]}</p>
+                    <div className='mt-2 flex items-center justify-between text-[11px] text-slate-500 font-bold'>
+                      <span>★ {rel.rating}</span>
+                      <span>{rel.distance}</span>
+                    </div>
+                  </button>
+                )) : (
+                  <p className='text-sm text-slate-500 bg-white border border-slate-200 rounded-xl p-4'>No related facilities found nearby.</p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className='min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden'>
+            <div className='bg-gradient-to-r from-white via-blue-50 to-emerald-50 px-5 py-5 border-b border-slate-200'>
+              <div className='flex flex-col xl:flex-row gap-5'>
+                <div className='flex-1 min-w-0'>
+                  <div className='flex flex-wrap items-center gap-3 mb-3'>
+                    <h1 className='text-2xl sm:text-3xl font-black text-slate-900 tracking-tight'>{hospitalName}, {hospitalCity}</h1>
+                    {s.verified && (
+                      <span className='inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-1 text-[10px] font-black uppercase tracking-wide'>
+                        <span className='h-1.5 w-1.5 rounded-full bg-emerald-500'></span>
+                        Verified
+                      </span>
+                    )}
+                  </div>
+
+                  <div className='flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-700 mb-3'>
+                    <span className='inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-1 rounded-md'>★ {s.rating} ({s.reviews})</span>
+                    <span className='inline-flex items-center gap-1'>📍 {s.distance} ({hospitalCity})</span>
+                  </div>
+
+                  <div className='space-y-1.5 text-sm text-slate-600 font-medium'>
+                    <p>📍 {hospitalAddress}</p>
+                    <p>📞 {contactNumber}</p>
+                    <p>✉️ contact@{hospitalName.replace(/\s+/g, '').toLowerCase()}.com</p>
+                  </div>
+
+                  <div className='flex flex-wrap gap-2 mt-4'>
+                    {(s.tags || []).map((tag) => (
+                      <span key={tag} className='bg-white/75 text-slate-700 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-md'>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <aside className='w-full xl:w-48 rounded-xl border border-white/80 bg-white/90 p-4 shadow-sm'>
+                  <div className={'text-xs font-black px-2 py-1 rounded-md border inline-flex mb-3 ' + (isFullyBooked ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100')}>
+                    {s.availabilityStatus}
+                  </div>
+                  <p className='text-[11px] text-slate-400 font-black uppercase'>Next Availability</p>
+                  <p className='text-sm font-black text-slate-900 mb-4'>{s.nextAvailable}</p>
+                  <button
+                    onClick={() => handleBookingOpen(s)}
+                    disabled={isFullyBooked}
+                    className={'w-full rounded-lg px-3 py-2.5 text-xs font-black transition-all ' + (isFullyBooked ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm')}
+                  >
+                    {isFullyBooked ? 'Request More Details' : s.availabilityStatus === 'Join Queue' ? 'Join Queue' : 'Book Appointment Now'}
+                  </button>
+                  <button onClick={() => setActiveTab('doctors')} className='mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50'>
+                    Detailed Schedule
+                  </button>
+                </aside>
+              </div>
+
+              <div className='mt-5 grid grid-cols-[1fr_auto] gap-4 items-end'>
+                <div className='space-y-2'>
+                  {reviewBars.map((bar) => (
+                    <div key={bar.label} className='flex items-center gap-2 text-[10px] font-bold text-slate-500'>
+                      <span className='w-10 text-right'>{bar.label}</span>
+                      <span className='h-2 flex-1 rounded-full bg-white/80 overflow-hidden'>
+                        <span className='block h-full rounded-full bg-emerald-500' style={{ width: bar.width }}></span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <span className='text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-1'>{detailProfile.serverMatched ? 'Live profile' : 'Preview profile'}</span>
+              </div>
+            </div>
+
+            <div className='flex border-b border-slate-200 overflow-x-auto hide-scrollbar bg-white'>
+              {detailTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={'px-5 py-3 text-sm font-black whitespace-nowrap border-b-2 transition-colors ' + (activeTab === tab.id ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50')}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className='p-5 min-h-[360px]'>
+              {activeTab === 'overview' && (
+                <div className='animate-fade-in space-y-5'>
+                  <div>
+                    <h2 className='text-lg font-black text-slate-900 mb-2'>About {hospitalName}</h2>
+                    <p className='text-sm sm:text-base text-slate-600 leading-relaxed'>{s.desc} The profile brings together hospital information, departments, services, doctors, and patient feedback from the backend where available.</p>
+                  </div>
+
+                  <div className='grid sm:grid-cols-2 gap-3'>
+                    {getDynamicDetails(s.category).flatMap((detail) => detail.items).slice(0, 4).map((item) => (
+                      <div key={item} className='rounded-xl border border-slate-200 bg-slate-50 p-4'>
+                        <span className='text-xs font-black text-blue-600 uppercase tracking-wide'>Facility</span>
+                        <p className='mt-1 text-sm font-black text-slate-900'>{item}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <h3 className='text-sm font-black text-slate-900 mb-3'>Available Services</h3>
+                    <div className='grid sm:grid-cols-2 gap-3'>
+                      {serviceCards.slice(0, 4).map((service) => (
+                        <div key={service.id} className='rounded-xl border border-slate-200 bg-white p-4 shadow-sm'>
+                          <div className='flex items-start justify-between gap-3'>
+                            <div>
+                              <h4 className='text-sm font-black text-slate-900'>{service.name}</h4>
+                              <p className='text-xs text-slate-500 mt-1 line-clamp-2'>{service.desc}</p>
+                            </div>
+                            <span className='text-xs font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md whitespace-nowrap'>{service.price}</span>
+                          </div>
+                          <p className='text-[11px] font-bold text-slate-400 mt-3'>{service.duration}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'departments' && (
+                <div className='animate-fade-in grid sm:grid-cols-2 gap-4'>
+                  {departmentCards.map((department) => (
+                    <div key={department.id} className='rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-blue-300 transition-colors'>
+                      <div className='flex items-center justify-between gap-3 mb-2'>
+                        <h3 className='font-black text-slate-900'>{department.name}</h3>
+                        <span className={'text-[10px] font-black px-2 py-1 rounded-md ' + (department.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>{department.active ? 'Active' : 'Inactive'}</span>
+                      </div>
+                      <p className='text-sm text-slate-600'>{department.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'doctors' && (
+                <div className='animate-fade-in grid sm:grid-cols-2 xl:grid-cols-3 gap-4'>
+                  {doctorCards.map((doctor) => (
+                    <div key={doctor.id} className='rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:border-blue-300 hover:shadow-md transition-all'>
+                      <div className='flex gap-3'>
+                        <img src={doctor.image} alt={doctor.name} className='h-16 w-16 rounded-lg object-cover border border-slate-100' />
+                        <div className='min-w-0'>
+                          <h3 className='text-sm font-black text-slate-900 truncate'>{doctor.name}</h3>
+                          <p className='text-[11px] font-bold text-slate-500 line-clamp-2'>{doctor.title}</p>
+                          <p className='mt-1 text-xs font-bold text-yellow-600'>★ {doctor.rating} <span className='text-slate-400'>({doctor.ratingsCount})</span></p>
+                        </div>
+                      </div>
+                      <p className='mt-3 text-[11px] font-bold text-slate-600'>{doctor.exp}</p>
+                      <p className='mt-2 text-xs text-slate-600 line-clamp-2'>{doctor.desc}</p>
+                      <div className='mt-3 flex flex-wrap gap-1.5'>
+                        {doctor.tags.map((tag) => (
+                          <span key={tag} className='bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-md'>{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div className='animate-fade-in space-y-4'>
+                  <div className='flex items-center gap-4 border-b border-slate-100 pb-4'>
+                    <div className='text-4xl font-black text-slate-900'>{s.rating}</div>
+                    <div>
+                      <div className='text-yellow-400 text-lg'>★★★★★</div>
+                      <p className='text-sm font-semibold text-slate-500'>Based on {s.reviews} verified reviews</p>
+                    </div>
+                  </div>
+                  {reviewCards.map((review) => (
+                    <div key={review.id} className='rounded-xl border border-slate-200 bg-slate-50 p-4'>
+                      <div className='flex justify-between gap-3 mb-2'>
+                        <span className='font-black text-sm text-slate-900'>{review.name}</span>
+                        <span className='text-xs font-bold text-slate-400'>{review.date}</span>
+                      </div>
+                      <div className='text-yellow-400 text-xs mb-2'>{'★'.repeat(Math.round(review.rating))}</div>
+                      <p className='text-sm text-slate-600'>{review.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+        {renderBookingModal()}
+      </div>
+    );
+  };
+
   // 🔥 7. FULL PAGE DETAIL RENDERER 🔥
   if (activeDetailPage) {
     const s = activeDetailPage;
@@ -821,6 +1308,10 @@ const CustomerPage = () => {
     const relatedFacilities = allServices.filter(item =>
       item.category === s.category && item.id !== s.id
     ).slice(0, 4);
+
+    if (isHealth) {
+      return renderHealthcareDetailPage(s, galleryImg2, galleryImg3, relatedFacilities);
+    }
 
     return (
       <div className="min-h-screen bg-slate-50 pb-20 font-sans animate-fade-in">

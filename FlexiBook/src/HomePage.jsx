@@ -1,14 +1,13 @@
 // src/HomePage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import heroBg from './family-bg.png'; 
+import heroBg from './family-bg.png';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
 
-  // Monitors client storage records to dynamically update login states
   useEffect(() => {
     const authFlag = localStorage.getItem('isAuthenticated');
     const savedUser = localStorage.getItem('registeredUser');
@@ -33,7 +32,6 @@ const HomePage = () => {
     <div className="w-full min-h-screen font-sans overflow-x-hidden flex flex-col justify-between bg-white">
       
       <div>
-        {/* ================= OPTIONAL APPLICATION NAVBAR ================= */}
         <nav className="w-full bg-white/80 backdrop-blur-md border-b border-slate-100 py-4 px-4 sm:px-6 lg:px-12 flex items-center justify-between sticky top-0 z-50">
           <Link to="/" className="font-extrabold text-xl text-slate-900 tracking-tight">FlexiBook</Link>
           <div className="flex items-center gap-4">
@@ -47,18 +45,17 @@ const HomePage = () => {
             ) : (
               <div className="flex items-center gap-3">
                 <Link to="/login" className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-2 transition-colors">Sign In</Link>
-                <Link to="/customer-register" className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-sm">Sign Up</Link>
+                <Link to="/signup" className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-sm">Sign Up</Link>
               </div>
             )}
           </div>
         </nav>
 
-        {/* ================= HERO SECTION ================= */}
         <section 
           className="relative w-full bg-cover bg-no-repeat min-h-[85vh] flex items-center bg-[center_right_-25rem] sm:bg-[center_right_-15rem] md:bg-right lg:bg-center"
           style={{ backgroundImage: `url(${heroBg})` }}
         >
-          <div className="absolute inset-0 bg-white/90 md:bg-white/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/95 lg:via-white/85 lg:to-white/10 z-0"></div>
+          <div className="absolute inset-0 bg-white/90 md:bg-white/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/95 lg:via-white/85 lg:to-white/10 z-0 pointer-events-none"></div>
 
           <div className="relative z-10 max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 w-full py-12 md:py-20 lg:py-0">
             <div className="w-full md:w-[80%] lg:w-[60%] xl:w-[50%] lg:-translate-x-8 xl:-translate-x-12 2xl:-translate-x-16 transition-transform duration-500">
@@ -76,7 +73,6 @@ const HomePage = () => {
                 Book appointments or join queues online at your favorite places and save time. Experience convenience like never before.
               </p>
 
-              {/* RESPONSIVE SEARCH BAR */}
               <div className="bg-white p-2 sm:p-2.5 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-200 flex flex-col md:flex-row items-center gap-2 mb-6 max-w-2xl">
                 <div className="flex-1 flex items-center px-4 py-3 w-full group">
                   <span className="text-slate-400 mr-3 text-lg group-focus-within:text-blue-600 transition-colors duration-300">🔍</span>
@@ -105,14 +101,18 @@ const HomePage = () => {
                 <p>Trusted by <span className="font-bold text-blue-600">5,000+</span> users today.</p>
               </div>
 
-              {/* RESPONSIVE CARDS WITH DYNAMIC TEXT MAPPING */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+                
                 <div className="bg-white/95 backdrop-blur-md border border-blue-100 p-5 rounded-2xl flex flex-col xl:flex-row items-start gap-4 hover:shadow-xl transition-all duration-300 group">
                   <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">👤</div>
                   <div className="flex flex-col h-full w-full">
                     <h4 className="font-bold text-slate-900 text-sm sm:text-base mb-1">I'm a Customer</h4>
                     <p className="text-xs sm:text-sm text-slate-600 mb-4 leading-relaxed">Book appointments or join live queues.</p>
-                    <Link to="/customers" className="inline-block mt-auto text-blue-600 border-2 border-blue-600 bg-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-blue-700 hover:text-white text-center w-full transition-all shadow-sm">
+                    
+                    <Link 
+                      to={isLoggedIn ? "/" : "/customer-register"} 
+                      className="inline-block mt-auto text-blue-600 border-2 border-blue-600 bg-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-blue-700 hover:text-white text-center w-full transition-all shadow-sm"
+                    >
                       {isLoggedIn ? 'View Dashboard →' : 'Get Started →'}
                     </Link>
                   </div>
@@ -123,7 +123,11 @@ const HomePage = () => {
                   <div className="flex flex-col h-full w-full">
                     <h4 className="font-bold text-slate-900 text-sm sm:text-base mb-1">Business Owner</h4>
                     <p className="text-xs sm:text-sm text-slate-600 mb-4 leading-relaxed">Manage appointments and grow sales.</p>
-                    <Link to="/real-business-form" className="mt-auto text-emerald-600 border-2 border-emerald-600 bg-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-emerald-700 hover:text-white text-center w-full transition-all shadow-sm inline-block">
+                    
+                    <Link 
+                      to={isLoggedIn ? "/business-login" : "/business-register"} 
+                      className="mt-auto text-emerald-600 border-2 border-emerald-600 bg-white px-4 py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-emerald-700 hover:text-white text-center w-full transition-all shadow-sm inline-block"
+                    >
                       {isLoggedIn ? 'Manage Platform →' : 'Register Now →'}
                     </Link>
                   </div>
@@ -134,7 +138,6 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* ================= WHY CHOOSE US SECTION ================= */}
         <section className="bg-white py-16 md:py-24 border-t border-slate-100 relative z-20">
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
             <div className="text-center mb-12 md:mb-20">
@@ -160,7 +163,6 @@ const HomePage = () => {
         </section>
       </div>
 
-      {/* ================= FOOTER SECTION ================= */}
       <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800 relative z-20">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 w-full">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
@@ -178,8 +180,8 @@ const HomePage = () => {
 
             <div className="flex flex-col gap-2">
               <h5 className="font-bold text-emerald-400 text-sm tracking-wide mb-2 uppercase">For Providers</h5>
-              <Link to="/real-business-form" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Register Business</Link>
-              <Link to="/real-business-form" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Find Business Solutions</Link>
+              <Link to="/business-register" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Register Business</Link>
+              <Link to="/business-login" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Business Sign In</Link>
             </div>
 
             <div className="flex flex-col gap-2">

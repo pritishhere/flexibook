@@ -1,14 +1,14 @@
 // src/LoginPage.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import familyBg from './family-bg.png'; 
+import familyBg from './family-bg.png';
 
 const LoginPage = () => {
-  const [loginMode, setLoginMode] = useState('email'); 
+  const [loginMode, setLoginMode] = useState('email');
   const [formData, setFormData] = useState({ email: '', phone: '', password: '' });
-  const [alert, setAlert] = useState({ type: '', message: '' }); 
+  const [alert, setAlert] = useState({ type: '', message: '' });
   const [focusedField, setFocusedField] = useState('');
-  const [showPassword, setShowPassword] = useState(false); 
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCapsLocked, setIsCapsLocked] = useState(false);
@@ -25,7 +25,7 @@ const LoginPage = () => {
 
   const onChange = (e) => {
     if (e.target.name === 'phone') {
-      const onlyDigits = e.target.value.replace(/[^0-9]/g, ''); 
+      const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
       setFormData({ ...formData, [e.target.name]: onlyDigits });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,17 +40,16 @@ const LoginPage = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
-    
+
     setIsLoading(true);
-    setAlert({ type: '', message: '' }); 
+    setAlert({ type: '', message: '' });
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
     setTimeout(() => {
       setIsLoading(false);
-      
-      // Pull fresh data states from client storage key sets
+
       const savedData = localStorage.getItem('registeredUser');
       let registeredUser = null;
       if (savedData) {
@@ -69,7 +68,7 @@ const LoginPage = () => {
         setAlert({ type: 'success', message: `Welcome back, ${registeredUser.name}! Redirecting...` });
         localStorage.setItem('isAuthenticated', 'true');
         setTimeout(() => navigate('/'), 1200);
-      } 
+      }
       // 3. SECURE LOCAL MACHINE MOCK CREDENTIAL CHECK
       else if (loginMode === 'email' && cleanEmail === 'test@example.com' && cleanPassword === 'password123') {
         setAlert({ type: 'success', message: 'Login successful! Redirecting...' });
@@ -82,13 +81,13 @@ const LoginPage = () => {
   };
 
   const getInputStyle = (fieldName) => ({
-    width: '100%', 
-    padding: fieldName === 'password' ? '12px 45px 12px 16px' : '12px 16px', 
+    width: '100%',
+    padding: fieldName === 'password' ? '12px 45px 12px 16px' : '12px 16px',
     marginTop: '6px',
-    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid #cbd5e1', 
+    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid #cbd5e1',
     borderRadius: '8px',
-    backgroundColor: '#ffffff', 
-    color: '#0f172a', 
+    backgroundColor: '#ffffff',
+    color: '#0f172a',
     fontSize: '14px',
     outline: 'none',
     boxSizing: 'border-box',
@@ -97,25 +96,95 @@ const LoginPage = () => {
   });
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 96px)', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url(${familyBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', padding: '40px 20px', boxSizing: 'border-box' }}>
-      <div style={{ width: '100%', maxWidth: '440px', padding: '40px 36px', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)', boxSizing: 'border-box', position: 'relative' }}>
-        
-        <Link to="/" style={{ position: 'absolute', top: '26px', left: '26px', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }} onMouseOver={(e) => { if(!isLoading) e.currentTarget.style.transform = 'translateX(-3px)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateX(0)'; }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2"><line x1="21" y1="12" x2="3" y2="12"></line><polyline points="10 19 3 12 10 5"></polyline></svg>
+    <div style={{
+      minHeight: 'calc(100vh - 96px)',
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url(${familyBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      padding: '40px 20px',
+      boxSizing: 'border-box'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '440px',
+        padding: '40px 36px',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '20px',
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+        boxSizing: 'border-box',
+        position: 'relative'
+      }}>
+
+        <Link to="/" style={{
+          position: 'absolute',
+          top: '26px',
+          left: '26px',
+          color: '#475569',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'transform 0.2s'
+        }} onMouseOver={(e) => { if (!isLoading) e.currentTarget.style.transform = 'translateX(-3px)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateX(0)'; }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2">
+            <line x1="21" y1="12" x2="3" y2="12"></line>
+            <polyline points="10 19 3 12 10 5"></polyline>
+          </svg>
         </Link>
 
         <h2 style={{ textAlign: 'center', marginBottom: '6px', color: '#0f172a', fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.025em', marginTop: '16px' }}>Welcome Back</h2>
         <p style={{ textAlign: 'center', color: '#475569', fontSize: '14px', marginTop: '0', marginBottom: '24px' }}>Please sign in to your FlexiBook account</p>
 
         <div style={{ display: 'flex', backgroundColor: 'rgba(15, 23, 42, 0.08)', padding: '4px', borderRadius: '10px', marginBottom: '24px' }}>
-          <button type="button" disabled={isLoading} onClick={() => setLoginMode('email')} style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '14px', cursor: isLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', backgroundColor: loginMode === 'email' ? '#ffffff' : 'transparent', color: loginMode === 'email' ? '#0f172a' : '#64748b', boxShadow: loginMode === 'email' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>Email Address</button>
-          <button type="button" disabled={isLoading} onClick={() => setLoginMode('phone')} style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '14px', cursor: isLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', backgroundColor: loginMode === 'phone' ? '#ffffff' : 'transparent', color: loginMode === 'phone' ? '#0f172a' : '#64748b', boxShadow: loginMode === 'phone' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>Phone Number</button>
+          <button type="button" disabled={isLoading} onClick={() => setLoginMode('email')} style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            fontSize: '14px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: loginMode === 'email' ? '#ffffff' : 'transparent',
+            color: loginMode === 'email' ? '#0f172a' : '#64748b',
+            boxShadow: loginMode === 'email' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+          }}>Email Address</button>
+          <button type="button" disabled={isLoading} onClick={() => setLoginMode('phone')} style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            fontSize: '14px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: loginMode === 'phone' ? '#ffffff' : 'transparent',
+            color: loginMode === 'phone' ? '#0f172a' : '#64748b',
+            boxShadow: loginMode === 'phone' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+          }}>Phone Number</button>
         </div>
 
         {alert.message && (
-          <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', fontWeight: '500', textAlign: 'center', backgroundColor: alert.type === 'success' ? '#f0fdf4' : '#fef2f2', color: alert.type === 'success' ? '#166534' : '#991b1b', border: alert.type === 'success' ? '1px solid #bbf7d0' : '1px solid #fecaca' }}>{alert.message}</div>
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontSize: '14px',
+            fontWeight: '500',
+            textAlign: 'center',
+            backgroundColor: alert.type === 'success' ? '#f0fdf4' : '#fef2f2',
+            color: alert.type === 'success' ? '#166534' : '#991b1b',
+            border: alert.type === 'success' ? '1px solid #bbf7d0' : '1px solid #fecaca'
+          }}>{alert.message}</div>
         )}
-        
+
         <form onSubmit={onSubmit}>
           {loginMode === 'email' ? (
             <div style={{ marginBottom: '20px' }}>
@@ -153,24 +222,43 @@ const LoginPage = () => {
               <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} disabled={isLoading} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }} />
               Remember me
             </label>
-            
-            <Link 
-              to="/forgot-password" 
+
+            <Link
+              to="/forgot-password"
               style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', cursor: 'pointer' }}
             >
               Forgot password?
             </Link>
           </div>
 
-          <button type="submit" disabled={isLoading} style={{ width: '100%', padding: '14px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: '600', fontSize: '16px', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)', opacity: isLoading ? 0.8 : 1 }}>
+          <button type="submit" disabled={isLoading} style={{
+            width: '100%',
+            padding: '14px',
+            backgroundColor: '#2563eb',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            fontWeight: '600',
+            fontSize: '16px',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+            opacity: isLoading ? 0.8 : 1
+          }}>
             {isLoading ? 'Verifying...' : 'Sign In'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '28px', fontSize: '14px', color: '#64748b' }}>
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#64748b' }}>
           Don't have an account?{' '}
-          <Link to="/customer-register" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>Sign Up</Link>
+          <Link to="/signup" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>Sign Up</Link>
         </div>
+
+        {/* Business Owner Sign In Link */}
+        <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', fontSize: '14px', color: '#64748b' }}>
+          Are you a business owner?{' '}
+          <Link to="/business-login" style={{ color: '#10b981', textDecoration: 'none', fontWeight: '600' }}>Sign In here</Link>
+        </div>
+
       </div>
     </div>
   );

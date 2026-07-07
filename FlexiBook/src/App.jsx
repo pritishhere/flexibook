@@ -3,24 +3,28 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './HomePage';
 import LoginPage from './LoginPage';
+import SignUpGateway from './SignupGateway';
 import CustomerRegister from './CustomerRegister';
-import ForgotPassword from './ForgotPassword'; // Imported newly created recovery component
+import BusinessLogin from './BusinessLogin';
+import BusinessSignUp from './BusinessSignup';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Main Application Routing Configuration */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup-gateway" element={<CustomerRegister />} />
+        
+        {/* Gateway Selection Screen */}
+        <Route path="/signup" element={<SignUpGateway />} />
+        <Route path="/signup-gateway" element={<SignUpGateway />} />
+        
+        {/* Customer Forms */}
         <Route path="/customer-register" element={<CustomerRegister />} />
         
-        {/* NEW: Operational endpoint mapping rule */}
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        {/* Catch-all fallback route defaults back to platform landing */}
-        <Route path="*" element={<HomePage />} />
+        {/* Business Forms */}
+        <Route path="/business-login" element={<BusinessLogin />} />
+        <Route path="/business-register" element={<BusinessSignUp />} />
       </Routes>
     </BrowserRouter>
   );

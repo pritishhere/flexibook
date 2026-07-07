@@ -469,7 +469,33 @@ const HomePage = () => {
                 Search
               </button>
             </form>
+            {/* ================= AI ASSISTANT CARD ================= */}
+<div className="reveal-4 mb-8 max-w-2xl">
+  <div className="rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
 
+    <div>
+      <span className="inline-block text-xs font-bold bg-white/20 text-white px-3 py-1 rounded-full mb-2">
+        🧠 NEW
+      </span>
+
+      <h3 className="text-2xl font-bold text-white">
+        FlexiCare AI
+      </h3>
+
+      <p className="text-cyan-100 text-sm mt-1">
+        Describe your symptoms and get an AI recommendation instantly.
+      </p>
+    </div>
+
+    <button
+      onClick={() => navigate("/ai-symptom-checker")}
+      className="bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:scale-105 transition"
+    >
+      Try AI →
+    </button>
+
+  </div>
+</div>
             {/* ================= 🚀 COMPACT PREMIUM CARDS ================= */}
             <div className="reveal-4 grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl">
               

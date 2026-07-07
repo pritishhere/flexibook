@@ -93,7 +93,11 @@ async function start() {
                 specialization: 'Cardiologist',
                 experience: 12,
                 consultationFee: 800,
-                availability: ['Monday', 'Wednesday', 'Friday']
+                availability: [
+                    { day: 'Monday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Wednesday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Friday', startTime: '09:00', endTime: '13:00' }
+                ]
             }
         });
         console.log(`   Response Status: ${docRes.status}`);

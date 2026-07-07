@@ -75,7 +75,10 @@ async function runTests() {
                 specialization: 'Cardiologist',
                 experience: 15,
                 consultationFee: 1000,
-                availability: ['Monday', 'Tuesday']
+                availability: [
+                    { day: 'Monday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Tuesday', startTime: '09:00', endTime: '13:00' }
+                ]
             }
         });
         console.log(`   - Created Cardiologist Doctor Profile: ${user1Res.data.name}`);
@@ -98,7 +101,10 @@ async function runTests() {
                 specialization: 'Neurologist',
                 experience: 10,
                 consultationFee: 900,
-                availability: ['Wednesday', 'Thursday']
+                availability: [
+                    { day: 'Wednesday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Thursday', startTime: '09:00', endTime: '13:00' }
+                ]
             }
         });
         console.log(`   - Created Neurologist Doctor Profile: ${user2Res.data.name}\n`);

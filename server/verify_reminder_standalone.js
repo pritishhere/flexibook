@@ -41,7 +41,7 @@ const runTest = async () => {
         specialization: 'Neurologist',
         experience: 12,
         consultationFee: 700,
-        availability: ['Monday']
+        availability: [{ day: 'Monday', startTime: '09:00', endTime: '13:00' }]
     };
     inMemoryDb.doctors.push(mockDoc);
 

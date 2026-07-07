@@ -92,6 +92,7 @@ const IntroSplash = ({ onFinish }) => {
         playsInline
         preload="auto" 
         onEnded={handleIntroComplete} 
+        onError={handleIntroComplete} 
         className="absolute inset-0 w-full h-full object-cover ultra-hd-video pointer-events-none" 
       />
 

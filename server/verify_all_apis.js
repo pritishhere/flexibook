@@ -191,7 +191,10 @@ async function runTests() {
                 specialization: 'Pediatrician',
                 experience: 8,
                 consultationFee: 500,
-                availability: ['Tuesday', 'Thursday']
+                availability: [
+                    { day: 'Tuesday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Thursday', startTime: '09:00', endTime: '13:00' }
+                ]
             }
         });
         console.log(`   - Create Doctor Status: ${createDocRes.status}`);

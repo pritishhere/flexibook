@@ -97,21 +97,21 @@ const DoctorPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col md:flex-row">
+    <div className="min-h-screen bg-base text-textMain font-sans flex flex-col md:flex-row transition-colors duration-500">
       {/* Sidebar Panel */}
-      <aside className="w-full md:w-64 bg-slate-950 border-r border-slate-800 p-6 flex flex-col gap-6">
+      <aside className="w-full md:w-64 bg-surface border-r border-borderSoft p-6 flex flex-col gap-6 transition-colors duration-500">
         <div>
           <h2 className="text-xl font-black text-blue-500 tracking-wider">FLEXIBOOK</h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Doctor Portal</p>
+          <p className="text-xs text-textMuted font-bold uppercase tracking-widest mt-1">Doctor Portal</p>
         </div>
 
         {/* Selected Doctor drop-down to simulate different logins */}
-        <div className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex flex-col gap-1.5">
-          <label className="text-[10px] font-black uppercase text-slate-400">Doctor Profile</label>
+        <div className="bg-base border border-borderSoft p-3 rounded-lg flex flex-col gap-1.5 transition-colors duration-500">
+          <label className="text-[10px] font-black uppercase text-textMuted">Doctor Profile</label>
           <select 
             value={selectedDoctorId} 
             onChange={(e) => setSelectedDoctorId(e.target.value)} 
-            className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-200 outline-none"
+            className="w-full bg-surface border border-borderSoft rounded p-1.5 text-xs text-textMain outline-none transition-colors duration-500"
           >
             {doctors.map(d => (
               <option key={d._id} value={d._id}>{d.userId ? d.userId.name : 'Doctor Profile'}</option>
@@ -122,13 +122,13 @@ const DoctorPortal = () => {
         <nav className="flex flex-col gap-2 mt-4">
           <button 
             onClick={() => setActiveTab('appointments')} 
-            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'appointments' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}
+            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'appointments' ? 'bg-blue-600 text-white shadow-md' : 'text-textMuted hover:bg-base hover:text-textMain'}`}
           >
             📅 Live Queue & Slots
           </button>
           <button 
             onClick={() => setActiveTab('leaves')} 
-            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'leaves' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}
+            className={`w-full py-3 px-4 rounded-lg font-bold text-sm text-left transition-all flex items-center gap-3 ${activeTab === 'leaves' ? 'bg-blue-600 text-white shadow-md' : 'text-textMuted hover:bg-base hover:text-textMain'}`}
           >
             🌴 Request Leaves
           </button>
@@ -137,10 +137,10 @@ const DoctorPortal = () => {
 
       {/* Main Workspace content */}
       <main className="flex-1 p-6 md:p-10">
-        <header className="flex justify-between items-center mb-8 border-b border-slate-800 pb-5">
+        <header className="flex justify-between items-center mb-8 border-b border-borderSoft pb-5 transition-colors duration-500">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Doctor Workspace</h1>
-            <p className="text-sm text-slate-400 mt-1">Manage checkups, call patients, and update your calendar slots live.</p>
+            <h1 className="text-2xl sm:text-3xl font-black text-textMain">Doctor Workspace</h1>
+            <p className="text-sm text-textMuted mt-1">Manage checkups, call patients, and update your calendar slots live.</p>
           </div>
           <span className="bg-emerald-500/10 text-emerald-400 text-xs font-black uppercase tracking-wider px-3.5 py-1.5 border border-emerald-500/20 rounded-full">
             Role: Onboarded Specialist
@@ -158,40 +158,40 @@ const DoctorPortal = () => {
           <div className="animate-fade-in grid lg:grid-cols-3 gap-8">
             {/* Left 2 Cols: Live Patient Queue */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
-                <h3 className="text-lg font-black text-white mb-5">👨‍👩‍👧‍👦 Upcoming Checkup List</h3>
+              <div className="bg-surface border border-borderSoft rounded-2xl p-6 transition-colors duration-500">
+                <h3 className="text-lg font-black text-textMain mb-5">👨‍👩‍👧‍👦 Upcoming Checkup List</h3>
 
                 <div className="space-y-4">
                   {appointments.map((app) => (
                     <div 
                       key={app.id} 
-                      className={`p-5 rounded-xl border flex justify-between items-center transition-all ${
+                      className={`p-5 rounded-xl border flex justify-between items-center transition-all duration-300 ${
                         app.token === currentToken 
-                          ? 'bg-blue-600/10 border-blue-500/30 text-white' 
+                          ? 'bg-blue-600/10 border-blue-500/30 text-textMain' 
                           : app.token < currentToken 
-                            ? 'bg-slate-900/40 border-slate-800/50 opacity-50' 
-                            : 'bg-slate-900 border-slate-800/80'
+                            ? 'bg-base/40 border-borderSoft opacity-50' 
+                            : 'bg-base border-borderSoft'
                       }`}
                     >
                       <div>
                         <div className="flex items-center gap-2">
                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                            app.token === currentToken ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400'
+                            app.token === currentToken ? 'bg-blue-50 text-white' : 'bg-surface text-textMuted border border-borderSoft'
                           }`}>
                             Token #{app.token}
                           </span>
-                          <h4 className="font-bold text-base">{app.patientName}</h4>
+                          <h4 className="font-bold text-base text-textMain">{app.patientName}</h4>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">Reason: {app.reason}</p>
-                        <p className="text-xs text-slate-500 mt-1 font-semibold">🕒 Scheduled Time: {app.time}</p>
+                        <p className="text-xs text-textMuted mt-1">Reason: {app.reason}</p>
+                        <p className="text-xs text-textMuted mt-1 font-semibold">🕒 Scheduled Time: {app.time}</p>
                       </div>
 
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                         app.token === currentToken 
                           ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                           : app.token < currentToken 
-                            ? 'bg-slate-800 text-slate-500' 
-                            : 'bg-slate-850 text-slate-400'
+                            ? 'bg-surface text-textMuted border border-borderSoft' 
+                            : 'bg-surface text-textMuted border border-borderSoft'
                       }`}>
                         {app.token === currentToken ? 'Currently Consulting' : app.token < currentToken ? 'Visited' : 'Waiting'}
                       </span>
@@ -203,9 +203,9 @@ const DoctorPortal = () => {
 
             {/* Right Col: Live Queue Controller */}
             <div className="lg:col-span-1">
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col items-center text-center">
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Live Waiting Room Status</p>
-                <h3 className="text-5xl font-black text-white my-3">Token #{currentToken}</h3>
+              <div className="bg-surface border border-borderSoft rounded-2xl p-6 flex flex-col items-center text-center transition-colors duration-500">
+                <p className="text-xs text-textMuted font-bold uppercase tracking-widest mb-2">Live Waiting Room Status</p>
+                <h3 className="text-5xl font-black text-textMain my-3">Token #{currentToken}</h3>
                 <p className="text-xs text-emerald-400 font-semibold mb-6">Patient Consultation In Progress</p>
 
                 <button 
@@ -223,30 +223,30 @@ const DoctorPortal = () => {
         {/* Tab content 2: Leaves Management */}
         {activeTab === 'leaves' && (
           <div className="animate-fade-in max-w-xl">
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
-              <h3 className="text-lg font-black text-white mb-5">🌴 Register Leave Date</h3>
+            <div className="bg-surface border border-borderSoft rounded-2xl p-6 transition-colors duration-500">
+              <h3 className="text-lg font-black text-textMain mb-5">🌴 Register Leave Date</h3>
               
               <form onSubmit={handleAddLeave} className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Leave Date</label>
+                  <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Leave Date</label>
                   <input 
                     type="date" 
                     required
                     value={leaveDate} 
                     onChange={(e) => setLeaveDate(e.target.value)}
-                    className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white"
+                    className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain transition-colors duration-500"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">Reason for absence</label>
+                  <label className="text-xs text-textMuted font-bold uppercase tracking-wider">Reason for absence</label>
                   <textarea 
                     required
                     rows="4"
                     placeholder="e.g. Conference, Medical emergency"
                     value={leaveReason} 
                     onChange={(e) => setLeaveReason(e.target.value)}
-                    className="bg-slate-900 border border-slate-800 focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-white resize-none"
+                    className="bg-base border border-borderSoft focus:border-blue-500 outline-none rounded-lg p-3 text-sm text-textMain resize-none transition-colors duration-500"
                   ></textarea>
                 </div>
 

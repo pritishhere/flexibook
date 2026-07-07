@@ -1,6 +1,122 @@
 /* src/index.css */
 @import "tailwindcss";
 
+@theme {
+  --color-base: var(--base);
+  --color-surface: var(--surface);
+  --color-textMain: var(--text-main);
+  --color-textMuted: var(--text-muted);
+  --color-borderSoft: var(--border-soft);
+  --color-brand: var(--brand);
+}
+
+:root {
+  --base: #f8fafc;
+  --surface: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-soft: #e2e8f0;
+  --brand: #2563eb;
+  --ultra-glass-bg: rgba(255, 255, 255, 0.65);
+  --surface-card: rgba(255, 255, 255, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.8);
+  --hover-bg: #f1f5f9;
+  --surface-opacity-95: rgba(255, 255, 255, 0.95);
+}
+
+.dark {
+  --base: #0f172a;
+  --surface: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-soft: #334155;
+  --brand: #60a5fa;
+  --ultra-glass-bg: rgba(15, 23, 42, 0.65);
+  --surface-card: rgba(30, 41, 59, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.05);
+  --hover-bg: #334155;
+  --surface-opacity-95: rgba(30, 41, 59, 0.95);
+
+  /* Tailwind CSS v4 Default Color Overrides under .dark */
+  --color-white: var(--surface);
+  --color-slate-50: var(--base);
+  --color-slate-100: var(--hover-bg);
+  --color-slate-200: var(--border-soft);
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: var(--text-muted);
+  --color-slate-600: var(--text-muted);
+  --color-slate-700: var(--text-main);
+  --color-slate-800: var(--text-main);
+  --color-slate-900: var(--text-main);
+  --color-slate-950: #020617;
+
+  --color-gray-50: var(--base);
+  --color-gray-100: var(--hover-bg);
+  --color-gray-200: var(--border-soft);
+  --color-gray-300: #334155;
+  --color-gray-400: #475569;
+  --color-gray-500: var(--text-muted);
+  --color-gray-600: var(--text-muted);
+  --color-gray-700: var(--text-main);
+  --color-gray-800: var(--text-main);
+  --color-gray-900: var(--text-main);
+  --color-gray-950: #020617;
+}
+
+/* Custom CSS Color Fallbacks and Global Dark Mode Overrides for Tailwind classes */
+.bg-base {
+  background-color: var(--base) !important;
+}
+.bg-surface {
+  background-color: var(--surface) !important;
+}
+.bg-surface\/95 {
+  background-color: var(--surface-opacity-95) !important;
+}
+.text-textMain {
+  color: var(--text-main) !important;
+}
+.text-textMuted {
+  color: var(--text-muted) !important;
+}
+.border-borderSoft {
+  border-color: var(--border-soft) !important;
+}
+
+/* Global Dark Mode Overrides for Tailwind Class Names */
+.dark .bg-slate-50 {
+  background-color: var(--base) !important;
+}
+.dark .bg-slate-100 {
+  background-color: var(--hover-bg) !important;
+}
+.dark .bg-white {
+  background-color: var(--surface) !important;
+}
+.dark .bg-white\/95 {
+  background-color: var(--surface-opacity-95) !important;
+}
+.dark .bg-white\/50 {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700 {
+  color: var(--text-main) !important;
+}
+.dark .text-slate-600,
+.dark .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+.dark .border-slate-200,
+.dark .border-slate-100 {
+  border-color: var(--border-soft) !important;
+}
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: var(--hover-bg) !important;
+}
 /* =========================================
    1. THE QUANTUM CORE
 ========================================= */

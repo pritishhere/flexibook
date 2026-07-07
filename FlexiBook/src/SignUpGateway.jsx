@@ -9,8 +9,8 @@ const SignUpGateway = () => {
   const getCardStyle = (cardType) => ({
     flex: 1,
     padding: '40px 28px 32px 28px', // Added extra top padding for card balance
-    backgroundColor: hoveredCard === cardType ? '#ffffff' : 'rgba(255, 255, 255, 0.6)',
-    border: hoveredCard === cardType ? '2px solid #2563eb' : '1px solid #cbd5e1',
+    backgroundColor: hoveredCard === cardType ? 'var(--surface)' : 'var(--surface-card)',
+    border: hoveredCard === cardType ? '2px solid #2563eb' : '1px solid var(--border-soft)',
     borderRadius: '16px',
     cursor: 'pointer',
     textAlign: 'center',
@@ -45,9 +45,9 @@ const SignUpGateway = () => {
         width: '100%',
         maxWidth: '680px', 
         padding: '50px 40px', 
-        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        border: '1px solid var(--border-glass)', 
         borderRadius: '24px',
-        backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+        backgroundColor: 'var(--surface-card)', 
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
@@ -59,11 +59,11 @@ const SignUpGateway = () => {
         <Link 
           to="/login" 
           style={{
-            position: 'absolute', top: '28px', left: '28px', color: '#475569', 
+            position: 'absolute', top: '28px', left: '28px', color: 'var(--text-muted)', 
             display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s, color 0.2s',
           }}
           onMouseOver={(e) => { e.currentTarget.style.color = '#2563eb'; e.currentTarget.style.transform = 'translateX(-3px)'; }}
-          onMouseOut={(e) => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.transform = 'translateX(0)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'translateX(0)'; }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="21" y1="12" x2="3" y2="12"></line>
@@ -72,10 +72,10 @@ const SignUpGateway = () => {
         </Link>
 
         {/* Heading Section */}
-        <h2 style={{ textAlign: 'center', marginBottom: '8px', color: '#0f172a', fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.025em', marginTop: '12px' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '8px', color: 'var(--text-main)', fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.025em', marginTop: '12px' }}>
           Join FlexiBook
         </h2>
-        <p style={{ textAlign: 'center', color: '#475569', fontSize: '15px', marginTop: '0', marginBottom: '45px', fontWeight: '400' }}>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '15px', marginTop: '0', marginBottom: '45px', fontWeight: '400' }}>
           Select how you want to use our platform to get started
         </p>
 
@@ -100,7 +100,7 @@ const SignUpGateway = () => {
             </div>
             
             {/* Flex container to cleanly hold Title and disappearing directional arrow */}
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)' }}>
               As a Customer
               <span style={{ 
                 transition: 'all 0.2s ease', 
@@ -109,7 +109,7 @@ const SignUpGateway = () => {
               }}>→</span>
             </h3>
             
-            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>
+            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
               Book appointments, track schedules, and connect with local services seamlessly.
             </p>
 
@@ -146,7 +146,7 @@ const SignUpGateway = () => {
               </svg>
             </div>
 
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)' }}>
               As a Business
               <span style={{ 
                 transition: 'all 0.2s ease', 
@@ -156,7 +156,7 @@ const SignUpGateway = () => {
               }}>→</span>
             </h3>
             
-            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>
+            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
               Manage clients, automate your custom slots, and grow your brand operation.
             </p>
 
@@ -168,7 +168,7 @@ const SignUpGateway = () => {
         </div>
 
         {/* Footer Navigation Link */}
-        <div style={{ textAlign: 'center', marginTop: '36px', fontSize: '14px', color: '#64748b' }}>
+        <div style={{ textAlign: 'center', marginTop: '36px', fontSize: '14px', color: 'var(--text-muted)' }}>
           Already have an account?{' '}
           <Link to="/login" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }} onMouseOver={(e) => e.target.style.textDecoration = 'underline'} onMouseOut={(e) => e.target.style.textDecoration = 'none'}>
             Sign In

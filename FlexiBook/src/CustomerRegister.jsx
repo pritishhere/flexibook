@@ -36,10 +36,10 @@ const CustomerRegister = () => {
     width: '100%', 
     padding: '12px 16px', 
     marginTop: '6px',
-    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid #cbd5e1', 
+    border: focusedField === fieldName ? '2px solid #2563eb' : '1px solid var(--border-soft)', 
     borderRadius: '8px',
-    backgroundColor: '#ffffff', 
-    color: '#0f172a', 
+    backgroundColor: 'var(--surface)', 
+    color: 'var(--text-main)', 
     fontSize: '14px',
     outline: 'none',
     boxSizing: 'border-box',
@@ -65,9 +65,9 @@ const CustomerRegister = () => {
         width: '100%',
         maxWidth: '440px', 
         padding: '40px 36px', 
-        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        border: '1px solid var(--border-glass)', 
         borderRadius: '20px',
-        backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+        backgroundColor: 'var(--surface-card)', 
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
@@ -82,7 +82,7 @@ const CustomerRegister = () => {
             position: 'absolute',
             top: '26px',
             left: '26px',
-            color: '#475569', 
+            color: 'var(--text-muted)', 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -93,7 +93,7 @@ const CustomerRegister = () => {
             e.currentTarget.style.transform = 'translateX(-3px)';
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.color = '#475569';
+            e.currentTarget.style.color = 'var(--text-muted)';
             e.currentTarget.style.transform = 'translateX(0)';
           }}
         >
@@ -106,7 +106,7 @@ const CustomerRegister = () => {
         <h2 style={{ 
           textAlign: 'center', 
           marginBottom: '6px', 
-          color: '#0f172a', 
+          color: 'var(--text-main)', 
           fontSize: '1.75rem', 
           fontWeight: '800',
           letterSpacing: '-0.025em',
@@ -116,7 +116,7 @@ const CustomerRegister = () => {
         </h2>
         <p style={{
           textAlign: 'center',
-          color: '#475569',
+          color: 'var(--text-muted)',
           fontSize: '14px',
           marginTop: '0',
           marginBottom: '28px',
@@ -128,7 +128,7 @@ const CustomerRegister = () => {
         <form onSubmit={onSubmit}>
           {/* Full Name Field */}
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Full Name</label>
+            <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Full Name</label>
             <input 
               type="text" name="name" value={name} onChange={onChange} 
               onFocus={() => setFocusedField('name')} onBlur={() => setFocusedField('')}
@@ -138,7 +138,7 @@ const CustomerRegister = () => {
 
           {/* Email Address Field */}
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Email Address</label>
+            <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Email Address</label>
             <input 
               type="email" name="email" value={email} onChange={onChange} 
               onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField('')}
@@ -148,7 +148,7 @@ const CustomerRegister = () => {
 
           {/* Password Field */}
           <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Password</label>
+            <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Password</label>
             <input 
               type="password" name="password" value={password} onChange={onChange} 
               onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField('')}
@@ -158,7 +158,7 @@ const CustomerRegister = () => {
 
           {/* Confirm Password Field */}
           <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'block', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Confirm Password</label>
+            <label style={{ display: 'block', fontWeight: '600', color: 'var(--text-main)', fontSize: '14px' }}>Confirm Password</label>
             <input 
               type="password" name="confirmPassword" value={confirmPassword} onChange={onChange} 
               onFocus={() => setFocusedField('confirmPassword')} onBlur={() => setFocusedField('')}
@@ -190,7 +190,7 @@ const CustomerRegister = () => {
           textAlign: 'center', 
           marginTop: '28px', 
           fontSize: '14px', 
-          color: '#64748b', 
+          color: 'var(--text-muted)', 
           fontWeight: '400' 
         }}>
           Already have an account?{' '}

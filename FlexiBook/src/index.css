@@ -1,14 +1,7 @@
 /* src/index.css */
 @import "tailwindcss";
 
-@theme {
-  --color-base: var(--base);
-  --color-surface: var(--surface);
-  --color-textMain: var(--text-main);
-  --color-textMuted: var(--text-muted);
-  --color-borderSoft: var(--border-soft);
-  --color-brand: var(--brand);
-}
+
 
 :root {
   --base: #f8fafc;

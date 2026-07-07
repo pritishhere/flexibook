@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ThemeContext } from '../ThemeContext';
+import { ThemeContext } from '../context/ThemeContext';
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);

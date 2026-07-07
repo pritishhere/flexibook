@@ -59,8 +59,8 @@ async function runTests() {
         silent: false // show log output
     });
 
-    // Wait 5 seconds for server to bind and connect to MongoDB
-    await delay(5000);
+    // Wait 10 seconds for server to bind and connect to MongoDB
+    await delay(10000);
 
     try {
         console.log('- Preparing test doctor & hospital database entries...');
@@ -96,7 +96,10 @@ async function runTests() {
                 specialization: 'Cardiologist',
                 experience: 15,
                 consultationFee: 1000,
-                availability: ['Monday', 'Tuesday']
+                availability: [
+                    { day: 'Monday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Tuesday', startTime: '09:00', endTime: '13:00' }
+                ]
             }
         });
         console.log(`   [DEBUG] user1Res status: ${user1Res.status}, data: ${JSON.stringify(user1Res.data)}`);
@@ -122,7 +125,10 @@ async function runTests() {
                 specialization: 'Neurologist',
                 experience: 10,
                 consultationFee: 900,
-                availability: ['Wednesday', 'Thursday']
+                availability: [
+                    { day: 'Wednesday', startTime: '09:00', endTime: '13:00' },
+                    { day: 'Thursday', startTime: '09:00', endTime: '13:00' }
+                ]
             }
         });
         console.log(`   [DEBUG] user2Res status: ${user2Res.status}, data: ${JSON.stringify(user2Res.data)}`);

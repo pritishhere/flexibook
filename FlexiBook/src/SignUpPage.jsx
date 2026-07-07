@@ -5,7 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, ShieldCheck, Loader2, User, Building2, Phone } from 'lucide-react';
 
 const SignUpPage = () => {
-  const [role, setRole] = useState('customer'); 
+  const [role, setRole] = useState('customer');
   const [formData, setFormData] = useState({ name: '', email: '', password: '', businessName: '', phone: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -17,12 +17,12 @@ const SignUpPage = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post('http://localhost:3000/api/auth/signup', {
         ...formData,
-        role: role
+        role: role === 'customer' ? 'patient' : role
       });
       alert('Account Created Successfully! Please login.');
-      navigate('/login'); 
+      navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed. Please try again.");
     } finally {
@@ -32,7 +32,7 @@ const SignUpPage = () => {
 
   return (
     <div className="w-full flex flex-col lg:flex-row items-stretch font-sans bg-white selection:bg-indigo-500 selection:text-white overflow-hidden relative z-10" style={{ minHeight: 'calc(100vh - 80px)' }}>
-      
+
       <style>{`
         @keyframes blob { 0% { transform: translate(0px, 0px) scale(1); } 33% { transform: translate(30px, -50px) scale(1.1); } 66% { transform: translate(-20px, 20px) scale(0.9); } 100% { transform: translate(0px, 0px) scale(1); } }
         @keyframes slideUpFade { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -97,7 +97,7 @@ const SignUpPage = () => {
 
           <div className="relative p-[1.5px] rounded-[2rem] hover:-translate-y-3 transition-all duration-700 ease-out hover:shadow-[0_40px_100px_-20px_rgba(16,185,129,0.3)]">
             <div className="absolute inset-[-150%] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#10b981_30%,transparent_60%)] animate-conic-spin opacity-0 group-hover/card:opacity-100 transition-opacity duration-[800ms]"></div>
-            
+
             <div className="relative bg-white/90 backdrop-blur-3xl rounded-[calc(2rem-1.5px)] p-8 sm:p-10 h-full w-full border border-white/60 overflow-hidden">
               <div className="absolute top-0 -left-[150%] w-[150%] h-full bg-gradient-to-r from-transparent via-white/80 to-transparent skew-x-[-30deg] pointer-events-none transition-all group-hover/card:animate-[glass-glare_1.5s_ease-in-out]"></div>
 
@@ -114,7 +114,7 @@ const SignUpPage = () => {
               </div>
 
               <form onSubmit={handleSignup} className="flex flex-col gap-5 stagger-3 relative z-10">
-                
+
                 {/* Full Name */}
                 <div className="flex flex-col gap-1.5 relative group">
                   <label className="text-[13px] font-bold text-slate-700 ml-1">{role === 'business' ? 'Owner Name' : 'Full Name'}</label>
@@ -122,7 +122,7 @@ const SignUpPage = () => {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <User className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300" />
                     </div>
-                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="John Doe" />
+                    <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="John Doe" />
                   </div>
                 </div>
 
@@ -134,7 +134,7 @@ const SignUpPage = () => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Building2 className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300" />
                       </div>
-                      <input type="text" value={formData.businessName} onChange={(e) => setFormData({...formData, businessName: e.target.value})} required={role === 'business'} className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="FlexiBook Clinic" />
+                      <input type="text" value={formData.businessName} onChange={(e) => setFormData({ ...formData, businessName: e.target.value })} required={role === 'business'} className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="FlexiBook Clinic" />
                     </div>
                   </div>
 
@@ -144,7 +144,7 @@ const SignUpPage = () => {
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Phone className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300" />
                       </div>
-                      <input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} required={role === 'business'} className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="+91 98765 43210" />
+                      <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required={role === 'business'} className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="+91 98765 43210" />
                     </div>
                   </div>
                 </div>
@@ -156,7 +156,7 @@ const SignUpPage = () => {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <Mail className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300" />
                     </div>
-                    <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="name@example.com" />
+                    <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required className="w-full pl-11 pr-4 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="name@example.com" />
                   </div>
                 </div>
 
@@ -167,13 +167,13 @@ const SignUpPage = () => {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300" />
                     </div>
-                    <input type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required className="w-full pl-11 pr-12 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="••••••••" />
+                    <input type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required className="w-full pl-11 pr-12 py-3.5 bg-white/80 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:animate-[border-breathe_2s_infinite] transition-all duration-300" placeholder="••••••••" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-emerald-600 transition-colors focus:outline-none">
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
-                
+
                 {error && <p className="text-[12px] font-bold text-red-500 mt-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>{error}</p>}
 
                 {/* SUBMIT BUTTON */}

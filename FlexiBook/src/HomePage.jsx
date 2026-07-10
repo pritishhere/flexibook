@@ -40,7 +40,13 @@ const HomePage = () => {
     ]
   });
 
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  let user = null;
+  try {
+    const userStr = localStorage.getItem('user');
+    user = userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
+  } catch (e) {
+    console.error("Error parsing user in HomePage", e);
+  }
   const currentServeRef = useRef(1); 
   const nextAddRef = useRef(4); 
 

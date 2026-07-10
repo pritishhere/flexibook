@@ -8,7 +8,13 @@ export const Header = () => {
 
   // Secure Auth State Memory se data read karne ke liye
   const isLoggedIn = !!localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user'));
+  let user = null;
+  try {
+    const userStr = localStorage.getItem('user');
+    user = userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
+  } catch (e) {
+    console.error("Error parsing user from localStorage", e);
+  }
 
   // Professional Secure Logout
   const handleLogout = () => {
@@ -42,7 +48,7 @@ export const Header = () => {
               <img 
                 src="/logo.png" 
                 alt="FlexiBook Logo" 
-                className="h-60 sm:h-35 md:h-45 lg:h-65 xl:h-65 w-auto object-contain cursor-pointer transform hover:scale-105 transition-transform duration-200" 
+                className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain cursor-pointer transform hover:scale-105 transition-transform duration-200" 
               />
             </Link>
           </div>

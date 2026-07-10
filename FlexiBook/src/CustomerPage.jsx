@@ -140,6 +140,7 @@ const CustomerPage = () => {
     categories: true, location: true, sortBy: true, availability: true, price: true, ratings: true
   });
   const [isOthersOpen, setIsOthersOpen] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // 🔥 Full Page Detail State 🔥
   const [activeDetailPage, setActiveDetailPage] = useState(null);
@@ -1573,8 +1574,8 @@ const CustomerPage = () => {
         <div className="flex flex-col lg:flex-row gap-8">
 
           {/* SIDEBAR */}
-          <div className="w-full lg:w-64 shrink-0">
-            <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-sm border border-slate-200/60 p-5 sticky top-28 transition-all duration-300">
+          <div className={`w-full lg:w-64 shrink-0 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
+            <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-sm border border-slate-200/60 p-5 lg:sticky lg:top-28 transition-all duration-300">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-slate-900 text-sm tracking-tight">Filter Results</h3>
                 <button onClick={handleClearAll} className="text-blue-600 text-xs font-bold px-2 py-1 rounded-md bg-blue-50/0 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 active:scale-90" title="Click to reset all filters">Clear All</button>
@@ -1711,15 +1712,24 @@ const CustomerPage = () => {
 
           {/* MAIN CONTENT LISTINGS (PREMIUM CARDS) */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-bold text-slate-900">All Services</h2>
                 <span className="bg-blue-50/80 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm transition-all">{sortedServices.length} Results</span>
               </div>
-              <button className="flex items-center gap-2 text-blue-600 text-sm font-medium border border-blue-200 bg-white/95 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-blue-50 active:scale-95 transition-all shadow-sm">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                Map View
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowMobileFilters(!showMobileFilters)} 
+                  className="flex lg:hidden items-center gap-2 text-slate-700 text-sm font-semibold border border-slate-300 bg-white/95 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-slate-50 active:scale-95 transition-all shadow-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                  {showMobileFilters ? 'Hide Filters' : 'Filters'}
+                </button>
+                <button className="flex items-center gap-2 text-blue-600 text-sm font-medium border border-blue-200 bg-white/95 backdrop-blur-md px-4 py-2 rounded-lg hover:bg-blue-50 active:scale-95 transition-all shadow-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                  Map View
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-5">

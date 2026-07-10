@@ -176,7 +176,7 @@ const DoctorPortal = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                            app.token === currentToken ? 'bg-blue-50 text-white' : 'bg-surface text-textMuted border border-borderSoft'
+                            app.token === currentToken ? 'bg-blue-600 text-white' : 'bg-surface text-textMuted border border-borderSoft'
                           }`}>
                             Token #{app.token}
                           </span>

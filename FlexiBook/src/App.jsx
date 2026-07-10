@@ -111,6 +111,7 @@ function App() {
                 <Route path="/business/dashboard" element={<BusinessDashboard />} />
                 <Route path="/doctor/portal" element={<DoctorPortal />} />
                 <Route path="/ai-symptom-checker" element={<AISymptomChecker />} />
+                
               </Routes>
             </Suspense>
           </main>

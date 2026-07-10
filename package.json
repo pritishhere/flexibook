@@ -1,6 +1,5 @@
 {
   "name": "flexibook-root",
-  "private": true,
   "version": "1.0.0",
   "workspaces": [
     "FlexiBook",

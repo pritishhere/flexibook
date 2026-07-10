@@ -6,7 +6,8 @@ const {
     getDoctorById,
     updateDoctor,
     deleteDoctor,
-    addDoctorLeave
+    addDoctorLeave,
+    getDoctorLeaves
 } = require('../controllers/doctorcontroller');
 
 // 🌐 GET /api/doctors - Get all doctors (with optional specialization/hospital search query)
@@ -26,6 +27,9 @@ router.delete('/:id', deleteDoctor);
 
 // 🌐 POST /api/doctors/:id/leave - Add a leave for a specific doctor
 router.post('/:id/leave', addDoctorLeave);
+
+// 🌐 GET /api/doctors/:id/leaves - Get all leaves for a specific doctor
+router.get('/:id/leaves', getDoctorLeaves);
 
 
 module.exports = router;

@@ -373,18 +373,72 @@ exports.addDoctorLeave = async (req, res) => {
         const leaveDate = new Date(date);
         leaveDate.setHours(0, 0, 0, 0);
 
-        const newLeave = await DoctorLeave.create({
-            doctor: doctorId,
-            date: leaveDate,
-            reason: reason
-        });
+        if (mongoose.connection.readyState === 1) {
+            const newLeave = await DoctorLeave.create({
+                doctor: doctorId || req.params.id,
+                date: leaveDate,
+                reason: reason
+            });
 
-        res.status(201).json({
-            success: true,
-            message: `Leave successfully marked for date: ${leaveDate.toDateString()}`,
-            data: newLeave
-        });
+            res.status(201).json({
+                success: true,
+                message: `Leave successfully marked for date: ${leaveDate.toDateString()}`,
+                data: newLeave
+            });
+        } else {
+            // In-Memory Fallback
+            const newLeave = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                doctor: doctorId || req.params.id,
+                date: leaveDate,
+                reason: reason || 'Personal Leave',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            if (!inMemoryDb.doctorLeaves) inMemoryDb.doctorLeaves = [];
+            inMemoryDb.doctorLeaves.push(newLeave);
+
+            res.status(201).json({
+                success: true,
+                message: `Leave successfully marked for date: ${leaveDate.toDateString()} (In-Memory)`,
+                data: newLeave
+            });
+        }
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// GET: /api/doctors/:id/leaves — Fetch all leaves for a doctor
+exports.getDoctorLeaves = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (mongoose.connection.readyState === 1) {
+            const leaves = await DoctorLeave.find({ doctor: id }).sort({ date: 1 });
+
+            return res.status(200).json({
+                success: true,
+                count: leaves.length,
+                data: leaves
+            });
+        } else {
+            // In-Memory Fallback
+            const leaves = (inMemoryDb.doctorLeaves || [])
+                .filter(l => l.doctor === id)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            return res.status(200).json({
+                success: true,
+                count: leaves.length,
+                data: leaves
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch doctor leaves',
+            error: error.message
+        });
     }
 };

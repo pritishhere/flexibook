@@ -7,6 +7,7 @@ const mainCategories = serviceCategories.slice(0, 6).map((category) => category.
 const otherCategories = serviceCategories.slice(6).map((category) => category.name);
 const allCategoriesList = serviceCategories.map((category) => category.name);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_123456';
 const HEALTHCARE_TIME_SLOTS = [
   '09:00 AM - 10:00 AM',
   '10:00 AM - 11:00 AM',
@@ -101,7 +102,10 @@ const createInitialBookingForm = (service = {}) => ({
   timeSlot: service.availabilityStatus === 'Join Queue' ? 'Live Queue' : HEALTHCARE_TIME_SLOTS[0],
   reasonForVisit: service.availabilityStatus === 'Join Queue'
     ? 'Joining the live queue for consultation'
-    : 'General consultation'
+    : 'General consultation',
+  doctorId: '',
+  doctorName: '',
+  consultationFee: service.priceValue || 500
 });
 
 const getServiceSpecialization = (service = {}) => {
@@ -149,6 +153,8 @@ const CustomerPage = () => {
   const [bookingForm, setBookingForm] = useState(() => createInitialBookingForm());
   const [bookingStatus, setBookingStatus] = useState({ state: 'idle', message: '', tokenNumber: null });
   const [detailProfile, setDetailProfile] = useState(DEFAULT_DETAIL_PROFILE);
+  const [availableDoctors, setAvailableDoctors] = useState([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
   const activeSelectedCategories = selectedCategories.length > 0
     ? selectedCategories
     : matchedQueryCategory ? [matchedQueryCategory] : [];
@@ -230,6 +236,72 @@ const CustomerPage = () => {
     };
     fetchDbHospitals();
   }, []);
+
+  useEffect(() => {
+    if (!bookingService || !isHealthcareService(bookingService)) {
+      setAvailableDoctors([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadDoctorsForBooking = async () => {
+      try {
+        setLoadingDoctors(true);
+        const hospitalDbId = await resolveBackendHospitalId(bookingService);
+        if (!hospitalDbId) {
+          if (isMounted) setAvailableDoctors([]);
+          return;
+        }
+
+        const res = await fetch(`http://localhost:3000/api/doctors?hospitalId=${hospitalDbId}`);
+        const json = await res.json();
+        if (isMounted) {
+          if (json.success && Array.isArray(json.data)) {
+            setAvailableDoctors(json.data);
+          } else {
+            setAvailableDoctors([]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load doctors for booking:', err);
+        if (isMounted) setAvailableDoctors([]);
+      } finally {
+        if (isMounted) setLoadingDoctors(false);
+      }
+    };
+
+    loadDoctorsForBooking();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingService, dbHospitals]);
+
+  useEffect(() => {
+    if (!bookingService) return;
+
+    if (availableDoctors && availableDoctors.length > 0) {
+      const firstDoc = availableDoctors[0];
+      setBookingForm(prev => ({
+        ...prev,
+        doctorId: firstDoc._id,
+        doctorName: firstDoc.userId?.name || 'Specialist',
+        consultationFee: firstDoc.fees || bookingService.priceValue || 500
+      }));
+    } else {
+      const mockTeam = getDynamicTeam(bookingService.category || '');
+      if (mockTeam && mockTeam.length > 0) {
+        const firstMock = mockTeam[0];
+        setBookingForm(prev => ({
+          ...prev,
+          doctorId: 'mock-doc-0',
+          doctorName: firstMock.name,
+          consultationFee: bookingService.priceValue || 500
+        }));
+      }
+    }
+  }, [availableDoctors, bookingService]);
 
   useEffect(() => {
     if (activeDetailPage) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -329,15 +401,16 @@ const CustomerPage = () => {
 
     if (!bookingService) return;
 
+    const fee = Number(bookingForm.consultationFee) || bookingService.priceValue || 500;
+
     setBookingStatus({ state: 'loading', message: 'Booking your appointment...', tokenNumber: null });
 
     try {
+      // ── Step 1: Book the appointment ──
       const isQueueBooking = bookingService.availabilityStatus === 'Join Queue';
-      const response = await fetch(`${API_BASE_URL}/appointments/book`, {
+      const bookingRes = await fetch(`${API_BASE_URL}/appointments/book`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientName: bookingForm.patientName.trim(),
           patientEmail: bookingForm.patientEmail.trim(),
@@ -347,26 +420,202 @@ const CustomerPage = () => {
           hospitalAddress: `${bookingService.location}, India`,
           hospitalContactNumber: '9876543210',
           specialization: getServiceSpecialization(bookingService),
-          consultationFee: bookingService.priceValue || 500,
+          consultationFee: fee,
           appointmentDate: bookingForm.appointmentDate,
           timeSlot: isQueueBooking ? 'Live Queue' : bookingForm.timeSlot,
           reasonForVisit: bookingForm.reasonForVisit.trim() || 'General consultation',
           bookingMode: isQueueBooking ? 'queue' : 'appointment',
-          sourceServiceId: bookingService.id
+          sourceServiceId: bookingService.id,
+          ...(bookingForm.doctorId && !bookingForm.doctorId.startsWith('mock-doc-') ? { doctor: bookingForm.doctorId } : {})
         })
       });
 
-      const data = await response.json().catch(() => ({}));
+      const bookingData = await bookingRes.json().catch(() => ({}));
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || data.error || 'Unable to book this appointment right now.');
+      if (!bookingRes.ok || !bookingData.success) {
+        throw new Error(bookingData.message || bookingData.error || 'Unable to book this appointment right now.');
       }
 
-      setBookingStatus({
-        state: 'success',
-        message: data.message || 'Appointment booked successfully.',
-        tokenNumber: data.data?.tokenNumber || null
+      const appointmentId = bookingData.data?.appointmentDetails?._id || bookingData.data?.appointmentDetails?.id || '';
+      const tokenNumber = bookingData.data?.tokenNumber || null;
+      const patientId = bookingData.data?.appointmentDetails?.patient || '';
+
+      // ── Step 2: Create a Razorpay order ──
+      setBookingStatus({ state: 'loading', message: 'Initiating secure payment...', tokenNumber: null });
+
+      const orderRes = await fetch(`${API_BASE_URL}/payments/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: patientId || 'guest_' + Date.now(),
+          amount: fee,
+          currency: 'INR',
+          receipt: `booking_${appointmentId || Date.now()}`
+        })
       });
+
+      const orderData = await orderRes.json().catch(() => ({}));
+
+      if (!orderRes.ok || !orderData.success) {
+        // Payment order failed but appointment is booked – show partial success
+        setBookingStatus({
+          state: 'success',
+          message: `${bookingData.message || 'Appointment booked!'} (Payment could not be initiated – please pay at the counter.)`,
+          tokenNumber
+        });
+        return;
+      }
+
+      const order = orderData.data;
+      const isMockOrder = order.id?.startsWith('order_mock_');
+
+      // ── Step 3A: Mock Payment Simulation (Dev Mode) ──
+      if (isMockOrder) {
+        setBookingStatus({ state: 'loading', message: 'Processing payment (Dev Mode)...', tokenNumber: null });
+
+        // Simulate a short delay for realism
+        await new Promise(r => setTimeout(r, 800));
+
+        const mockPaymentId = 'pay_mock_' + Math.random().toString(36).substring(2, 15);
+
+        // Generate valid HMAC-SHA256 signature using the known mock secret
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode('mock_secret');
+        const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+        const signData = encoder.encode(order.id + '|' + mockPaymentId);
+        const sigBuffer = await crypto.subtle.sign('HMAC', cryptoKey, signData);
+        const mockSignature = Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Call verify endpoint with mock credentials
+        setBookingStatus({ state: 'loading', message: 'Verifying payment...', tokenNumber: null });
+
+        const verifyRes = await fetch(`${API_BASE_URL}/payments/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpay_order_id: order.id,
+            razorpay_payment_id: mockPaymentId,
+            razorpay_signature: mockSignature,
+            appointmentId
+          })
+        });
+
+        const verifyData = await verifyRes.json().catch(() => ({}));
+
+        if (verifyRes.ok && verifyData.success) {
+          setBookingStatus({
+            state: 'success',
+            message: 'Payment successful! Your appointment is confirmed. (Dev Mode)',
+            tokenNumber
+          });
+        } else {
+          setBookingStatus({
+            state: 'success',
+            message: `Appointment booked (Token #${tokenNumber || '—'}). Mock payment verification failed – ${verifyData.message || 'unknown error'}.`,
+            tokenNumber
+          });
+        }
+        return;
+      }
+
+      // ── Step 3B: Real Razorpay Checkout (Production) ──
+      if (typeof window.Razorpay === 'undefined') {
+        setBookingStatus({
+          state: 'success',
+          message: `${bookingData.message || 'Appointment booked!'} (Online payment is currently unavailable – please pay at the counter.)`,
+          tokenNumber
+        });
+        return;
+      }
+
+      // Return a promise from the Razorpay payment flow
+      await new Promise((resolve, reject) => {
+        const options = {
+          key: RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency || 'INR',
+          name: 'FlexiBook',
+          description: `Appointment – ${bookingService.name}`,
+          order_id: order.id,
+          prefill: {
+            name: bookingForm.patientName,
+            email: bookingForm.patientEmail,
+            contact: bookingForm.patientPhone || ''
+          },
+          theme: { color: '#2563EB' },
+          handler: async function (response) {
+            try {
+              setBookingStatus({ state: 'loading', message: 'Verifying payment...', tokenNumber: null });
+
+              const verifyRes = await fetch(`${API_BASE_URL}/payments/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  appointmentId
+                })
+              });
+
+              const verifyData = await verifyRes.json().catch(() => ({}));
+
+              if (verifyRes.ok && verifyData.success) {
+                setBookingStatus({
+                  state: 'success',
+                  message: 'Payment successful! Your appointment is confirmed.',
+                  tokenNumber
+                });
+              } else {
+                setBookingStatus({
+                  state: 'success',
+                  message: `Appointment booked (Token #${tokenNumber || '—'}). Payment verification pending – please check your email for confirmation.`,
+                  tokenNumber
+                });
+              }
+              resolve();
+            } catch (verifyErr) {
+              setBookingStatus({
+                state: 'success',
+                message: `Appointment booked (Token #${tokenNumber || '—'}). Payment was processed but verification encountered an issue. Please contact support.`,
+                tokenNumber
+              });
+              resolve();
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setBookingStatus({
+                state: 'success',
+                message: `Appointment booked (Token #${tokenNumber || '—'}). Payment was skipped – you can pay at the counter.`,
+                tokenNumber
+              });
+              resolve();
+            }
+          }
+        };
+
+        try {
+          const rzp = new window.Razorpay(options);
+          rzp.on('payment.failed', function (response) {
+            setBookingStatus({
+              state: 'success',
+              message: `Appointment booked (Token #${tokenNumber || '—'}). Payment failed: ${response.error?.description || 'Unknown error'}. You can pay at the counter.`,
+              tokenNumber
+            });
+            resolve();
+          });
+          rzp.open();
+        } catch (rzpError) {
+          setBookingStatus({
+            state: 'success',
+            message: `Appointment booked (Token #${tokenNumber || '—'}). Could not open payment gateway – please pay at the counter.`,
+            tokenNumber
+          });
+          resolve();
+        }
+      });
+
     } catch (error) {
       setBookingStatus({
         state: 'error',
@@ -814,6 +1063,16 @@ const CustomerPage = () => {
               </div>
               <h3 className="text-2xl font-black text-slate-900">Booking confirmed</h3>
               <p className="mt-2 text-sm font-medium text-slate-600">{bookingStatus.message}</p>
+              {bookingStatus.message?.toLowerCase().includes('payment successful') && (
+                <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1.5">
+                  <span className="text-emerald-600 text-xs font-black">💳 Payment Verified</span>
+                </div>
+              )}
+              {bookingStatus.message?.toLowerCase().includes('pay at the counter') && (
+                <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5">
+                  <span className="text-amber-700 text-xs font-black">⚠ Pay at Counter</span>
+                </div>
+              )}
               {bookingStatus.tokenNumber && (
                 <div className="mx-auto mt-5 max-w-xs rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
                   <p className="text-xs font-bold uppercase tracking-wide text-blue-600">Queue token</p>
@@ -891,6 +1150,60 @@ const CustomerPage = () => {
                 </label>
               </div>
 
+              {isHealthcareService(bookingService) && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-bold text-slate-700">Select Specialist / Doctor</span>
+                  {loadingDoctors ? (
+                    <div className="text-xs text-blue-500 font-bold animate-pulse mt-1">Fetching doctor directory...</div>
+                  ) : (
+                    <select
+                      name="doctorId"
+                      value={bookingForm.doctorId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        let selectedDocName = '';
+                        let fee = bookingService.priceValue || 500;
+
+                        const docObj = availableDoctors.find(d => d._id === val);
+                        if (docObj) {
+                          selectedDocName = docObj.userId?.name || 'Specialist';
+                          fee = docObj.fees || fee;
+                        } else {
+                          const mockTeam = getDynamicTeam(bookingService.category || '');
+                          const mockIdx = parseInt(val.replace('mock-doc-', ''), 10);
+                          if (!isNaN(mockIdx) && mockTeam[mockIdx]) {
+                            selectedDocName = mockTeam[mockIdx].name;
+                            fee = bookingService.priceValue || 500;
+                          }
+                        }
+
+                        setBookingForm(prev => ({
+                          ...prev,
+                          doctorId: val,
+                          doctorName: selectedDocName,
+                          consultationFee: fee
+                        }));
+                      }}
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white"
+                    >
+                      {availableDoctors.length > 0 ? (
+                        availableDoctors.map((doc) => (
+                          <option key={doc._id} value={doc._id}>
+                            {doc.userId?.name || 'Doctor'} ({doc.specialization}) — Fee: ₹{doc.fees || 500}
+                          </option>
+                        ))
+                      ) : (
+                        getDynamicTeam(bookingService.category).map((doc, idx) => (
+                          <option key={`mock-doc-${idx}`} value={`mock-doc-${idx}`}>
+                            {doc.name} ({doc.title}) — Fee: ₹{bookingService.priceValue || 500}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  )}
+                </div>
+              )}
+
               <label className="block text-sm font-bold text-slate-700">
                 Time slot
                 {isQueueBooking ? (
@@ -927,12 +1240,25 @@ const CustomerPage = () => {
                 />
               </label>
 
+              {isHealthcareService(bookingService) && (
+                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-1.5 shadow-inner">
+                  <div className="flex justify-between items-center text-xs sm:text-sm">
+                    <span className="text-slate-500 font-semibold">Assigned Professional</span>
+                    <span className="font-bold text-slate-800">{bookingForm.doctorName || 'General Care Team'}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs sm:text-sm">
+                    <span className="text-slate-500 font-semibold">Adjusted Consultation Fee</span>
+                    <span className="font-black text-blue-600">₹{bookingForm.consultationFee}</span>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
               >
-                {isSubmitting ? 'Booking...' : isQueueBooking ? 'Join Queue' : 'Confirm Booking'}
+                {isSubmitting ? 'Processing...' : isQueueBooking ? 'Join Queue' : `Pay ₹${bookingForm.consultationFee} & Confirm`}
               </button>
             </form>
           )}

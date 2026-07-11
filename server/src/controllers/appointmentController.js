@@ -3,6 +3,7 @@ const Appointment = require('../models/Appointment');
 const User = require('../models/user');
 const Hospital = require('../models/Hospital');
 const Doctor = require('../models/Doctor');
+const DoctorLeave = require('../models/DoctorLeave');
 const inMemoryDb = require('../utils/inMemoryDb');
 
 const DEFAULT_DOCTOR_PASSWORD = 'FlexiBook@123';
@@ -253,7 +254,35 @@ exports.bookAppointment = async (req, res) => {
         const appointmentDateValue = new Date(appointmentDate);
         const visitReason = reasonForVisit || (bookingMode === 'queue' ? 'Joined live queue' : 'General Checkup');
 
+        // === Block booking if doctor is marked unavailable or on leave ===
         if (inMemoryDb.isDbConnected()) {
+            // Check doctor's availability flag
+            const doctorDoc = await Doctor.findById(doctor);
+            if (doctorDoc && doctorDoc.isAvailable === false) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot book: Doctor is currently unavailable.'
+                });
+            }
+
+            // Check if doctor has a leave for the appointment date
+            const startOfDay = new Date(appointmentDateValue);
+            startOfDay.setHours(0,0,0,0);
+            const endOfDay = new Date(appointmentDateValue);
+            endOfDay.setHours(23,59,59,999);
+
+            const leave = await DoctorLeave.findOne({
+                doctor: doctor,
+                date: { $gte: startOfDay, $lte: endOfDay }
+            });
+
+            if (leave) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Cannot book: Doctor is on leave for ${startOfDay.toDateString()}.`
+                });
+            }
+
             // Find the last token for this specific doctor on the given date
             const lastAppointment = await Appointment.findOne({ 
                 doctor: doctor, 
@@ -312,7 +341,19 @@ exports.bookAppointment = async (req, res) => {
             });
         } else {
             // In-Memory Fallback Mode
+            // Check doctor's availability flag in in-memory DB
+            const docObjCheck = inMemoryDb.doctors.find(d => d._id === doctor);
+            if (docObjCheck && docObjCheck.isAvailable === false) {
+                return res.status(400).json({ success: false, message: 'Cannot book: Doctor is currently unavailable.' });
+            }
+
+            // Check in-memory doctor leaves for the date
             const targetDateStr = appointmentDateValue.toDateString();
+            const hasLeave = (inMemoryDb.doctorLeaves || []).some(l => l.doctor === doctor && new Date(l.date).toDateString() === targetDateStr);
+            if (hasLeave) {
+                return res.status(400).json({ success: false, message: `Cannot book: Doctor is on leave for ${targetDateStr}.` });
+            }
+
             const sameDayApps = inMemoryDb.appointments.filter(a => 
                 a.doctor === doctor && 
                 a.hospital === hospital && 

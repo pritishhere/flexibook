@@ -406,11 +406,17 @@ const CustomerPage = () => {
     setBookingStatus({ state: 'loading', message: 'Booking your appointment...', tokenNumber: null });
 
     try {
+      const token = localStorage.getItem('token');
+      const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
       // ── Step 1: Book the appointment ──
       const isQueueBooking = bookingService.availabilityStatus === 'Join Queue';
       const bookingRes = await fetch(`${API_BASE_URL}/appointments/book`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
         body: JSON.stringify({
           patientName: bookingForm.patientName.trim(),
           patientEmail: bookingForm.patientEmail.trim(),
@@ -445,7 +451,10 @@ const CustomerPage = () => {
 
       const orderRes = await fetch(`${API_BASE_URL}/payments/order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
         body: JSON.stringify({
           userId: patientId || 'guest_' + Date.now(),
           amount: fee,
@@ -491,7 +500,10 @@ const CustomerPage = () => {
 
         const verifyRes = await fetch(`${API_BASE_URL}/payments/verify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...authHeaders
+          },
           body: JSON.stringify({
             razorpay_order_id: order.id,
             razorpay_payment_id: mockPaymentId,
@@ -549,7 +561,10 @@ const CustomerPage = () => {
 
               const verifyRes = await fetch(`${API_BASE_URL}/payments/verify`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  ...authHeaders
+                },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,

@@ -104,9 +104,13 @@ const BusinessDashboard = () => {
         availability: doctorForm.slots
       };
 
+      const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:3000/api/doctors', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
       const json = await res.json();
@@ -137,7 +141,13 @@ const BusinessDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this doctor profile and their user credentials?')) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/doctors/${id}`, { method: 'DELETE' });
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:3000/api/doctors/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       const json = await res.json();
       if (json.success) {
         setAlert({ type: 'success', message: 'Doctor deleted successfully!' });

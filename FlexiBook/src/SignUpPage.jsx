@@ -28,59 +28,57 @@ const SignUpPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    // 1. Fetch Existing Users Database
-    const usersDB = JSON.parse(localStorage.getItem('flexibook_secure_users_db')) || [];
+    // Backend role mapping: 'customer' maps to 'patient' inside mongoose enum
+    const backendRole = role === 'customer' ? 'patient' : role;
 
-    // 2. Security Check: Check if Email already exists
-    const userExists = usersDB.find(u => u.email.toLowerCase() === formData.email.toLowerCase());
-    if (userExists) {
-      setError("This email is already registered. Please log in.");
+    trackUserAction('SIGNUP_ATTEMPT', { name: formData.name, email: formData.email, role: backendRole });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email.toLowerCase(),
+          password: formData.password,
+          role: backendRole,
+          mobile: formData.phone // Pass phone as mobile in backend schema/controller
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.message || 'Registration failed. Please try again.');
+        trackUserAction('SIGNUP_FAILED', { email: formData.email });
+        setIsLoading(false);
+        return;
+      }
+
+      // Generate Auto-Login Session using real backend JWT token
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify({
+        name: data.name,
+        email: data.email,
+        role: data.role
+      }));
+
       setIsLoading(false);
-      trackUserAction('SIGNUP_FAILED_DUPLICATE_EMAIL', { email: formData.email });
-      return;
+      trackUserAction('SIGNUP_SUCCESSFUL', { email: data.email, role: data.role });
+      alert(`Welcome ${data.name}! Account created successfully.`);
+      navigate('/');
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError('Connection to registration server failed. Please check if the server is running.');
+      trackUserAction('SIGNUP_ERROR', { email: formData.email, error: err.message });
+      setIsLoading(false);
     }
-
-    trackUserAction('SIGNUP_ATTEMPT', { name: formData.name, email: formData.email, role: role });
-
-    // 3. Cryptography: Generate Unique Salt & Hash Password
-    const uniqueSalt = crypto.randomUUID(); 
-    const securePasswordHash = await hashPassword(formData.password, uniqueSalt);
-
-    // 4. Create New Secure User Profile
-    const newUserProfile = {
-      id: crypto.randomUUID(),
-      name: formData.name,
-      email: formData.email.toLowerCase(),
-      role: role,
-      businessName: role === 'business' ? formData.businessName : null,
-      phone: role === 'business' ? formData.phone : null,
-      salt: uniqueSalt,
-      passwordHash: securePasswordHash,
-      createdAt: new Date().toISOString()
-    };
-
-    setTimeout(() => {
-      // 5. Save to Local Database
-      usersDB.push(newUserProfile);
-      localStorage.setItem('flexibook_secure_users_db', JSON.stringify(usersDB));
-
-      // 6. Generate Fake JWT Token & Auto-Login Session
-      const fakeSecureToken = btoa(JSON.stringify({ id: newUserProfile.id, email: newUserProfile.email, role: role })) + ".ultra_secure_signature";
-      
-      localStorage.setItem('token', fakeSecureToken);
-      localStorage.setItem('user', JSON.stringify({ name: newUserProfile.name, email: newUserProfile.email, role: newUserProfile.role }));
-      
-      setIsLoading(false);
-      trackUserAction('SIGNUP_SUCCESSFUL', { email: newUserProfile.email, role: role });
-      alert(`Welcome ${newUserProfile.name}! Account created securely.`);
-      navigate('/'); 
-    }, 1500);
   };
 
   return (

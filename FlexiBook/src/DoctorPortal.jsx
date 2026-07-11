@@ -72,9 +72,13 @@ const DoctorPortal = () => {
         reason: leaveReason
       };
 
+      const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:3000/api/doctors/${selectedDoctorId}/leave`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
       const json = await res.json();

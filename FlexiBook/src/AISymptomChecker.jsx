@@ -27,6 +27,7 @@ function AISymptomChecker() {
   const [error, setError] = useState("");
 
   const [bookingDoctor, setBookingDoctor] = useState(null);
+  const [bookingDoctorLeaves, setBookingDoctorLeaves] = useState([]);
   const [bookingForm, setBookingForm] = useState({
     patientName: '',
     patientEmail: '',
@@ -48,6 +49,20 @@ function AISymptomChecker() {
       reasonForVisit: `AI Symptom Check: ${symptoms.trim()}`
     });
     setBookingStatus({ state: 'idle', message: '', tokenNumber: null });
+    // Fetch doctor's leaves to prevent booking on leave dates
+    (async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/api/doctors/${doctor.id}/leaves`);
+        if (res.data && res.data.success) {
+          const leaves = (res.data.data || []).map(l => new Date(l.date).toDateString());
+          setBookingDoctorLeaves(leaves);
+        } else {
+          setBookingDoctorLeaves([]);
+        }
+      } catch (err) {
+        setBookingDoctorLeaves([]);
+      }
+    })();
   };
 
   const handleBookingClose = () => {
@@ -64,6 +79,13 @@ function AISymptomChecker() {
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     if (!bookingDoctor) return;
+
+    // Client-side check: prevent booking if selected date is a leave
+    const selectedDateStr = new Date(bookingForm.appointmentDate).toDateString();
+    if (bookingDoctorLeaves.includes(selectedDateStr)) {
+      setBookingStatus({ state: 'error', message: `Selected date ${selectedDateStr} is marked as doctor's leave.` });
+      return;
+    }
 
     setBookingStatus({ state: 'loading', message: 'Booking your appointment...', tokenNumber: null });
 

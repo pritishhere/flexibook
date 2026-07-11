@@ -56,7 +56,7 @@ async function runTests() {
                 name: 'Audit Reviewer',
                 email: uniqueEmail,
                 password: 'securepassword123',
-                role: 'patient'
+                role: 'admin'
             }
         });
         console.log(`   - SignUp Status: ${signupRes.status}`);
@@ -75,6 +75,9 @@ async function runTests() {
         if (loginRes.status !== 200) throw new Error('Login failed');
         console.log('   ✅ AUTH API WORKING PERFECTLY\n');
 
+        const token = loginRes.data.token;
+        const authHeader = { 'Authorization': `Bearer ${token}` };
+
         // ==========================================
         // 2. HOSPITAL API TESTING
         // ==========================================
@@ -82,6 +85,7 @@ async function runTests() {
         // Create Hospital
         const createHospRes = await request(`${baseUrl}/hospitals`, {
             method: 'POST',
+            headers: authHeader,
             body: {
                 name: 'City Care Hospital',
                 address: 'Park Street',
@@ -104,6 +108,7 @@ async function runTests() {
         // Update Hospital
         const updateHospRes = await request(`${baseUrl}/hospitals/${hospitalId}`, {
             method: 'PUT',
+            headers: authHeader,
             body: { name: 'City Care Super-speciality Hospital' }
         });
         console.log(`   - Update Hospital Status: ${updateHospRes.status} (New Name: ${updateHospRes.data.data.name})`);
@@ -184,6 +189,7 @@ async function runTests() {
         // Create Doctor
         const createDocRes = await request(`${baseUrl}/doctors`, {
             method: 'POST',
+            headers: authHeader,
             body: {
                 userId: userId,
                 hospitalId: hospitalId,
@@ -212,6 +218,7 @@ async function runTests() {
         // Update Doctor
         const updateDocRes = await request(`${baseUrl}/doctors/${doctorId}`, {
             method: 'PUT',
+            headers: authHeader,
             body: { consultationFee: 600 }
         });
         console.log(`   - Update Doctor Status: ${updateDocRes.status} (New Fees: ${updateDocRes.data.data.fees})`);
@@ -269,9 +276,12 @@ async function runTests() {
         getHospRatingRes = await request(`${baseUrl}/hospitals/${hospitalId}`);
         console.log(`   - Hospital Rating after review deletion: ${getHospRatingRes.data.data.rating} (Expected: 0)`);
 
-        // Delete Doctor
-        const delDocRes = await request(`${baseUrl}/doctors/${doctorId}`, { method: 'DELETE' });
-        console.log(`   - Delete Doctor Status: ${delDocRes.status}`);
+        // Delete Hospital
+        const delHospRes = await request(`${baseUrl}/hospitals/${hospitalId}`, { 
+            method: 'DELETE',
+            headers: authHeader
+        });
+        console.log(`   - Delete Hospital Status: ${delHospRes.status}`);
 
         // Delete Service
         const delServRes = await request(`${baseUrl}/services/${serviceId}`, { method: 'DELETE' });
@@ -281,9 +291,12 @@ async function runTests() {
         const delDeptRes = await request(`${baseUrl}/departments/${departmentId}`, { method: 'DELETE' });
         console.log(`   - Delete Department Status: ${delDeptRes.status}`);
 
-        // Delete Hospital
-        const delHospRes = await request(`${baseUrl}/hospitals/${hospitalId}`, { method: 'DELETE' });
-        console.log(`   - Delete Hospital Status: ${delHospRes.status}`);
+        // Delete Doctor
+        const delDocRes = await request(`${baseUrl}/doctors/${doctorId}`, { 
+            method: 'DELETE',
+            headers: authHeader
+        });
+        console.log(`   - Delete Doctor Status: ${delDocRes.status}`);
 
         console.log('   ✅ CLEANUP & DELETION COMPLETED SUCCESSFULLY\n');
 

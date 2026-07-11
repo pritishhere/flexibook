@@ -28,6 +28,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -36,46 +37,38 @@ const Login = () => {
 
     trackUserAction('LOGIN_ATTEMPT', { email: email.toLowerCase() });
 
-    // 1. Fetch Users Database
-    const usersDB = JSON.parse(localStorage.getItem('flexibook_secure_users_db')) || [];
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), password })
+      });
+      const data = await res.json().catch(() => ({}));
 
-    // 2. Find specific user
-    const activeUser = usersDB.find(u => u.email === email.toLowerCase());
-
-    if (!activeUser) {
-      setTimeout(() => {
+      if (!res.ok) {
+        setError(data.message || 'Invalid email or password. Please try again.');
+        trackUserAction('LOGIN_FAILED', { email: email.toLowerCase() });
         setIsLoading(false);
-        setError('No account found with this email.');
-        trackUserAction('LOGIN_FAILED_NOT_FOUND', { email: email.toLowerCase() });
-      }, 1000);
-      return;
-    }
+        return;
+      }
 
-    // 3. Ultra Security: Hash the entered password with user's saved salt
-    const enteredHash = await hashPassword(password, activeUser.salt);
+      // SUCCESS! Store JWT token and user info from server
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify({
+        name: data.name,
+        email: data.email,
+        role: data.role
+      }));
 
-    // 4. Verify Credentials Match
-    if (enteredHash !== activeUser.passwordHash) {
-      setTimeout(() => {
-        setIsLoading(false);
-        setError('Incorrect password. Please try again.');
-        trackUserAction('LOGIN_FAILED_WRONG_PASSWORD', { email: activeUser.email });
-      }, 1000);
-      return;
-    }
-
-    // 5. SUCCESS! Start session for specific user
-    setTimeout(() => {
+      trackUserAction('LOGIN_SUCCESSFUL', { email: data.email, name: data.name });
+      navigate('/');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Connection to authorization server failed. Please check if the server is running.');
+      trackUserAction('LOGIN_ERROR', { email: email.toLowerCase(), error: err.message });
+    } finally {
       setIsLoading(false);
-      
-      const fakeSecureToken = btoa(JSON.stringify({ id: activeUser.id })) + ".ultra_secure_session";
-      localStorage.setItem('token', fakeSecureToken);
-      
-      localStorage.setItem('user', JSON.stringify({ name: activeUser.name, email: activeUser.email, role: activeUser.role }));
-      
-      trackUserAction('LOGIN_SUCCESSFUL', { email: activeUser.email, name: activeUser.name });
-      navigate('/'); 
-    }, 1500);
+    }
   };
 
   return (

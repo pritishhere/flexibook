@@ -227,6 +227,11 @@ exports.bookAppointment = async (req, res) => {
     try {
         let { patient, doctor, hospital, appointmentDate, timeSlot, reasonForVisit, bookingMode } = req.body;
 
+        // Patient bookings always belong to the authenticated account.
+        if (req.user && req.user.role === 'patient') {
+            patient = req.user._id || req.user.id;
+        }
+
         if (!appointmentDate || !timeSlot) {
             return res.status(400).json({
                 success: false,
@@ -236,8 +241,8 @@ exports.bookAppointment = async (req, res) => {
 
         if (!patient || !doctor || !hospital) {
             const resolvedTargets = inMemoryDb.isDbConnected()
-                ? await resolveMongoBookingTargets(req.body)
-                : resolveInMemoryBookingTargets(req.body);
+                ? await resolveMongoBookingTargets({ ...req.body, patient })
+                : resolveInMemoryBookingTargets({ ...req.body, patient });
 
             patient = patient || resolvedTargets.patient;
             doctor = doctor || resolvedTargets.doctor;
@@ -300,7 +305,9 @@ exports.bookAppointment = async (req, res) => {
                 appointmentDate: appointmentDateValue,
                 timeSlot,
                 tokenNumber: newTokenNumber,
-                reasonForVisit: visitReason
+                reasonForVisit: visitReason,
+                patientName: req.body.patientName || null,
+                consultationFee: Number(req.body.consultationFee) || 500
             });
 
             await newAppointment.save();
@@ -376,6 +383,8 @@ exports.bookAppointment = async (req, res) => {
                 timeSlot,
                 tokenNumber: newTokenNumber,
                 reasonForVisit: visitReason,
+                patientName: req.body.patientName || null,
+                consultationFee: Number(req.body.consultationFee) || 500,
                 status: 'Pending',
                 paymentStatus: 'Pending',
                 createdAt: new Date(),

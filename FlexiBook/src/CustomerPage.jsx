@@ -292,6 +292,7 @@ const CustomerPage = () => {
         doctorName: firstDoc.userId?.name || 'Specialist',
         consultationFee: firstDoc.fees || bookingService.priceValue || 500
       }));
+      checkDoctorLeave(firstDoc._id, getLocalDateInputValue());
     } else {
       const mockTeam = getDynamicTeam(bookingService.category || '');
       if (mockTeam && mockTeam.length > 0) {
@@ -302,6 +303,7 @@ const CustomerPage = () => {
           doctorName: firstMock.name,
           consultationFee: bookingService.priceValue || 500
         }));
+        checkDoctorLeave('mock-doc-0', getLocalDateInputValue());
       }
     }
   }, [availableDoctors, bookingService]);
@@ -1240,12 +1242,18 @@ const CustomerPage = () => {
                           }
                         }
 
-                        setBookingForm(prev => ({
+                        setBookingForm(prev => {
+                          const updatedForm = {
                           ...prev,
                           doctorId: val,
                           doctorName: selectedDocName,
                           consultationFee: fee
-                        }));
+                        };
+
+                        checkDoctorLeave(val, updatedForm.appointmentDate);
+
+                      return updatedForm;
+});
                       }}
                       className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white"
                     >

@@ -8,7 +8,7 @@ const mainCategories = serviceCategories.slice(0, 6).map((category) => category.
 const otherCategories = serviceCategories.slice(6).map((category) => category.name);
 const allCategoriesList = serviceCategories.map((category) => category.name);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_123456';
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 const HEALTHCARE_TIME_SLOTS = [
   '09:00 AM - 10:00 AM',
   '10:00 AM - 11:00 AM',
@@ -482,6 +482,9 @@ const CustomerPage = () => {
 
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in before booking an appointment.');
+      }
       const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       // ── Step 1: Book the appointment ──
@@ -519,7 +522,6 @@ const CustomerPage = () => {
 
       const appointmentId = bookingData.data?.appointmentDetails?._id || bookingData.data?.appointmentDetails?.id || '';
       const tokenNumber = bookingData.data?.tokenNumber || null;
-      const patientId = bookingData.data?.appointmentDetails?.patient || '';
 
       // ── Step 2: Create a Razorpay order ──
       setBookingStatus({ state: 'loading', message: 'Initiating secure payment...', tokenNumber: null });
@@ -531,10 +533,8 @@ const CustomerPage = () => {
           ...authHeaders
         },
         body: JSON.stringify({
-          userId: patientId || 'guest_' + Date.now(),
-          amount: fee,
-          currency: 'INR',
-          receipt: `booking_${appointmentId || Date.now()}`
+          appointmentId,
+          currency: 'INR'
         })
       });
 
@@ -606,6 +606,16 @@ const CustomerPage = () => {
       }
 
       // ── Step 3B: Real Razorpay Checkout (Production) ──
+      const checkoutKey = order.keyId || RAZORPAY_KEY_ID;
+      if (!checkoutKey) {
+        setBookingStatus({
+          state: 'success',
+          message: `${bookingData.message || 'Appointment booked!'} (Payment configuration is unavailable - please pay at the counter.)`,
+          tokenNumber
+        });
+        return;
+      }
+
       if (typeof window.Razorpay === 'undefined') {
         setBookingStatus({
           state: 'success',
@@ -618,7 +628,7 @@ const CustomerPage = () => {
       // Return a promise from the Razorpay payment flow
       await new Promise((resolve, reject) => {
         const options = {
-          key: RAZORPAY_KEY_ID,
+          key: checkoutKey,
           amount: order.amount,
           currency: order.currency || 'INR',
           name: 'FlexiBook',
@@ -688,9 +698,13 @@ const CustomerPage = () => {
         try {
           const rzp = new window.Razorpay(options);
           rzp.on('payment.failed', function (response) {
+            const paymentError = response.error?.description
+              || response.error?.reason
+              || response.error?.code
+              || 'Unknown error';
             setBookingStatus({
               state: 'success',
-              message: `Appointment booked (Token #${tokenNumber || '—'}). Payment failed: ${response.error?.description || 'Unknown error'}. You can pay at the counter.`,
+              message: `Appointment reserved (Token #${tokenNumber || '-'}). Payment failed: ${paymentError}. You can pay at the counter.`,
               tokenNumber
             });
             resolve();
@@ -1121,6 +1135,7 @@ const CustomerPage = () => {
     const isQueueBooking = bookingService.availabilityStatus === 'Join Queue';
     const isSubmitting = bookingStatus.state === 'loading';
     const isBooked = bookingStatus.state === 'success';
+    const paymentIncomplete = /pay at the counter|payment failed|payment was skipped|payment could not|payment configuration|online payment is currently unavailable|could not open payment/i.test(bookingStatus.message || '');
 
     return (
       <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
@@ -1151,7 +1166,9 @@ const CustomerPage = () => {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl font-black text-emerald-700">
                 ✓
               </div>
-              <h3 className="text-2xl font-black text-slate-900">Booking confirmed</h3>
+              <h3 className="text-2xl font-black text-slate-900">
+                {paymentIncomplete ? 'Appointment reserved' : 'Booking confirmed'}
+              </h3>
               <p className="mt-2 text-sm font-medium text-slate-600">{bookingStatus.message}</p>
               {bookingStatus.message?.toLowerCase().includes('payment successful') && (
                 <div className="mx-auto mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1.5">

@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
-const User = require('../models/user');
+const Appointment = require('../models/Appointment');
 const inMemoryDb = require('../utils/inMemoryDb');
 
 let Razorpay;
@@ -31,26 +31,50 @@ try {
 
 // @desc    Create a Razorpay payment order
 // @route   POST /api/payments/order
-// @access  Public
+// @access  Private
 exports.createOrder = async (req, res) => {
     try {
-        const { userId, amount, currency, receipt } = req.body;
+        const { appointmentId, currency } = req.body;
+        const authenticatedUserId = String(req.user._id || req.user.id);
 
-        if (!userId) {
+        if (!appointmentId || !mongoose.Types.ObjectId.isValid(appointmentId)) {
             return res.status(400).json({
                 success: false,
-                message: 'userId is required to create an order'
+                message: 'A valid appointmentId is required to create an order.'
             });
         }
 
-        if (!amount) {
-            return res.status(400).json({
-                success: false,
-                message: 'Amount is required'
-            });
+        let appointment;
+        let orderAmount;
+
+        if (inMemoryDb.isDbConnected()) {
+            appointment = await Appointment.findById(appointmentId).populate('doctor', 'fees');
+            orderAmount = Number(appointment?.consultationFee || appointment?.doctor?.fees);
+        } else {
+            appointment = inMemoryDb.appointments.find(item => item._id === appointmentId);
+            const doctor = appointment
+                ? inMemoryDb.doctors.find(item => item._id === appointment.doctor)
+                : null;
+            orderAmount = Number(appointment?.consultationFee || doctor?.fees);
         }
 
-        const orderAmount = Number(amount);
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found.' });
+        }
+
+        if (String(appointment.patient) !== authenticatedUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'You cannot pay for this appointment.' });
+        }
+
+        if (appointment.paymentStatus === 'Paid') {
+            return res.status(409).json({ success: false, message: 'This appointment is already paid.' });
+        }
+
+        if (!Number.isFinite(orderAmount) || orderAmount <= 0) {
+            return res.status(400).json({ success: false, message: 'Appointment fee is invalid.' });
+        }
+
+        const receipt = `booking_${appointmentId}`;
         let order;
 
         if (!isMock && razorpayInstance) {
@@ -58,7 +82,7 @@ exports.createOrder = async (req, res) => {
             const options = {
                 amount: Math.round(orderAmount * 100), // convert to paise
                 currency: currency || 'INR',
-                receipt: receipt || `receipt_${Date.now()}`
+                receipt
             };
 
             order = await razorpayInstance.orders.create(options);
@@ -71,7 +95,7 @@ exports.createOrder = async (req, res) => {
                 amount_paid: 0,
                 amount_due: Math.round(orderAmount * 100),
                 currency: currency || 'INR',
-                receipt: receipt || `receipt_mock_${Date.now()}`,
+                receipt,
                 status: 'created',
                 attempts: 0,
                 created_at: Math.floor(Date.now() / 1000)
@@ -81,7 +105,8 @@ exports.createOrder = async (req, res) => {
         // Save Transaction with status 'created'
         if (inMemoryDb.isDbConnected()) {
             await Transaction.create({
-                userId,
+                userId: authenticatedUserId,
+                appointmentId,
                 orderId: order.id,
                 amount: orderAmount,
                 currency: currency || 'INR',
@@ -92,7 +117,8 @@ exports.createOrder = async (req, res) => {
             // In-Memory Fallback
             inMemoryDb.transactions.push({
                 _id: new mongoose.Types.ObjectId().toString(),
-                userId,
+                userId: authenticatedUserId,
+                appointmentId,
                 orderId: order.id,
                 paymentId: null,
                 amount: orderAmount,
@@ -107,7 +133,11 @@ exports.createOrder = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: isMock ? 'Order created successfully (Mock Fallback)' : 'Order created successfully (Razorpay)',
-            data: order
+            data: {
+                ...order,
+                keyId: isMock ? null : process.env.RAZORPAY_KEY_ID,
+                mode: isMock ? 'mock' : 'razorpay'
+            }
         });
 
     } catch (error) {
@@ -121,16 +151,36 @@ exports.createOrder = async (req, res) => {
 
 // @desc    Verify Razorpay payment signature
 // @route   POST /api/payments/verify
-// @access  Public
+// @access  Private
 exports.verifyPayment = async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId } = req.body;
+        const authenticatedUserId = String(req.user._id || req.user.id);
 
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
             return res.status(400).json({
                 success: false,
                 message: 'Missing required payment verification details (orderId, paymentId, signature)'
             });
+        }
+
+        let transactionObj = null;
+        if (inMemoryDb.isDbConnected()) {
+            transactionObj = await Transaction.findOne({ orderId: razorpay_order_id });
+        } else {
+            transactionObj = inMemoryDb.transactions.find(t => t.orderId === razorpay_order_id);
+        }
+
+        if (!transactionObj) {
+            return res.status(404).json({ success: false, message: 'Payment order was not found.' });
+        }
+
+        if (String(transactionObj.userId) !== authenticatedUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'You cannot verify this payment.' });
+        }
+
+        if (appointmentId && String(transactionObj.appointmentId) !== String(appointmentId)) {
+            return res.status(400).json({ success: false, message: 'Payment does not match this appointment.' });
         }
 
         const secret = isMock ? 'mock_secret' : process.env.RAZORPAY_KEY_SECRET;
@@ -142,19 +192,22 @@ exports.verifyPayment = async (req, res) => {
             .update(text)
             .digest('hex');
 
-        if (generatedSignature === razorpay_signature) {
-            let transactionObj = null;
+        const generatedBuffer = Buffer.from(generatedSignature, 'utf8');
+        const suppliedBuffer = Buffer.from(razorpay_signature, 'utf8');
+        const signatureMatches = generatedBuffer.length === suppliedBuffer.length
+            && crypto.timingSafeEqual(generatedBuffer, suppliedBuffer);
+
+        if (signatureMatches) {
 
             // 1. Update Transaction to 'captured'
             if (inMemoryDb.isDbConnected()) {
                 transactionObj = await Transaction.findOneAndUpdate(
-                    { orderId: razorpay_order_id },
+                    { orderId: razorpay_order_id, userId: authenticatedUserId },
                     { status: 'captured', paymentId: razorpay_payment_id },
                     { new: true }
                 );
             } else {
                 // In-Memory Fallback
-                transactionObj = inMemoryDb.transactions.find(t => t.orderId === razorpay_order_id);
                 if (transactionObj) {
                     transactionObj.status = 'captured';
                     transactionObj.paymentId = razorpay_payment_id;
@@ -163,7 +216,7 @@ exports.verifyPayment = async (req, res) => {
             }
 
             // 2. Resolve Appointment ID from request body or transaction receipt
-            let targetAppointmentId = appointmentId;
+            let targetAppointmentId = transactionObj.appointmentId || appointmentId;
             if (!targetAppointmentId && transactionObj && transactionObj.receipt) {
                 const match = transactionObj.receipt.match(/booking_([a-fA-F0-9]{24})/);
                 if (match && match[1]) {
@@ -285,10 +338,15 @@ exports.verifyPayment = async (req, res) => {
 
 // @desc    Get transaction history for a user
 // @route   GET /api/payments/history/:userId
-// @access  Public
+// @access  Private
 exports.getTransactionHistory = async (req, res) => {
     try {
         const { userId } = req.params;
+        const authenticatedUserId = String(req.user._id || req.user.id);
+
+        if (userId !== authenticatedUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'You cannot view this payment history.' });
+        }
 
         if (inMemoryDb.isDbConnected()) {
             const history = await Transaction.find({ userId })
@@ -330,10 +388,11 @@ exports.getTransactionHistory = async (req, res) => {
 
 // @desc    Get receipt details for a successful payment
 // @route   GET /api/payments/receipt/:paymentId
-// @access  Public
+// @access  Private
 exports.getReceipt = async (req, res) => {
     try {
         const { paymentId } = req.params;
+        const authenticatedUserId = String(req.user._id || req.user.id);
         let tx = null;
         let user = null;
 
@@ -355,6 +414,10 @@ exports.getReceipt = async (req, res) => {
                 success: false,
                 message: 'Invoice bills are only generated and accessible for successful payments.'
             });
+        }
+
+        if (String(tx.userId?._id || tx.userId) !== authenticatedUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'You cannot view this receipt.' });
         }
 
         return res.status(200).json({

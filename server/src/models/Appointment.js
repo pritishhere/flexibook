@@ -32,6 +32,12 @@ const appointmentSchema = new mongoose.Schema({
         type: String,
         default: 'General Checkup'
     },
+    consultationFee: {
+        type: Number,
+        required: true,
+        min: 1,
+        default: 500
+    },
     patientName: {
         type: String,
         default: null

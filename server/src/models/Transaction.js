@@ -6,6 +6,11 @@ const transactionSchema = new mongoose.Schema({
         ref: 'User',
         required: [true, 'User ID is required']
     },
+    appointmentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Appointment',
+        required: [true, 'Appointment ID is required']
+    },
     orderId: {
         type: String,
         required: [true, 'Order ID is required'],

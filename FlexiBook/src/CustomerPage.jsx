@@ -1,4 +1,5 @@
 // src/pages/CustomerPage.jsx
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { serviceCategories } from './data/categories';
@@ -152,6 +153,8 @@ const CustomerPage = () => {
   const [bookingService, setBookingService] = useState(null);
   const [bookingForm, setBookingForm] = useState(() => createInitialBookingForm());
   const [bookingStatus, setBookingStatus] = useState({ state: 'idle', message: '', tokenNumber: null });
+  const [doctorOnLeave, setDoctorOnLeave] = useState(false);
+  const [leaveMessage, setLeaveMessage] = useState("");
   const [detailProfile, setDetailProfile] = useState(DEFAULT_DETAIL_PROFILE);
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
@@ -396,10 +399,54 @@ const CustomerPage = () => {
     setBookingForm(prev => ({ ...prev, [name]: value }));
   };
 
+  const checkDoctorLeave = async (doctorId, selectedDate) => {
+  if (!doctorId || doctorId.startsWith("mock-doc")) {
+    setDoctorOnLeave(false);
+    setLeaveMessage("");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/doctors/${doctorId}/leaves`
+    );
+
+    const data = await res.json();
+
+    const leaves = data.data || data;
+
+    const leaveFound = leaves.some((leave) => {
+      return (
+        new Date(leave.date).toISOString().split("T")[0] === selectedDate
+      );
+    });
+
+    if (leaveFound) {
+      setDoctorOnLeave(true);
+      setLeaveMessage("Doctor is on leave on this date.");
+    } else {
+      setDoctorOnLeave(false);
+      setLeaveMessage("");
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
 
     if (!bookingService) return;
+
+    if (doctorOnLeave) {
+    setBookingStatus({
+      state: "error",
+      message: "Doctor is on leave on the selected date.",
+      tokenNumber: null
+      });
+      return;
+    }
 
     const fee = Number(bookingForm.consultationFee) || bookingService.priceValue || 500;
 
@@ -1158,7 +1205,8 @@ const CustomerPage = () => {
                     name="appointmentDate"
                     min={getLocalDateInputValue()}
                     value={bookingForm.appointmentDate}
-                    onChange={handleBookingFieldChange}
+                    onChange={(e) => {handleBookingFieldChange(e);
+                    checkDoctorLeave(bookingForm.doctorId,e.target.value);}}
                     required
                     className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                   />
@@ -1268,12 +1316,11 @@ const CustomerPage = () => {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
+              <button type="submit"
+                disabled={isSubmitting || doctorOnLeave}
                 className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
               >
-                {isSubmitting ? 'Processing...' : isQueueBooking ? 'Join Queue' : `Pay ₹${bookingForm.consultationFee} & Confirm`}
+              {doctorOnLeave? "Doctor Unavailable": isSubmitting ? "Processing..." : isQueueBooking ? "Join Queue" : `Pay ₹${bookingForm.consultationFee} & Confirm`}
               </button>
             </form>
           )}

@@ -402,39 +402,65 @@ const CustomerPage = () => {
   };
 
   const checkDoctorLeave = async (doctorId, selectedDate) => {
-  if (!doctorId || doctorId.startsWith("mock-doc")) {
-    setDoctorOnLeave(false);
-    setLeaveMessage("");
-    return;
-  }
+    if (!doctorId || doctorId.startsWith("mock-doc")) {
+      setDoctorOnLeave(false);
+      setLeaveMessage("");
+      return;
+    }
 
-  try {
-    const res = await fetch(
-      `http://localhost:3000/api/doctors/${doctorId}/leaves`
-    );
-
-    const data = await res.json();
-
-    const leaves = data.data || data;
-
-    const leaveFound = leaves.some((leave) => {
-      return (
-        new Date(leave.date).toISOString().split("T")[0] === selectedDate
+    // 1. Availability Weekday Check
+    const docObj = availableDoctors.find(d => d._id === doctorId);
+    if (docObj && Array.isArray(docObj.availability) && docObj.availability.length > 0) {
+      const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const selectedDayName = weekdays[new Date(year, month - 1, day).getDay()];
+      
+      const isAvailableDay = docObj.availability.some(
+        a => a.day.toLowerCase() === selectedDayName.toLowerCase()
       );
-    });
 
-    if (leaveFound) {
-      setDoctorOnLeave(true);
-      setLeaveMessage("Doctor is on leave on this date.");
-    } else {
+      if (!isAvailableDay) {
+        setDoctorOnLeave(true);
+        const sittingDays = docObj.availability.map(a => a.day).join(', ');
+        setLeaveMessage(`Doctor is not available on ${selectedDayName}s. Sitting days: ${sittingDays}`);
+        return;
+      }
+    }
+
+    // 2. Fetch & Validate Registered Leave Dates
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/doctors/${doctorId}/leaves`
+      );
+      const data = await res.json();
+      const leaves = data.data || data;
+
+      const formatLocalDate = (dateObjOrStr) => {
+        const d = new Date(dateObjOrStr);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dayVal = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dayVal}`;
+      };
+
+      const leaveFound = Array.isArray(leaves) && leaves.some((leave) => {
+        return formatLocalDate(leave.date) === selectedDate;
+      });
+
+      if (leaveFound) {
+        setDoctorOnLeave(true);
+        setLeaveMessage("Doctor is on leave on this date.");
+      } else {
+        setDoctorOnLeave(false);
+        setLeaveMessage("");
+      }
+    } catch (err) {
+      console.error('Error validating doctor leaves:', err);
       setDoctorOnLeave(false);
       setLeaveMessage("");
     }
-
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -1212,6 +1238,11 @@ const CustomerPage = () => {
                     required
                     className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                   />
+                  {leaveMessage && (
+                    <span className="block mt-1.5 text-xs font-bold text-red-500 animate-in fade-in slide-in-from-top-1">
+                      ⚠️ {leaveMessage}
+                    </span>
+                  )}
                 </label>
               </div>
 

@@ -27,7 +27,8 @@ function AISymptomChecker() {
   const [error, setError] = useState("");
 
   const [bookingDoctor, setBookingDoctor] = useState(null);
-  const [bookingDoctorLeaves, setBookingDoctorLeaves] = useState([]);
+  const [doctorOnLeave, setDoctorOnLeave] = useState(false);
+  const [leaveMessage, setLeaveMessage] = useState("");
   const [bookingForm, setBookingForm] = useState({
     patientName: '',
     patientEmail: '',
@@ -37,6 +38,63 @@ function AISymptomChecker() {
     reasonForVisit: ''
   });
   const [bookingStatus, setBookingStatus] = useState({ state: 'idle', message: '', tokenNumber: null });
+
+  const checkDoctorLeave = async (doctor, selectedDate) => {
+    if (!doctor || !doctor.id || doctor.id.startsWith("mock-doc")) {
+      setDoctorOnLeave(false);
+      setLeaveMessage("");
+      return;
+    }
+
+    // 1. Availability Weekday Check
+    if (Array.isArray(doctor.availability) && doctor.availability.length > 0) {
+      const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const selectedDayName = weekdays[new Date(year, month - 1, day).getDay()];
+      
+      const isAvailableDay = doctor.availability.some(
+        a => a.day.toLowerCase() === selectedDayName.toLowerCase()
+      );
+
+      if (!isAvailableDay) {
+        setDoctorOnLeave(true);
+        const sittingDays = doctor.availability.map(a => a.day).join(', ');
+        setLeaveMessage(`Doctor is not available on ${selectedDayName}s. Sitting days: ${sittingDays}`);
+        return;
+      }
+    }
+
+    // 2. Fetch & Validate Registered Leave Dates
+    try {
+      const res = await fetch(`http://localhost:3000/api/doctors/${doctor.id}/leaves`);
+      const data = await res.json();
+      const leaves = data.data || data;
+
+      const formatLocalDate = (dateObjOrStr) => {
+        const d = new Date(dateObjOrStr);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dayVal = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dayVal}`;
+      };
+
+      const leaveFound = Array.isArray(leaves) && leaves.some((leave) => {
+        return formatLocalDate(leave.date) === selectedDate;
+      });
+
+      if (leaveFound) {
+        setDoctorOnLeave(true);
+        setLeaveMessage("Doctor is on leave on this date.");
+      } else {
+        setDoctorOnLeave(false);
+        setLeaveMessage("");
+      }
+    } catch (err) {
+      console.error('Error checking leaves:', err);
+      setDoctorOnLeave(false);
+      setLeaveMessage("");
+    }
+  };
 
   const handleBookingOpen = (doctor) => {
     setBookingDoctor(doctor);
@@ -49,20 +107,9 @@ function AISymptomChecker() {
       reasonForVisit: `AI Symptom Check: ${symptoms.trim()}`
     });
     setBookingStatus({ state: 'idle', message: '', tokenNumber: null });
-    // Fetch doctor's leaves to prevent booking on leave dates
-    (async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/api/doctors/${doctor.id}/leaves`);
-        if (res.data && res.data.success) {
-          const leaves = (res.data.data || []).map(l => new Date(l.date).toDateString());
-          setBookingDoctorLeaves(leaves);
-        } else {
-          setBookingDoctorLeaves([]);
-        }
-      } catch (err) {
-        setBookingDoctorLeaves([]);
-      }
-    })();
+    setDoctorOnLeave(false);
+    setLeaveMessage("");
+    checkDoctorLeave(doctor, getLocalDateInputValue());
   };
 
   const handleBookingClose = () => {
@@ -80,10 +127,11 @@ function AISymptomChecker() {
     e.preventDefault();
     if (!bookingDoctor) return;
 
-    // Client-side check: prevent booking if selected date is a leave
-    const selectedDateStr = new Date(bookingForm.appointmentDate).toDateString();
-    if (bookingDoctorLeaves.includes(selectedDateStr)) {
-      setBookingStatus({ state: 'error', message: `Selected date ${selectedDateStr} is marked as doctor's leave.` });
+    if (doctorOnLeave) {
+      setBookingStatus({ 
+        state: 'error', 
+        message: leaveMessage || 'Doctor is on leave or unavailable on the selected date.' 
+      });
       return;
     }
 
@@ -158,6 +206,7 @@ function AISymptomChecker() {
           experience: item.doctor.experience || "N/A",
           fees: item.doctor.fees || 500,
           rating: item.hospital?.rating || "N/A",
+          availability: item.doctor.availability || [],
         })),
       });
 
@@ -405,10 +454,18 @@ function AISymptomChecker() {
                       name="appointmentDate"
                       min={getLocalDateInputValue()}
                       value={bookingForm.appointmentDate}
-                      onChange={handleBookingFieldChange}
+                      onChange={(e) => {
+                        handleBookingFieldChange(e);
+                        checkDoctorLeave(bookingDoctor, e.target.value);
+                      }}
                       required
                       className="mt-2 w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition"
                     />
+                    {leaveMessage && (
+                      <span className="block mt-1.5 text-xs font-bold text-red-500 animate-in fade-in slide-in-from-top-1">
+                        ⚠️ {leaveMessage}
+                      </span>
+                    )}
                   </label>
                 </div>
 
@@ -440,10 +497,10 @@ function AISymptomChecker() {
 
                 <button
                   type="submit"
-                  disabled={bookingStatus.state === 'loading'}
+                  disabled={bookingStatus.state === 'loading' || doctorOnLeave}
                   className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 py-3.5 text-sm font-bold text-white shadow-md hover:scale-[1.01] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {bookingStatus.state === 'loading' ? 'Booking...' : 'Confirm Booking'}
+                  {doctorOnLeave ? 'Doctor Unavailable' : bookingStatus.state === 'loading' ? 'Booking...' : 'Confirm Booking'}
                 </button>
               </form>
             )}

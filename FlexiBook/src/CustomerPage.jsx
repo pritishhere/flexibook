@@ -195,7 +195,7 @@ const CustomerPage = () => {
   useEffect(() => {
     const fetchDbHospitals = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/hospitals');
+        const response = await fetch(`${API_BASE_URL}/hospitals`);
         const json = await response.json();
         if (json.success && json.data) {
           const mapped = json.data.map(h => {
@@ -247,7 +247,7 @@ const CustomerPage = () => {
   }, []);
 
   useEffect(() => {
-  const socketInstance = io("http://localhost:3000");
+  const socketInstance = io(API_BASE_URL.replace('/api', ''));
 
   setSocket(socketInstance);
 
@@ -298,7 +298,7 @@ const CustomerPage = () => {
           return;
         }
 
-        const res = await fetch(`http://localhost:3000/api/doctors?hospitalId=${hospitalDbId}`);
+        const res = await fetch(`${API_BASE_URL}/doctors?hospitalId=${hospitalDbId}`);
         const json = await res.json();
         if (isMounted) {
           if (json.success && Array.isArray(json.data)) {
@@ -494,7 +494,7 @@ const CustomerPage = () => {
     // 2. Fetch & Validate Registered Leave Dates
     try {
       const res = await fetch(
-        `http://localhost:3000/api/doctors/${doctorId}/leaves`
+        `${API_BASE_URL}/doctors/${doctorId}/leaves`
       );
       const data = await res.json();
       const leaves = data.data || data;

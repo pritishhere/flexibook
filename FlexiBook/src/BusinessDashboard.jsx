@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 const BusinessDashboard = () => {
   const [activeTab, setActiveTab] = useState('doctors');
   const [doctors, setDoctors] = useState([]);
@@ -24,7 +26,7 @@ const BusinessDashboard = () => {
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/hospitals');
+        const res = await fetch(`${API_BASE_URL}/hospitals`);
         const json = await res.json();
         if (json.success && json.data.length > 0) {
           setHospitals(json.data);
@@ -44,7 +46,7 @@ const BusinessDashboard = () => {
     if (!selectedHospitalId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/doctors?hospitalId=${selectedHospitalId}`);
+      const res = await fetch(`${API_BASE_URL}/doctors?hospitalId=${selectedHospitalId}`);
       const json = await res.json();
       if (json.success) {
         setDoctors(json.data);
@@ -105,7 +107,7 @@ const BusinessDashboard = () => {
       };
 
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/api/doctors', {
+      const res = await fetch(`${API_BASE_URL}/doctors`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -142,7 +144,7 @@ const BusinessDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/api/doctors/${id}`, { 
+      const res = await fetch(`${API_BASE_URL}/doctors/${id}`, { 
         method: 'DELETE',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})

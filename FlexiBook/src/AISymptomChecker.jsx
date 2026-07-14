@@ -1,5 +1,7 @@
 import axios from "axios";
 import React, { useState } from "react";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 import {
   MapPin,
   Brain,
@@ -66,7 +68,7 @@ function AISymptomChecker() {
 
     // 2. Fetch & Validate Registered Leave Dates
     try {
-      const res = await fetch(`http://localhost:3000/api/doctors/${doctor.id}/leaves`);
+      const res = await fetch(`${API_BASE_URL}/doctors/${doctor.id}/leaves`);
       const data = await res.json();
       const leaves = data.data || data;
 
@@ -138,7 +140,7 @@ function AISymptomChecker() {
     setBookingStatus({ state: 'loading', message: 'Booking your appointment...', tokenNumber: null });
 
     try {
-      const response = await axios.post("http://localhost:3000/api/appointments/book", {
+      const response = await axios.post(`${API_BASE_URL}/appointments/book`, {
         patientName: bookingForm.patientName.trim(),
         patientEmail: bookingForm.patientEmail.trim(),
         patientPhone: bookingForm.patientPhone.trim(),
@@ -185,7 +187,7 @@ function AISymptomChecker() {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/ai/symptom-check",
+        `${API_BASE_URL}/ai/symptom-check`,
         {
           symptoms,
           city,

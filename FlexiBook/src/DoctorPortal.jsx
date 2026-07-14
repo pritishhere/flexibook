@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 const DoctorPortal = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [doctors, setDoctors] = useState([]);
@@ -19,7 +21,7 @@ const DoctorPortal = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/doctors');
+        const res = await fetch(`${API_BASE_URL}/doctors`);
         const json = await res.json();
         if (json.success && json.data.length > 0) {
           setDoctors(json.data);
@@ -54,7 +56,7 @@ const DoctorPortal = () => {
     const token = localStorage.getItem("token");
 
     await axios.post(
-      "http://localhost:3000/api/appointments/next-patient",
+      `${API_BASE_URL}/appointments/next-patient`,
       {
         doctorId: selectedDoctorId,
         currentServingToken: currentToken
@@ -95,7 +97,7 @@ const handleEmergency = async () => {
     const token = localStorage.getItem("token");
 
     await axios.post(
-      "http://localhost:3000/api/appointments/trigger-emergency",
+      `${API_BASE_URL}/appointments/trigger-emergency`,
       {
         message:
           "Doctor has been called for an emergency. Please expect a delay."
@@ -140,7 +142,7 @@ const handleEmergency = async () => {
       };
 
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/api/doctors/${selectedDoctorId}/leave`, {
+      const res = await fetch(`${API_BASE_URL}/doctors/${selectedDoctorId}/leave`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

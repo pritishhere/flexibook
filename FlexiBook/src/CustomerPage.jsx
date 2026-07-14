@@ -24,6 +24,7 @@ const DEFAULT_DETAIL_PROFILE = {
   departments: [],
   services: [],
   reviews: [],
+  myComplaints: [],
   serverMatched: false,
   error: ''
 };
@@ -350,6 +351,27 @@ const CustomerPage = () => {
 
         if (!isMounted) return;
 
+        const token = localStorage.getItem('token');
+        let myComplaints = [];
+        if (token) {
+          try {
+            const complaintsRes = await fetch(`${API_BASE_URL}/complaints/my`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+              signal: controller.signal
+            });
+            if (complaintsRes.ok) {
+              const complaintsData = await complaintsRes.json();
+              const allComplaints = complaintsData.data || [];
+              myComplaints = allComplaints.filter(c => {
+                const hId = c.hospitalId?._id || c.hospitalId;
+                return hId && String(hId) === String(hospitalId);
+              });
+            }
+          } catch (err) {
+            console.error("Error fetching my complaints:", err);
+          }
+        }
+
         setDetailProfile({
           status: 'success',
           hospital: hospitalResult.status === 'fulfilled' ? hospitalResult.value : null,
@@ -357,6 +379,7 @@ const CustomerPage = () => {
           departments: departmentsResult.status === 'fulfilled' && Array.isArray(departmentsResult.value) ? departmentsResult.value : [],
           services: servicesResult.status === 'fulfilled' && Array.isArray(servicesResult.value) ? servicesResult.value : [],
           reviews: reviewsResult.status === 'fulfilled' && Array.isArray(reviewsResult.value) ? reviewsResult.value : [],
+          myComplaints,
           serverMatched: true,
           error: ''
         });
@@ -1758,6 +1781,25 @@ const CustomerPage = () => {
                         if(res.ok) {
                           alert("Feedback submitted successfully! It is pending admin review.");
                           form.reset();
+                          try {
+                            const complaintsRes = await fetch(`${API_BASE_URL}/complaints/my`, {
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (complaintsRes.ok) {
+                              const complaintsData = await complaintsRes.json();
+                              const allComplaints = complaintsData.data || [];
+                              const filtered = allComplaints.filter(c => {
+                                const hId = c.hospitalId?._id || c.hospitalId;
+                                return hId && String(hId) === String(hospitalDbId);
+                              });
+                              setDetailProfile(prev => ({
+                                ...prev,
+                                myComplaints: filtered
+                              }));
+                            }
+                          } catch (err) {
+                            console.error("Error reloading complaints:", err);
+                          }
                         } else {
                           alert("Failed to submit feedback. Ensure you are logged in.");
                         }
@@ -1793,6 +1835,33 @@ const CustomerPage = () => {
                       </div>
                     </form>
                   </div>
+
+                  {/* 1.5 PRIVATE COMPLAINTS & GRIEVANCES HISTORY (Only visible to the logged-in patient) */}
+                  {localStorage.getItem('token') && detailProfile.myComplaints && detailProfile.myComplaints.length > 0 && (
+                    <div className="bg-white p-6 border border-slate-200 rounded-2xl mb-8 shadow-sm">
+                      <h4 className="font-black text-slate-900 mb-4 flex items-center gap-2 text-lg">
+                        <span className="text-xl">📋</span> My Private Tickets & Feedback
+                      </h4>
+                      <div className="space-y-4">
+                        {detailProfile.myComplaints.map((ticket) => (
+                          <div key={ticket._id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors relative">
+                            <span className={`absolute top-4 right-4 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wide border shadow-sm ${
+                              ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                              ticket.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse' : 
+                              'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
+                              {ticket.status}
+                            </span>
+                            <div className="text-xs text-slate-500 font-bold mb-1">
+                              Filed on {new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                            <h5 className="font-black text-slate-800 text-sm mb-1">{ticket.subject}</h5>
+                            <p className="text-sm text-slate-600">{ticket.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 2. REVIEWS LIST (Premium Animated Cards) */}
                   <div className="space-y-4">

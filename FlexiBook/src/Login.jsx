@@ -203,24 +203,4 @@ const Login = () => {
   );
 };
 
-
-const handleBookingOpen = (service) => {
-    // 🔴 1. CHECK IF USER IS LOGGED IN
-    const token = localStorage.getItem('token');
-    if (!token) {
-      // Agar login nahi hai, toh alert dikha kar Login page par bhej do
-      alert("Please log in to book an appointment or join the queue.");
-      navigate('/login');
-      return;
-    }
-
-    // 🟢 2. PROCEED TO BOOKING IF LOGGED IN
-    if (!isHealthcareService(service) || service.availabilityStatus === 'Fully Booked') return;
-
-    setBookingService(service);
-    setBookingForm(createInitialBookingForm(service));
-    setBookingStatus({ state: 'idle', message: '', tokenNumber: null });
-  };
-
-
 export default Login;

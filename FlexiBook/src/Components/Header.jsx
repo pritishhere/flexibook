@@ -60,6 +60,9 @@ export const Header = () => {
             <Link to="/business-register" className={getDesktopLinkStyle('/business-register')}>For Businesses</Link>
             <Link to="/categories" className={getDesktopLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" className={getDesktopLinkStyle('/about')}>About Us</Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin-complaints" className={getDesktopLinkStyle('/admin-complaints')}>Admin Central</Link>
+            )}
           </nav>
 
           {/* AUTH BUTTONS (Desktop) */}
@@ -114,6 +117,9 @@ export const Header = () => {
             <Link to="/business-register" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/business-register')}>For Businesses</Link>
             <Link to="/categories" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/about')}>About Us</Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin-complaints" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/admin-complaints')}>Admin Central</Link>
+            )}
             <hr className="border-gray-100 my-2" />
 
             <div className="flex flex-col gap-3">

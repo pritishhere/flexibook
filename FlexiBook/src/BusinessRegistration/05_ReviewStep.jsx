@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   "Business Information",
@@ -747,8 +748,10 @@ function ReviewItem({ title, value }) {
 
 const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.termsAccepted) {
@@ -757,8 +760,43 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
     }
     
     setErrors({});
-    console.log("Final Registration Data Submitted:", formData);
-    nextStep(); // Advance to Success Screen instead of using an alert
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      
+      const res = await fetch(`${API_BASE_URL}/hospitals`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          name: formData.businessName,
+          address: `${formData.address1} ${formData.address2 || ''} ${formData.landmark || ''}`.trim(),
+          city: formData.city,
+          contactNumber: formData.businessPhone,
+          emergencyNumber: formData.whatsappNumber || '',
+          sector: formData.businessCategory || 'healthcare'
+        })
+      });
+      
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setErrors({ submit: data.message || "Failed to submit registration. Please make sure you are logged in as a Business Owner." });
+        setIsLoading(false);
+        return;
+      }
+
+      alert("Business Registered Successfully!");
+      navigate('/business/dashboard');
+    } catch (err) {
+      console.error('Registration submit error:', err);
+      setErrors({ submit: 'Failed to connect to server. Please try again.' });
+      setIsLoading(false);
+    }
   };
 
   const yesNo = (value) => (value ? "Yes" : "No");
@@ -859,20 +897,38 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
         {errors.termsAccepted && <p className="text-red-500 text-sm mt-3 font-medium ml-8">{errors.termsAccepted}</p>}
       </div>
 
+      {errors.submit && (
+        <p className="text-red-500 text-sm font-bold bg-red-50 border border-red-200 p-4 rounded-xl">
+          ⚠️ {errors.submit}
+        </p>
+      )}
+
       {/* Navigation */}
       <div className="flex flex-col-reverse sm:flex-row items-center justify-between pt-2 gap-4">
         <button
           type="button"
           onClick={previousStep}
-          className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-8 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+          disabled={isLoading}
+          className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-8 py-3 font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ← Previous
         </button>
         <button
           type="submit"
-          className="w-full sm:w-auto rounded-xl bg-green-600 px-8 py-3 font-semibold text-white shadow-md shadow-green-200 transition-all hover:bg-green-700 hover:shadow-lg"
+          disabled={isLoading}
+          className="w-full sm:w-auto rounded-xl bg-green-600 px-8 py-3 font-semibold text-white shadow-md shadow-green-200 transition-all hover:bg-green-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Submit Registration ✓
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Submitting...
+            </>
+          ) : (
+            "Submit Registration ✓"
+          )}
         </button>
       </div>
     </form>

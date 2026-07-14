@@ -11,7 +11,7 @@ const testWhatsApp = async () => {
     
     // The recipient is the first argument passed (e.g. node verify_whatsapp.js +91XXXXXXXXXX) 
     // or falls back to your personal number
-    const testRecipient = process.argv[2] || '+919883769499'; 
+    const testRecipient = process.argv[2] || '+916203978419'; 
 
     console.log('🔄 Triggering Twilio WhatsApp Config Test...');
     console.log(`   - Account SID: ${sid}`);

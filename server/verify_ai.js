@@ -55,6 +55,7 @@ async function runTests() {
                 contactNumber: '033-665544'
             }
         });
+        console.log('hospRes response:', JSON.stringify(hospRes, null, 2));
         const hospitalId = hospRes.data.data._id;
 
         // Setup Doctor 1 (Cardiologist)

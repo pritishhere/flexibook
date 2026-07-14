@@ -10,25 +10,63 @@ const CustomerRegister = () => {
     confirmPassword: ''
   });
   const [focusedField, setFocusedField] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const { name, email, password, confirmPassword } = formData;
   const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
       return;
     }
 
-    console.log("Registering Customer:", name, email);
-    alert("Account Created Successfully!");
-    navigate('/login'); // Sends them straight to your clean login card
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email: email.toLowerCase(),
+          password,
+          role: 'patient'
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.message || 'Registration failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Generate Auto-Login Session
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify({
+        name: data.name,
+        email: data.email,
+        role: data.role
+      }));
+
+      setIsLoading(false);
+      alert(`Welcome ${data.name}! Account created successfully.`);
+      navigate('/');
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError('Connection to registration server failed. Please check if the server is running.');
+      setIsLoading(false);
+    }
   };
 
   // Reusable, interactive input design config mapping
@@ -165,24 +203,37 @@ const CustomerRegister = () => {
               required placeholder="••••••••" style={getInputStyle('confirmPassword')} 
             />
           </div>
+          
+          {error && (
+            <p style={{ 
+              color: '#ef4444', 
+              fontSize: '12px', 
+              fontWeight: '700', 
+              marginBottom: '18px', 
+              textAlign: 'center' 
+            }}>
+              ⚠️ {error}
+            </p>
+          )}
 
           <button 
             type="submit" 
+            disabled={isLoading}
             style={{ 
               width: '100%', 
               padding: '14px', 
-              backgroundColor: '#2563eb', 
+              backgroundColor: isLoading ? '#93c5fd' : '#2563eb', 
               color: '#ffffff', 
               border: 'none', 
               borderRadius: '8px', 
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               fontWeight: '600',
               fontSize: '16px',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+              boxShadow: isLoading ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.25)',
               transition: 'all 0.2s ease',
             }}
           >
-            Sign Up
+            {isLoading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 

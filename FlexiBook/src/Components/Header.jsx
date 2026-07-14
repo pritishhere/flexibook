@@ -48,7 +48,7 @@ export const Header = () => {
               <img 
                 src="/logo.png" 
                 alt="FlexiBook Logo" 
-                className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain cursor-pointer transform hover:scale-105 transition-transform duration-200" 
+                className="h-35 sm:h-45 md:h-55 lg:h-65 w-auto object-contain cursor-pointer transform hover:scale-105 transition-transform duration-200" 
               />
             </Link>
           </div>

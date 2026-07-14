@@ -273,7 +273,7 @@ Your profile is now securely activated in our system. You can now send any text 
 
                 const prompt = `
 You are an AI receptionist for FlexiBook clinic queue management.
-Analyze the patient's request (which may be a voice recording or a text message in English, Hindi, or Bengali).
+Analyze the patient's request (which may be a voice recording or a text message in English or any Indian regional language such as Hindi, Bengali, Tamil, Telugu, Kannada, Marathi, Gujarati, Malayalam, Odia, Punjabi, etc.).
 Extract the details and return them STRICTLY in the following JSON format:
 {
     "specialization": "one of: Cardiologist, Dermatologist, Gastroenterologist, General Physician, Neurologist, Pediatrician, Orthopedic",

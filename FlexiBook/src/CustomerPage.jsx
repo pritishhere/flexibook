@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { serviceCategories } from './data/categories';
+import { io } from "socket.io-client";
 
 const mainCategories = serviceCategories.slice(0, 6).map((category) => category.name);
 const otherCategories = serviceCategories.slice(6).map((category) => category.name);
@@ -156,6 +157,10 @@ const CustomerPage = () => {
   const [bookingStatus, setBookingStatus] = useState({ state: 'idle', message: '', tokenNumber: null });
   const [doctorOnLeave, setDoctorOnLeave] = useState(false);
   const [leaveMessage, setLeaveMessage] = useState("");
+  const [socket, setSocket] = useState(null);
+  const [currentQueueToken, setCurrentQueueToken] = useState(null);
+  const [emergencyMessage, setEmergencyMessage] = useState("");
+  const [turnAlert, setTurnAlert] = useState("");
   const [detailProfile, setDetailProfile] = useState(DEFAULT_DETAIL_PROFILE);
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
@@ -240,6 +245,41 @@ const CustomerPage = () => {
     };
     fetchDbHospitals();
   }, []);
+
+  useEffect(() => {
+  const socketInstance = io("http://localhost:3000");
+
+  setSocket(socketInstance);
+
+  return () => {
+    socketInstance.disconnect();
+  };
+  }, []);
+
+  useEffect(() => {
+  if (!socket) return;
+
+  socket.on("queue_update", (data) => {
+    setCurrentQueueToken(data.currentToken);
+  });
+
+  socket.on("your_turn_alert", (data) => {
+    if (bookingStatus.tokenNumber === data.tokenNumber) {
+      setTurnAlert(data.message);
+      alert(data.message);
+    }
+  });
+
+  socket.on("emergency_broadcast", (data) => {
+    setEmergencyMessage(data.message);
+  });
+
+  return () => {
+    socket.off("queue_update");
+    socket.off("your_turn_alert");
+    socket.off("emergency_broadcast");
+  };
+  }, [socket, bookingStatus.tokenNumber]);
 
   useEffect(() => {
     if (!bookingService || !isHealthcareService(bookingService)) {
@@ -545,6 +585,9 @@ const CustomerPage = () => {
 
       const appointmentId = bookingData.data?.appointmentDetails?._id || bookingData.data?.appointmentDetails?.id || '';
       const tokenNumber = bookingData.data?.tokenNumber || null;
+      if (socket && bookingForm.doctorId && !bookingForm.doctorId.startsWith("mock-doc-")) {
+            socket.emit("join_doctor_queue", bookingForm.doctorId);
+        }   
 
       // ── Step 2: Create a Razorpay order ──
       setBookingStatus({ state: 'loading', message: 'Initiating secure payment...', tokenNumber: null });
@@ -1209,6 +1252,28 @@ const CustomerPage = () => {
                   <p className="mt-1 text-3xl font-black text-blue-700">#{bookingStatus.tokenNumber}</p>
                 </div>
               )}
+              {currentQueueToken && (
+  <div className="mx-auto mt-4 max-w-xs rounded-xl border border-green-100 bg-green-50 px-5 py-4">
+    <p className="text-xs font-bold uppercase tracking-wide text-green-600">
+      Now Serving
+    </p>
+    <p className="mt-1 text-2xl font-black text-green-700">
+      Token #{currentQueueToken}
+    </p>
+  </div>
+)}
+
+{turnAlert && (
+  <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+    🔔 {turnAlert}
+  </div>
+)}
+
+{emergencyMessage && (
+  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+    🚨 {emergencyMessage}
+  </div>
+)}
               <button
                 type="button"
                 onClick={handleBookingClose}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from "axios";
 
 const DoctorPortal = () => {
   const [activeTab, setActiveTab] = useState('appointments');
@@ -46,14 +47,80 @@ const DoctorPortal = () => {
     setCurrentToken(1);
   }, [selectedDoctorId]);
 
-  const handleCallNext = () => {
+ const handleCallNext = async () => {
+  if (!selectedDoctorId) return;
+
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post(
+      "http://localhost:3000/api/appointments/next-patient",
+      {
+        doctorId: selectedDoctorId,
+        currentServingToken: currentToken
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
     if (currentToken < appointments.length) {
       setCurrentToken(prev => prev + 1);
-      setAlert({ type: 'success', message: `Patient token #${currentToken + 1} has been called to consultation room!` });
+
+      setAlert({
+        type: "success",
+        message: `Patient token #${currentToken + 1} has been called.`
+      });
     } else {
-      setAlert({ type: 'success', message: 'All scheduled patients checked for today!' });
+      setAlert({
+        type: "success",
+        message: "All scheduled patients checked."
+      });
     }
-  };
+
+  } catch (err) {
+    setAlert({
+      type: "error",
+      message:
+        err.response?.data?.message ||
+        "Unable to notify next patient."
+    });
+  }
+};
+
+const handleEmergency = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post(
+      "http://localhost:3000/api/appointments/trigger-emergency",
+      {
+        message:
+          "Doctor has been called for an emergency. Please expect a delay."
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    setAlert({
+      type: "success",
+      message: "Emergency broadcast sent successfully."
+    });
+
+  } catch (err) {
+    setAlert({
+      type: "error",
+      message:
+        err.response?.data?.message ||
+        "Failed to send emergency broadcast."
+    });
+  }
+};
 
   const handleAddLeave = async (e) => {
     e.preventDefault();
@@ -217,6 +284,12 @@ const DoctorPortal = () => {
                   className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all active:scale-95 shadow-lg shadow-blue-500/10"
                 >
                   Call Next Patient 🔔
+                </button>
+                <button
+                  onClick={handleEmergency}
+                  className="mt-3 w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all active:scale-95 shadow-lg"
+                >
+                  🚨 Emergency Alert
                 </button>
                 <p className="text-[10px] text-slate-500 mt-3 font-semibold">Will trigger waiting room alert.</p>
               </div>

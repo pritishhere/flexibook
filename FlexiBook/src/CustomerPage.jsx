@@ -1205,8 +1205,8 @@ const CustomerPage = () => {
 
     return (
       <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-        <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 flex-shrink-0">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
                 {isQueueBooking ? 'Join healthcare queue' : 'Book healthcare appointment'}
@@ -1228,7 +1228,7 @@ const CustomerPage = () => {
           </div>
 
           {isBooked ? (
-            <div className="px-6 py-8 text-center">
+            <div className="px-6 py-8 text-center overflow-y-auto">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl font-black text-emerald-700">
                 ✓
               </div>
@@ -1283,7 +1283,7 @@ const CustomerPage = () => {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleBookingSubmit} className="space-y-5 px-6 py-6">
+            <form onSubmit={handleBookingSubmit} className="space-y-5 px-6 py-6 overflow-y-auto">
               {bookingStatus.state === 'error' && (
                 <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                   {bookingStatus.message}

@@ -24,6 +24,8 @@ const BusinessRegistration = lazy(() => import('./BusinessRegistration/BusinessR
 const BusinessDashboard = lazy(() => import('./BusinessDashboard'));
 const DoctorPortal = lazy(() => import('./DoctorPortal'));
 const AISymptomChecker = lazy(() => import('./AISymptomChecker'));
+const AdminComplaintsPanel = lazy(() => import('./AdminComplaintsPanel'));
+
 
 /* ====================================================================
    🧠 2. THE NETWORK INTELLIGENCE ENGINE (Custom Hook)
@@ -111,7 +113,7 @@ function App() {
                 <Route path="/business/dashboard" element={<BusinessDashboard />} />
                 <Route path="/doctor/portal" element={<DoctorPortal />} />
                 <Route path="/ai-symptom-checker" element={<AISymptomChecker />} />
-                
+                <Route path="/admin-complaints" element={<AdminComplaintsPanel />} />
               </Routes>
             </Suspense>
           </main>

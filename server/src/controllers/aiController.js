@@ -74,7 +74,7 @@ const analyzeSymptomsWithGemini = async (symptomsText) => {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
-    Analyze the following patient symptoms and match them to the most suitable medical specialty from this list:
+    Analyze the following patient symptoms (which may be written in English or any Indian regional language such as Hindi, Bengali, Tamil, Telugu, Kannada, Marathi, Gujarati, Malayalam, Odia, Punjabi, etc. Translate them to English if needed) and match them to the most suitable medical specialty from this list:
     - Cardiologist
     - Neurologist
     - Dermatologist
@@ -82,7 +82,7 @@ const analyzeSymptomsWithGemini = async (symptomsText) => {
     - Dentist
     - General Physician
 
-    Return ONLY a raw JSON object containing the mapped specialty and a short clinical explanation of why it fits. 
+    Return ONLY a raw JSON object containing the mapped specialty and a short clinical explanation (written in English) of why it fits. 
     Do not add markdown formatting or backticks. Follow this exact structure:
     {
       "specialty": "SpecialtyName",

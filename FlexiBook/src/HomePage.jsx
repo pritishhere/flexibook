@@ -98,7 +98,7 @@ const HomePage = () => {
 
   const handleJoinQueue = () => {
     if (!user) {
-      alert("Please authenticate to generate a ticket.");
+      alert("Please log in or sign up to get your queue ticket.");
       navigate('/login');
       return;
     }

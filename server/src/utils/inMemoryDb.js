@@ -7,6 +7,7 @@ const dataStore = {
     doctors: [],
     reviews: [],
     users: [],
+    familyMembers: [],
     transactions: [],
     complaints: [],
     appointments: [],

@@ -6,6 +6,11 @@ const appointmentSchema = new mongoose.Schema({
         ref: 'User', 
         required: true
     },
+    familyMember: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FamilyMember',
+        default: null
+    },
     doctor: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Doctor',
@@ -49,6 +54,10 @@ const appointmentSchema = new mongoose.Schema({
     patientGender: {
         type: String,
         default: null
+    },
+    patientRelationship: {
+        type: String,
+        default: 'Self'
     },
     status: {
         type: String,

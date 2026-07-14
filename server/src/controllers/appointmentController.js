@@ -4,6 +4,7 @@ const User = require('../models/user');
 const Hospital = require('../models/Hospital');
 const Doctor = require('../models/Doctor');
 const DoctorLeave = require('../models/DoctorLeave');
+const FamilyMember = require('../models/FamilyMember');
 const inMemoryDb = require('../utils/inMemoryDb');
 
 const DEFAULT_DOCTOR_PASSWORD = 'FlexiBook@123';
@@ -227,8 +228,8 @@ exports.bookAppointment = async (req, res) => {
     try {
         let { patient, doctor, hospital, appointmentDate, timeSlot, reasonForVisit, bookingMode } = req.body;
 
-        // Patient bookings always belong to the authenticated account.
-        if (req.user && req.user.role === 'patient') {
+        // Appointment ownership always belongs to the authenticated account.
+        if (req.user) {
             patient = req.user._id || req.user.id;
         }
 
@@ -237,6 +238,29 @@ exports.bookAppointment = async (req, res) => {
                 success: false,
                 message: 'Appointment date and time slot are required.'
             });
+        }
+
+        let selectedFamilyMember = null;
+        const familyMemberId = req.body.familyMemberId;
+        if (familyMemberId) {
+            if (!mongoose.Types.ObjectId.isValid(familyMemberId)) {
+                return res.status(400).json({ success: false, message: 'Invalid family member selection.' });
+            }
+
+            const ownerId = String(req.user._id || req.user.id);
+            selectedFamilyMember = inMemoryDb.isDbConnected()
+                ? await FamilyMember.findOne({ _id: familyMemberId, userId: ownerId })
+                : inMemoryDb.familyMembers.find(member =>
+                    String(member._id) === String(familyMemberId)
+                    && String(member.userId) === ownerId
+                );
+
+            if (!selectedFamilyMember) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Family member was not found for this account.'
+                });
+            }
         }
 
         if (!patient || !doctor || !hospital) {
@@ -258,6 +282,19 @@ exports.bookAppointment = async (req, res) => {
 
         const appointmentDateValue = new Date(appointmentDate);
         const visitReason = reasonForVisit || (bookingMode === 'queue' ? 'Joined live queue' : 'General Checkup');
+        const patientSnapshot = selectedFamilyMember
+            ? {
+                name: selectedFamilyMember.name,
+                age: selectedFamilyMember.age,
+                gender: selectedFamilyMember.gender,
+                relationship: selectedFamilyMember.relationToUser
+            }
+            : {
+                name: req.body.patientName || req.user.name,
+                age: req.body.patientAge || null,
+                gender: req.body.patientGender || null,
+                relationship: 'Self'
+            };
 
         // === Block booking if doctor is marked unavailable or on leave ===
         if (inMemoryDb.isDbConnected()) {
@@ -306,7 +343,11 @@ exports.bookAppointment = async (req, res) => {
                 timeSlot,
                 tokenNumber: newTokenNumber,
                 reasonForVisit: visitReason,
-                patientName: req.body.patientName || null,
+                familyMember: selectedFamilyMember?._id || null,
+                patientName: patientSnapshot.name,
+                patientAge: patientSnapshot.age,
+                patientGender: patientSnapshot.gender,
+                patientRelationship: patientSnapshot.relationship,
                 consultationFee: Number(req.body.consultationFee) || 500
             });
 
@@ -383,7 +424,11 @@ exports.bookAppointment = async (req, res) => {
                 timeSlot,
                 tokenNumber: newTokenNumber,
                 reasonForVisit: visitReason,
-                patientName: req.body.patientName || null,
+                familyMember: selectedFamilyMember?._id || null,
+                patientName: patientSnapshot.name,
+                patientAge: patientSnapshot.age,
+                patientGender: patientSnapshot.gender,
+                patientRelationship: patientSnapshot.relationship,
                 consultationFee: Number(req.body.consultationFee) || 500,
                 status: 'Pending',
                 paymentStatus: 'Pending',
@@ -401,7 +446,7 @@ exports.bookAppointment = async (req, res) => {
             let email = '';
 
             if (patientUser) {
-                patientName = patientUser.name;
+                patientName = newApp.patientName || patientUser.name;
                 email = patientUser.email;
             }
             if (doctorObj) {
@@ -454,7 +499,8 @@ exports.getPatientAppointments = async (req, res) => {
         const appointments = await Appointment.find({ patient: patientId })
             .sort({ createdAt: -1 })
             .populate('doctor', 'name specialization')
-            .populate('hospital', 'name address');
+            .populate('hospital', 'name address')
+            .populate('familyMember', 'name age gender relationToUser');
 
         res.status(200).json({ success: true, count: appointments.length, data: appointments });
 
@@ -804,7 +850,7 @@ exports.rescheduleAppointment = async (req, res) => {
             try {
                 const { sendAppointmentAlert } = require('../services/notificationService');
                 const doctorName = (appointment.doctor && appointment.doctor.userId) ? appointment.doctor.userId.name : 'Doctor';
-                const patientName = appointment.patient ? appointment.patient.name : 'Patient';
+                const patientName = appointment.patientName || (appointment.patient ? appointment.patient.name : 'Patient');
 
                 await sendAppointmentAlert({
                     email: appointment.patient ? appointment.patient.email : '',
@@ -870,7 +916,7 @@ exports.rescheduleAppointment = async (req, res) => {
             let phone = '';
 
             if (patientUser) {
-                patientName = patientUser.name;
+                patientName = appointment.patientName || patientUser.name;
                 email = patientUser.email;
                 phone = patientUser.mobile;
             }

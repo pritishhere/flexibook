@@ -445,7 +445,7 @@ exports.getHospitalAnalytics = async (req, res) => {
             .filter(a => a.paymentStatus === 'Paid')
             .map(a => ({
                 appointmentId: a._id,
-                patientName: a.patient ? a.patient.name : 'Unknown Patient',
+                patientName: a.patientName || (a.patient ? a.patient.name : 'Unknown Patient'),
                 doctorName: (a.doctor && a.doctor.userId) ? a.doctor.userId.name : 'Unknown Doctor',
                 amount: (a.doctor && a.doctor.consultationFee) ? a.doctor.consultationFee : 0,
                 date: a.appointmentDate

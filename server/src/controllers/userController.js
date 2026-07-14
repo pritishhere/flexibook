@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const User = require('../models/user');
 const FamilyMember = require('../models/FamilyMember');
+const inMemoryDb = require('../utils/inMemoryDb');
 
 // ==========================================
 // 1. Get Logged-In User Profile Data
@@ -70,16 +72,46 @@ exports.updateUserProfile = async (req, res) => {
 // 3. Add Family Member
 // ==========================================
 exports.addFamilyMember = async (req, res) => {
-    const { name, relationship, age, gender } = req.body;
     try {
+        const { name, relationship, relationToUser, age, gender, bloodGroup, phone } = req.body;
         const userId = req.user._id || req.user.id;
-        const member = await FamilyMember.create({
-            userId,
-            name,
-            relationship,
-            age,
+        const relation = (relationToUser || relationship || '').trim();
+        const memberAge = Number(age);
+
+        if (!name?.trim() || !relation || !Number.isInteger(memberAge) || memberAge < 0 || memberAge > 120) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name, relationship, and a valid age are required.'
+            });
+        }
+
+        if (!['male', 'female', 'other'].includes(gender)) {
+            return res.status(400).json({ success: false, message: 'Please select a valid gender.' });
+        }
+
+        const memberData = {
+            userId: String(userId),
+            name: name.trim(),
+            relationToUser: relation,
+            age: memberAge,
             gender,
-        });
+            bloodGroup: bloodGroup?.trim() || 'Unknown',
+            phone: phone?.trim() || ''
+        };
+
+        let member;
+        if (inMemoryDb.isDbConnected()) {
+            member = await FamilyMember.create(memberData);
+        } else {
+            member = {
+                _id: new mongoose.Types.ObjectId().toString(),
+                ...memberData,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            inMemoryDb.familyMembers.push(member);
+        }
+
         res.status(201).json({ success: true, data: member });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -91,8 +123,12 @@ exports.addFamilyMember = async (req, res) => {
 // ==========================================
 exports.getFamilyMembers = async (req, res) => {
     try {
-        const userId = req.user._id || req.user.id;
-        const members = await FamilyMember.find({ userId });
+        const userId = String(req.user._id || req.user.id);
+        const members = inMemoryDb.isDbConnected()
+            ? await FamilyMember.find({ userId }).sort({ createdAt: -1 })
+            : inMemoryDb.familyMembers
+                .filter(member => String(member.userId) === userId)
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         res.json({ success: true, data: members });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

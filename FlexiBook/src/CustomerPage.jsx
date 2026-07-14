@@ -98,9 +98,13 @@ const resolveBackendHospitalId = async (service, signal) => {
 };
 
 const createInitialBookingForm = (service = {}) => ({
+  familyMemberId: '',
   patientName: '',
   patientEmail: '',
   patientPhone: '',
+  patientAge: '',
+  patientGender: '',
+  patientRelationship: 'Self',
   appointmentDate: getLocalDateInputValue(getBookingDateOffset(service)),
   timeSlot: service.availabilityStatus === 'Join Queue' ? 'Live Queue' : HEALTHCARE_TIME_SLOTS[0],
   reasonForVisit: service.availabilityStatus === 'Join Queue'
@@ -110,6 +114,23 @@ const createInitialBookingForm = (service = {}) => ({
   doctorName: '',
   consultationFee: service.priceValue || 500
 });
+
+const createInitialFamilyForm = () => ({
+  name: '',
+  relationship: '',
+  age: '',
+  gender: '',
+  bloodGroup: '',
+  phone: ''
+});
+
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+};
 
 const getServiceSpecialization = (service = {}) => {
   const primaryCategory = service.category?.split('•')[0]?.trim() || '';
@@ -164,6 +185,10 @@ const CustomerPage = () => {
   const [detailProfile, setDetailProfile] = useState(DEFAULT_DETAIL_PROFILE);
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [familyState, setFamilyState] = useState({ loading: false, adding: false, error: '' });
+  const [showFamilyForm, setShowFamilyForm] = useState(false);
+  const [newFamilyMember, setNewFamilyMember] = useState(() => createInitialFamilyForm());
   const activeSelectedCategories = selectedCategories.length > 0
     ? selectedCategories
     : matchedQueryCategory ? [matchedQueryCategory] : [];
@@ -444,12 +469,42 @@ const CustomerPage = () => {
     };
   }, [activeDetailPage]);
 
+  const loadFamilyMembers = async (token) => {
+    if (!token) return;
+
+    setFamilyState(prev => ({ ...prev, loading: true, error: '' }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/family`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Unable to load family members.');
+      }
+      setFamilyMembers(Array.isArray(data.data) ? data.data : []);
+    } catch (error) {
+      setFamilyState(prev => ({ ...prev, error: error.message }));
+    } finally {
+      setFamilyState(prev => ({ ...prev, loading: false }));
+    }
+  };
+
   const handleBookingOpen = (service) => {
     if (!isHealthcareService(service) || service.availabilityStatus === 'Fully Booked') return;
 
+    const storedUser = getStoredUser();
+    const token = localStorage.getItem('token');
     setBookingService(service);
-    setBookingForm(createInitialBookingForm(service));
+    setBookingForm({
+      ...createInitialBookingForm(service),
+      patientName: storedUser.name || '',
+      patientEmail: storedUser.email || ''
+    });
     setBookingStatus({ state: 'idle', message: '', tokenNumber: null });
+    setShowFamilyForm(false);
+    setNewFamilyMember(createInitialFamilyForm());
+    setFamilyState({ loading: false, adding: false, error: '' });
+    loadFamilyMembers(token);
   };
 
   const handleBookingClose = () => {
@@ -462,6 +517,89 @@ const CustomerPage = () => {
   const handleBookingFieldChange = (e) => {
     const { name, value } = e.target;
     setBookingForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePatientSelection = (e) => {
+    const familyMemberId = e.target.value;
+    const storedUser = getStoredUser();
+
+    if (!familyMemberId) {
+      setBookingForm(prev => ({
+        ...prev,
+        familyMemberId: '',
+        patientName: storedUser.name || '',
+        patientEmail: storedUser.email || '',
+        patientPhone: '',
+        patientAge: '',
+        patientGender: '',
+        patientRelationship: 'Self'
+      }));
+      return;
+    }
+
+    const member = familyMembers.find(item => item._id === familyMemberId);
+    if (!member) return;
+
+    setBookingForm(prev => ({
+      ...prev,
+      familyMemberId: member._id,
+      patientName: member.name,
+      patientEmail: storedUser.email || '',
+      patientPhone: member.phone || '',
+      patientAge: member.age,
+      patientGender: member.gender,
+      patientRelationship: member.relationToUser
+    }));
+  };
+
+  const handleAddFamilyMember = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setFamilyState(prev => ({ ...prev, error: 'Please log in before adding a family member.' }));
+      return;
+    }
+
+    const age = Number(newFamilyMember.age);
+    if (!newFamilyMember.name.trim() || !newFamilyMember.relationship || !Number.isInteger(age) || age < 0 || age > 120 || !newFamilyMember.gender) {
+      setFamilyState(prev => ({ ...prev, error: 'Enter name, relationship, age, and gender.' }));
+      return;
+    }
+
+    setFamilyState(prev => ({ ...prev, adding: true, error: '' }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/family`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(newFamilyMember)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Unable to add family member.');
+      }
+
+      const member = data.data;
+      setFamilyMembers(prev => [member, ...prev]);
+      setShowFamilyForm(false);
+      setNewFamilyMember(createInitialFamilyForm());
+      const storedUser = getStoredUser();
+      setBookingForm(prev => ({
+        ...prev,
+        familyMemberId: member._id,
+        patientName: member.name,
+        patientEmail: storedUser.email || '',
+        patientPhone: member.phone || '',
+        patientAge: member.age,
+        patientGender: member.gender,
+        patientRelationship: member.relationToUser
+      }));
+    } catch (error) {
+      setFamilyState(prev => ({ ...prev, error: error.message }));
+    } finally {
+      setFamilyState(prev => ({ ...prev, adding: false }));
+    }
   };
 
   const checkDoctorLeave = async (doctorId, selectedDate) => {
@@ -559,9 +697,12 @@ const CustomerPage = () => {
           ...authHeaders
         },
         body: JSON.stringify({
+          familyMemberId: bookingForm.familyMemberId || undefined,
           patientName: bookingForm.patientName.trim(),
           patientEmail: bookingForm.patientEmail.trim(),
           patientPhone: bookingForm.patientPhone.trim(),
+          patientAge: bookingForm.patientAge || undefined,
+          patientGender: bookingForm.patientGender || undefined,
           hospitalName: bookingService.name,
           hospitalCity: bookingService.location,
           hospitalAddress: `${bookingService.location}, India`,
@@ -1290,6 +1431,99 @@ const CustomerPage = () => {
                 </div>
               )}
 
+              <section className="-mx-6 border-y border-slate-200 bg-slate-50 px-6 py-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <label className="flex-1 text-sm font-bold text-slate-700">
+                    Who is this appointment for?
+                    <select
+                      value={bookingForm.familyMemberId}
+                      onChange={handlePatientSelection}
+                      disabled={familyState.loading || isSubmitting}
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                    >
+                      <option value="">Myself (account holder)</option>
+                      {familyMembers.map(member => (
+                        <option key={member._id} value={member._id}>
+                          {member.name} ({member.relationToUser})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFamilyForm(prev => !prev);
+                      setFamilyState(prev => ({ ...prev, error: '' }));
+                    }}
+                    className="rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
+                  >
+                    {showFamilyForm ? 'Cancel' : 'Add family member'}
+                  </button>
+                </div>
+
+                {familyState.loading && (
+                  <p className="mt-2 text-xs font-semibold text-slate-500">Loading saved family members...</p>
+                )}
+                {familyState.error && (
+                  <p className="mt-2 text-xs font-bold text-red-600">{familyState.error}</p>
+                )}
+
+                {showFamilyForm && (
+                  <div className="mt-4 border-t border-slate-200 pt-4">
+                    <p className="mb-3 text-sm font-black text-slate-800">New family member</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        type="text"
+                        value={newFamilyMember.name}
+                        onChange={(e) => setNewFamilyMember(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Full name"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      />
+                      <select
+                        value={newFamilyMember.relationship}
+                        onChange={(e) => setNewFamilyMember(prev => ({ ...prev, relationship: e.target.value }))}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      >
+                        <option value="">Relationship</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Child">Child</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Grandparent">Grandparent</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        max="120"
+                        value={newFamilyMember.age}
+                        onChange={(e) => setNewFamilyMember(prev => ({ ...prev, age: e.target.value }))}
+                        placeholder="Age"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      />
+                      <select
+                        value={newFamilyMember.gender}
+                        onChange={(e) => setNewFamilyMember(prev => ({ ...prev, gender: e.target.value }))}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500"
+                      >
+                        <option value="">Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddFamilyMember}
+                      disabled={familyState.adding}
+                      className="mt-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                    >
+                      {familyState.adding ? 'Saving...' : 'Save and select'}
+                    </button>
+                  </div>
+                )}
+              </section>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-bold text-slate-700">
                   Patient name
@@ -1298,21 +1532,22 @@ const CustomerPage = () => {
                     name="patientName"
                     value={bookingForm.patientName}
                     onChange={handleBookingFieldChange}
+                    readOnly={Boolean(bookingForm.familyMemberId)}
                     required
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 read-only:bg-slate-50"
                     placeholder="Your full name"
                   />
                 </label>
 
                 <label className="text-sm font-bold text-slate-700">
-                  Email
+                  Account contact email
                   <input
                     type="email"
                     name="patientEmail"
                     value={bookingForm.patientEmail}
-                    onChange={handleBookingFieldChange}
+                    readOnly
                     required
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
                     placeholder="name@example.com"
                   />
                 </label>

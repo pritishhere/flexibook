@@ -31,6 +31,10 @@ const familyMemberSchema = new mongoose.Schema({
     bloodGroup: {
         type: String,
         default: 'Unknown'
+    },
+    phone: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

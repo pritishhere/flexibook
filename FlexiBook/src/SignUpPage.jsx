@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, ShieldCheck, Loader2, User, Building2, Phone } from 'lucide-react';
 
 // 🔴 TRACKER LOGIC
@@ -22,12 +22,14 @@ const hashPassword = async (password, salt) => {
 };
 
 const SignUpPage = () => {
-  const [role, setRole] = useState('customer'); 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const [role, setRole] = useState(queryParams.get("role") === "business"  ? "business" : "customer"); 
   const [formData, setFormData] = useState({ name: '', email: '', password: '', businessName: '', phone: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
   const handleSignup = async (e) => {
@@ -72,7 +74,11 @@ const SignUpPage = () => {
       setIsLoading(false);
       trackUserAction('SIGNUP_SUCCESSFUL', { email: data.email, role: data.role });
       alert(`Welcome ${data.name}! Account created successfully.`);
-      navigate('/');
+      if (data.role === "business") {
+        navigate("/business-register");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       console.error('Signup error:', err);
       setError('Connection to registration server failed. Please check if the server is running.');

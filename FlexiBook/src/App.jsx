@@ -7,6 +7,7 @@ import Loader from './Components/Loader';
 import IntroSplash from './Components/IntroSplash'; 
 import SignUpPage from './SignUpPage'; 
 
+
 // 2. Apne <Routes> tags ke andar purane signup route ko hatakar ye NAYA link daaliye:
 
 
@@ -25,6 +26,7 @@ const BusinessDashboard = lazy(() => import('./BusinessDashboard'));
 const DoctorPortal = lazy(() => import('./DoctorPortal'));
 const AISymptomChecker = lazy(() => import('./AISymptomChecker'));
 const AdminComplaintsPanel = lazy(() => import('./AdminComplaintsPanel'));
+const BusinessOwnerChoice = lazy(() => import("./BusinessOwnerChoice"));
 
 
 /* ====================================================================
@@ -114,6 +116,7 @@ function App() {
                 <Route path="/doctor/portal" element={<DoctorPortal />} />
                 <Route path="/ai-symptom-checker" element={<AISymptomChecker />} />
                 <Route path="/admin-complaints" element={<AdminComplaintsPanel />} />
+                <Route path="/business-owner" element={<BusinessOwnerChoice />} />
               </Routes>
             </Suspense>
           </main>

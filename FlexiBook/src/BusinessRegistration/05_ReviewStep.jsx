@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   "Business Information",
@@ -747,6 +748,7 @@ function ReviewItem({ title, value }) {
 
 const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   "Business Information",
@@ -665,17 +666,110 @@ function ReviewItem({ title, value }) {
 
 const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.termsAccepted) {
-      setErrors({ termsAccepted: "You must confirm that the information is correct to proceed." });
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!formData.termsAccepted) {
+    setErrors({
+      termsAccepted:
+        "You must confirm that the information is correct to proceed."
+    });
+    return;
+  }
+
+  setErrors({});
+  setIsLoading(true);
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const API_BASE_URL =
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://localhost:3000/api";
+
+    const res = await fetch(`${API_BASE_URL}/hospitals`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {}),
+      },
+      body: JSON.stringify({
+        businessName: formData.businessName,
+        ownerName: formData.ownerName,
+        businessEmail: formData.businessEmail,
+        businessPhone: formData.businessPhone,
+        whatsappNumber: formData.whatsappNumber,
+
+        businessCategory: formData.businessCategory,
+        businessType: formData.businessType,
+        registrationNumber: formData.registrationNumber,
+        gstNumber: formData.gstNumber,
+        website: formData.website,
+
+        address1: formData.address1,
+        address2: formData.address2,
+        landmark: formData.landmark,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        description: formData.description,
+        establishedYear: formData.establishedYear,
+        employees: formData.employees,
+        languages: formData.languages,
+
+        services: formData.services,
+        serviceMode: formData.serviceMode,
+        averagePrice: formData.averagePrice,
+        gstRegistered: formData.gstRegistered,
+        paymentMethods: formData.paymentMethods,
+        slotDuration: formData.slotDuration,
+        bufferTime: formData.bufferTime,
+
+        workingDays: formData.workingDays,
+        openTime: formData.openTime,
+        closeTime: formData.closeTime,
+        lunchBreak: formData.lunchBreak,
+        appointmentRequired: formData.appointmentRequired,
+        emergencySupport: formData.emergencySupport,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      setErrors({
+        submit:
+          data.message ||
+          "Failed to submit registration.",
+      });
+
+      setIsLoading(false);
       return;
     }
-    setErrors({});
-    console.log("Final Registration Data Submitted:", formData);
-    nextStep(); // Advance to Success Screen
-  };
+
+    alert("Business Registered Successfully!");
+
+    setIsLoading(false);
+
+    navigate("/business/dashboard");
+
+  } catch (err) {
+    console.error(err);
+
+    setErrors({
+      submit: "Failed to connect to server.",
+    });
+
+    setIsLoading(false);
+  }
+};
 
   const yesNo = (value) => (value ? "Yes" : "No");
 
@@ -768,10 +862,10 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
         </label>
         {errors.termsAccepted && <p className="text-red-500 text-sm mt-3 font-medium ml-8">{errors.termsAccepted}</p>}
       </div>
-
+      {errors.submit && (<p className="text-red-500 text-sm font-semibold"> {errors.submit} </p>)}
       <div className="flex flex-col-reverse sm:flex-row items-center justify-between pt-2 gap-4">
         <button type="button" onClick={previousStep} className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-8 py-3 font-semibold text-slate-700 transition hover:bg-slate-50">← Previous</button>
-        <button type="submit" className="w-full sm:w-auto rounded-xl bg-green-600 px-8 py-3 font-semibold text-white shadow-md shadow-green-200 transition-all hover:bg-green-700 hover:shadow-lg">Submit Registration ✓</button>
+        <button type="submit" disabled={isLoading} className="w-full sm:w-auto rounded-xl bg-green-600 px-8 py-3 font-semibold text-white shadow-md shadow-green-200 transition-all hover:bg-green-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"> {isLoading ? "Submitting..." : "Submit Registration ✓"} </button>  
       </div>
     </form>
   );

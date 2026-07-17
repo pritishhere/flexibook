@@ -8,44 +8,68 @@ const inMemoryDb = require('../utils/inMemoryDb');
 // @desc    Create a new hospital (Typically for Business Owners)
 exports.createHospital = async (req, res) => {
     try {
-        // Extract data sent from the frontend
-        const { name, address, city, contactNumber, emergencyNumber, ownerId, sector } = req.body;
+
+        const hospitalData = {
+            // Existing fields
+            name: req.body.businessName,
+            address: `${req.body.address1} ${req.body.address2}`.trim(),
+            city: req.body.city,
+            contactNumber: req.body.businessPhone,
+            emergencyNumber: req.body.whatsappNumber,
+            ownerId: req.body.ownerId || null,
+            sector: req.body.businessCategory || "healthcare",
+
+            // Business Information
+            ownerName: req.body.ownerName,
+            businessEmail: req.body.businessEmail,
+            businessType: req.body.businessType,
+            registrationNumber: req.body.registrationNumber,
+            gstNumber: req.body.gstNumber,
+            website: req.body.website,
+            logo: req.body.logo,
+
+            // Business Details
+            landmark: req.body.landmark,
+            state: req.body.state,
+            pincode: req.body.pincode,
+            description: req.body.description,
+            establishedYear: req.body.establishedYear,
+            employees: req.body.employees,
+            languages: req.body.languages,
+
+            // Services
+            services: req.body.services,
+            serviceMode: req.body.serviceMode,
+            averagePrice: req.body.averagePrice,
+            gstRegistered: req.body.gstRegistered,
+            paymentMethods: req.body.paymentMethods,
+            slotDuration: req.body.slotDuration,
+            bufferTime: req.body.bufferTime,
+
+            // Availability
+            workingDays: req.body.workingDays,
+            openTime: req.body.openTime,
+            closeTime: req.body.closeTime,
+            lunchBreak: req.body.lunchBreak,
+            appointmentRequired: req.body.appointmentRequired,
+            emergencySupport: req.body.emergencySupport
+        };
 
         if (mongoose.connection.readyState === 1) {
-            // Create and save the new hospital in the database
-            const newHospital = await Hospital.create({
-                name,
-                address,
-                city,
-                contactNumber,
-                emergencyNumber,
-                ownerId: ownerId || null,
-                sector: sector || 'healthcare'
-            });
+
+            const newHospital = await Hospital.create(hospitalData);
 
             return res.status(201).json({
                 success: true,
-                message: 'Hospital created successfully (MongoDB)',
+                message: "Hospital created successfully (MongoDB)",
                 data: newHospital
             });
+
         } else {
-            // Use In-Memory fallback
-            if (!name || !address || !city || !contactNumber) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Validation failed: name, address, city, and contactNumber are required'
-                });
-            }
 
             const newHospital = {
                 _id: new mongoose.Types.ObjectId().toString(),
-                name,
-                address,
-                city,
-                contactNumber,
-                emergencyNumber: emergencyNumber || '',
-                ownerId: ownerId || null,
-                sector: sector || 'healthcare',
+                ...hospitalData,
                 rating: 0,
                 isVerified: false,
                 createdAt: new Date(),
@@ -56,15 +80,16 @@ exports.createHospital = async (req, res) => {
 
             return res.status(201).json({
                 success: true,
-                message: 'Hospital created successfully (In-Memory Fallback)',
+                message: "Hospital created successfully (In-Memory Fallback)",
                 data: newHospital
             });
         }
+
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to create hospital', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: "Failed to create hospital",
+            error: error.message
         });
     }
 };

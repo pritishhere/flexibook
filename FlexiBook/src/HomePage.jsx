@@ -482,7 +482,7 @@ const HomePage = () => {
                 </div>
               </div>
 
-              <div className="premium-card business group cursor-pointer" onClick={() => navigate('/business-register')}>
+              <div className="premium-card business group cursor-pointer" onClick={() => navigate('/business-owner')}>
                 <div className="absolute -right-4 -bottom-4 text-[100px] opacity-[0.02] group-hover:opacity-[0.06] transition-all duration-700 group-hover:scale-110 group-hover:rotate-12 pointer-events-none">🏪</div>
                 <div className="icon-box w-12 h-12 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 text-emerald-600 rounded-[14px] flex items-center justify-center shrink-0 text-2xl mb-4 shadow-inner relative z-10">🏪</div>
                 <h4 className="font-black text-slate-900 text-xl mb-2 group-hover:text-emerald-600 transition-colors relative z-10">Business Owner</h4>

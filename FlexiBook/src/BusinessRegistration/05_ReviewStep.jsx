@@ -748,8 +748,7 @@ function ReviewItem({ title, value }) {
 
 const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

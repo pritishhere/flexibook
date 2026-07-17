@@ -87,10 +87,11 @@ async function runTests() {
             method: 'POST',
             headers: authHeader,
             body: {
-                name: 'City Care Hospital',
-                address: 'Park Street',
+                businessName: 'City Care Hospital',
+                address1: 'Park Street',
+                address2: 'Block B',
                 city: 'Kolkata',
-                contactNumber: '033-111222'
+                businessPhone: '033-111222'
             }
         });
         console.log(`   - Create Hospital Status: ${createHospRes.status}`);

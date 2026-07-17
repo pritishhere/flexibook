@@ -8,6 +8,7 @@ const connectDB = require('./src/config/db');
 
 // Import routes and models
 const hospitalRoutes = require('./src/routes/hospitalRoutes');
+const generateToken = require('./src/utils/generateToken');
 
 const runAudit = async () => {
     console.log('🔄 STARTING SELF-CONTAINED BUSINESS ANALYTICS AUDIT...');
@@ -70,6 +71,12 @@ const runAudit = async () => {
 
         console.log(`\n✅ Setup Mock Patients, Doctors, and Hospital:`);
         console.log(`   - Hospital ID: ${hospitalId}`);
+
+        // Setup mock admin user for authorization
+        const mockAdminId = new mongoose.Types.ObjectId().toString();
+        inMemoryDb.users.push({ _id: mockAdminId, name: 'Admin User', role: 'admin', email: 'admin@flexibook.com' });
+        const adminToken = generateToken(mockAdminId);
+        const authHeader = { 'Authorization': `Bearer ${adminToken}` };
 
         // Seed 4 appointments across different dates to test new patient calculations and monthly metrics
         const app1Id = new mongoose.Types.ObjectId().toString();
@@ -140,7 +147,9 @@ const runAudit = async () => {
         // CALL THE BUSINESS ANALYTICS API
         // ==========================================================
         console.log('\n[TEST] Requesting hospital dashboard analytics...');
-        const res = await request(`${baseUrl}/hospitals/${hospitalId}/analytics`);
+        const res = await request(`${baseUrl}/hospitals/${hospitalId}/analytics`, {
+            headers: authHeader
+        });
 
         console.log(`   - Response Status: ${res.status}`);
         

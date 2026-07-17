@@ -54,7 +54,8 @@ async function runTests() {
     const serverProcess = fork('./app.js', [], {
         env: {
             ...process.env,
-            PORT: testPort
+            PORT: testPort,
+            DISABLE_WHATSAPP: 'true'
         },
         silent: false // show log output
     });
@@ -65,14 +66,30 @@ async function runTests() {
     try {
         console.log('- Preparing test doctor & hospital database entries...');
 
+        // Setup Business User for Auth
+        const uniqueAdminEmail = `audit_admin_${Date.now()}@example.com`;
+        const authRes = await request(`${baseUrl}/auth/signup`, {
+            method: 'POST',
+            body: {
+                name: 'Audit Admin',
+                email: uniqueAdminEmail,
+                password: 'securepassword123',
+                role: 'admin'
+            }
+        });
+        const token = authRes.data.token;
+        const authHeader = { 'Authorization': `Bearer ${token}` };
+
         // Setup Kolkata Hospital
         const hospRes = await request(`${baseUrl}/hospitals`, {
             method: 'POST',
+            headers: authHeader,
             body: {
-                name: 'Kolkata Multispeciality Clinic',
-                address: 'Salt Lake City',
+                businessName: 'Kolkata Multispeciality Clinic',
+                address1: 'Salt Lake City',
+                address2: 'Block EA',
                 city: 'Kolkata',
-                contactNumber: '033-665544'
+                businessPhone: '033-665544'
             }
         });
         const hospitalId = hospRes.data.data._id;
@@ -90,6 +107,7 @@ async function runTests() {
         });
         const doc1Res = await request(`${baseUrl}/doctors`, {
             method: 'POST',
+            headers: authHeader,
             body: {
                 userId: user1Res.data ? user1Res.data._id : null,
                 hospitalId: hospitalId,
@@ -119,6 +137,7 @@ async function runTests() {
         });
         const doc2Res = await request(`${baseUrl}/doctors`, {
             method: 'POST',
+            headers: authHeader,
             body: {
                 userId: user2Res.data ? user2Res.data._id : null,
                 hospitalId: hospitalId,
@@ -182,7 +201,10 @@ async function runTests() {
         }
 
         // Clean up test hospital
-        await request(`${baseUrl}/hospitals/${hospitalId}`, { method: 'DELETE' });
+        await request(`${baseUrl}/hospitals/${hospitalId}`, { 
+            method: 'DELETE',
+            headers: authHeader
+        });
 
         console.log('🌟🌟🌟 AI SYMPTOM CHECKER API IS confirmed 100% CORRECT & WORKING PERFECTLY! 🌟🌟🌟');
 

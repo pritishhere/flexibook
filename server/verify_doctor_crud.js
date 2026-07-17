@@ -5,7 +5,7 @@ const Hospital = require('./src/models/Hospital');
 const User = require('./src/models/user');
 const Doctor = require('./src/models/Doctor');
 const inMemoryDb = require('./src/utils/inMemoryDb');
-const { createDoctor, getDoctors, deleteDoctor } = require('./src/controllers/doctorController');
+const { createDoctor, getDoctors, deleteDoctor } = require('./src/controllers/doctorcontroller');
 
 // Mock req and res objects for express controller testing
 const mockResponse = () => {

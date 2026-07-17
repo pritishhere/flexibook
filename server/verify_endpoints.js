@@ -43,15 +43,32 @@ async function start() {
     const baseUrl = 'http://localhost:3000/api';
 
     try {
+        // Setup Business User for Auth
+        console.log('0. Setting up Admin/Business user for Auth...');
+        const uniqueAdminEmail = `audit_admin_${Date.now()}@example.com`;
+        const authRes = await request(`${baseUrl}/auth/signup`, {
+            method: 'POST',
+            body: {
+                name: 'Audit Admin',
+                email: uniqueAdminEmail,
+                password: 'securepassword123',
+                role: 'admin'
+            }
+        });
+        const token = authRes.data.token;
+        const authHeader = { 'Authorization': `Bearer ${token}` };
+
         // 1. Create a Hospital
         console.log('1. Creating Hospital...');
         const hRes = await request(`${baseUrl}/hospitals`, {
             method: 'POST',
+            headers: authHeader,
             body: {
-                name: 'Apollo Hospital',
-                address: 'EM Bypass Road',
+                businessName: 'Apollo Hospital',
+                address1: 'EM Bypass Road',
+                address2: 'Block A',
                 city: 'Kolkata',
-                contactNumber: '033-234567'
+                businessPhone: '033-234567'
             }
         });
         console.log(`   Response Status: ${hRes.status}`);
@@ -126,6 +143,7 @@ async function start() {
         console.log('\n7. Updating Hospital...');
         const updateHRes = await request(`${baseUrl}/hospitals/${hospitalId}`, {
             method: 'PUT',
+            headers: authHeader,
             body: { name: 'Apollo Gleneagles Hospital' }
         });
         console.log(`   Response Status: ${updateHRes.status}`);
@@ -166,7 +184,8 @@ async function start() {
         // 12. Delete Hospital
         console.log('\n12. Deleting Hospital...');
         const deleteHRes = await request(`${baseUrl}/hospitals/${hospitalId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: authHeader
         });
         console.log(`   Response Status: ${deleteHRes.status}`);
 

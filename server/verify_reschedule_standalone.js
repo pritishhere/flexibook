@@ -8,6 +8,7 @@ const connectDB = require('./src/config/db');
 
 // Import routes and models
 const appointmentRoutes = require('./src/routes/appointmentRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const runAudit = async () => {
     console.log('🔄 STARTING SELF-CONTAINED APPOINTMENT RESCHEDULING AUDIT...');
@@ -16,6 +17,7 @@ const runAudit = async () => {
     const app = express();
     app.use(express.json());
     app.use('/api/appointments', appointmentRoutes);
+    app.use('/api/auth', authRoutes);
     
     const server = http.createServer(app);
     await new Promise((resolve) => server.listen(3005, resolve));
@@ -45,18 +47,23 @@ const runAudit = async () => {
 
     try {
         // Setup initial Mock Patients, Doctors, and Hospital in memory
-        const patientId = new mongoose.Types.ObjectId().toString();
         const docUserId = new mongoose.Types.ObjectId().toString();
         const doctorId = new mongoose.Types.ObjectId().toString();
         const hospitalId = new mongoose.Types.ObjectId().toString();
-
         // Seed users (We use the real verified email to test the SMTP updating trigger)
-        inMemoryDb.users.push({ 
-            _id: patientId, 
-            name: 'Sainee Sarker', 
-            email: process.env.SMTP_USER || 'ghoshpritish111@gmail.com', 
-            mobile: '+919903592889' 
+        const signupRes = await request(`${baseUrl}/auth/signup`, {
+            method: 'POST',
+            body: {
+                name: 'Sainee Sarker',
+                email: process.env.SMTP_USER || `ghoshpritish_${Date.now()}@example.com`,
+                password: 'password123',
+                mobile: '+919903592889',
+                role: 'patient'
+            }
         });
+        const patientId = signupRes.body._id;
+        const patientToken = signupRes.body.token;
+        const authHeader = { 'Authorization': `Bearer ${patientToken}` };
         inMemoryDb.users.push({ _id: docUserId, name: 'Dr. Debabrata Sen' });
 
         // Seed doctor
@@ -115,6 +122,7 @@ const runAudit = async () => {
         
         const rescheduleRes = await request(`${baseUrl}/appointments/${app1Id}/reschedule`, {
             method: 'PUT',
+            headers: authHeader,
             body: {
                 newDate: tomorrow,
                 newTimeSlot: '11:00 AM - 11:15 AM'

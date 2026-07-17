@@ -8,6 +8,7 @@ const connectDB = require('./src/config/db');
 
 // Import routes and models
 const appointmentRoutes = require('./src/routes/appointmentRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const runAudit = async () => {
     console.log('🔄 STARTING SELF-CONTAINED HOSPITAL PATIENT MANAGEMENT AUDIT...');
@@ -16,6 +17,7 @@ const runAudit = async () => {
     const app = express();
     app.use(express.json());
     app.use('/api/appointments', appointmentRoutes);
+    app.use('/api/auth', authRoutes);
     
     const server = http.createServer(app);
     await new Promise((resolve) => server.listen(3005, resolve));
@@ -59,8 +61,8 @@ const runAudit = async () => {
 
     try {
         // Setup initial Mock Patients, Doctors, and Hospital in memory
-        const patientAId = new mongoose.Types.ObjectId().toString();
-        const patientBId = new mongoose.Types.ObjectId().toString();
+        let patientAId;
+        let patientBId;
         
         const docUser1Id = new mongoose.Types.ObjectId().toString();
         const docUser2Id = new mongoose.Types.ObjectId().toString();
@@ -70,9 +72,32 @@ const runAudit = async () => {
         
         const hospitalId = new mongoose.Types.ObjectId().toString();
 
-        // Seed users
-        inMemoryDb.users.push({ _id: patientAId, name: 'Sainee Sarker', email: 'sainee@example.com', mobile: '9903592889' });
-        inMemoryDb.users.push({ _id: patientBId, name: 'Pritish Ghosh', email: 'pritish@example.com', mobile: '9883769499' });
+        // Seed users using signup endpoint to get valid tokens
+        const signupResA = await request(`${baseUrl}/auth/signup`, {
+            method: 'POST',
+            body: {
+                name: 'Sainee Sarker',
+                email: `sainee_${Date.now()}@example.com`,
+                password: 'password123',
+                mobile: '9903592889',
+                role: 'patient'
+            }
+        });
+        patientAId = signupResA.body._id;
+        const patientAToken = signupResA.body.token;
+        const authHeader = { 'Authorization': `Bearer ${patientAToken}` };
+
+        const signupResB = await request(`${baseUrl}/auth/signup`, {
+            method: 'POST',
+            body: {
+                name: 'Pritish Ghosh',
+                email: `pritish_${Date.now()}@example.com`,
+                password: 'password123',
+                mobile: '9883769499',
+                role: 'patient'
+            }
+        });
+        patientBId = signupResB.body._id;
         inMemoryDb.users.push({ _id: docUser1Id, name: 'Dr. Debabrata Sen' });
         inMemoryDb.users.push({ _id: docUser2Id, name: 'Dr. Pritam Das' });
 
@@ -146,7 +171,9 @@ const runAudit = async () => {
         // TEST 1: RETRIEVE ALL HOSPITAL APPOINTMENTS (Admin Schedule)
         // ==========================================================
         console.log('\n[TEST 1] Retrieving hospital schedule list...');
-        const listRes = await request(`${baseUrl}/appointments/hospital/${hospitalId}`);
+        const listRes = await request(`${baseUrl}/appointments/hospital/${hospitalId}`, {
+            headers: authHeader
+        });
 
         console.log(`   - Response Status: ${listRes.status}`);
         console.log(`   - Total Appointments Scheduled: ${listRes.body.count}`);
@@ -162,6 +189,7 @@ const runAudit = async () => {
         console.log(`\n[TEST 2] Updating payment status of booking ${app1Id} to 'Paid'...`);
         const payRes = await request(`${baseUrl}/appointments/${app1Id}/payment`, {
             method: 'PUT',
+            headers: authHeader,
             body: { paymentStatus: 'Paid' }
         });
 
@@ -178,7 +206,9 @@ const runAudit = async () => {
         // TEST 3: VERIFY PAID APPOINTMENT POPULATES CORRECTLY
         // ==========================================================
         console.log('\n[TEST 3] Re-verifying schedule board outputs...');
-        const verifyListRes = await request(`${baseUrl}/appointments/hospital/${hospitalId}`);
+        const verifyListRes = await request(`${baseUrl}/appointments/hospital/${hospitalId}`, {
+            headers: authHeader
+        });
         const app1 = verifyListRes.body.data.find(a => a._id === app1Id);
         
         console.log(`   - Appointment 1 Patient Name: ${app1.patient.name}`);
@@ -194,7 +224,9 @@ const runAudit = async () => {
         // TEST 4: FILTER BY DOCTOR (Retrieve only Cardio bookings)
         // ==========================================================
         console.log(`\n[TEST 4] Filtering dashboard schedule for Cardio Doctor (${doctor1Id})...`);
-        const cardioRes = await request(`${baseUrl}/appointments/hospital/${hospitalId}?doctorId=${doctor1Id}`);
+        const cardioRes = await request(`${baseUrl}/appointments/hospital/${hospitalId}?doctorId=${doctor1Id}`, {
+            headers: authHeader
+        });
 
         console.log(`   - Response Status: ${cardioRes.status}`);
         console.log(`   - Cardio Appointments count: ${cardioRes.body.count}`);

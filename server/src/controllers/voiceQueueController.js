@@ -112,10 +112,11 @@ const parseVoiceRequestLocal = (textQuery) => {
     };
 };
 
-// Helper function to download audio from Twilio into a buffer
+// Helper function to download audio into a buffer (supports both http and https)
 const downloadAudio = (url) => {
     return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
+        const client = url.startsWith('https') ? require('https') : require('http');
+        client.get(url, (res) => {
             if (res.statusCode !== 200) {
                 reject(new Error(`Failed to download audio: ${res.statusCode}`));
                 return;

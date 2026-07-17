@@ -111,5 +111,7 @@ server.listen(PORT, () => {
     startReminderScheduler();
     
     // Start free self-hosted WhatsApp Web client
-    startWhatsAppClient();
+    if (process.env.DISABLE_WHATSAPP !== 'true') {
+        startWhatsAppClient();
+    }
 });

@@ -42,15 +42,15 @@ const runSectorsVerification = async () => {
         });
         console.log(`👤 Created Test Business Owner: ${testUser.name} (${testUser._id})`);
 
-        // 2. Create Healthcare Org via Controller
         const req1 = {
             body: {
-                name: 'Kolkata Care Clinic',
-                address: 'Salt Lake Sector V',
+                businessName: 'Kolkata Care Clinic',
+                address1: 'Salt Lake',
+                address2: 'Sector V',
                 city: 'Kolkata',
-                contactNumber: '9876543210',
+                businessPhone: '9876543210',
                 ownerId: testUser._id,
-                sector: 'healthcare'
+                businessCategory: 'healthcare'
             }
         };
         const res1 = mockResponse();
@@ -58,15 +58,15 @@ const runSectorsVerification = async () => {
         const healthcareOrg = res1.body.data;
         console.log(`🏥 Registered Healthcare Org: "${healthcareOrg.name}" | Sector: ${healthcareOrg.sector} | Owner: ${healthcareOrg.ownerId}`);
 
-        // 3. Create Salon Org via Controller
         const req2 = {
             body: {
-                name: 'Glamour Salon',
-                address: 'Park Street',
+                businessName: 'Glamour Salon',
+                address1: 'Park',
+                address2: 'Street',
                 city: 'Kolkata',
-                contactNumber: '9123456789',
+                businessPhone: '9123456789',
                 ownerId: testUser._id,
-                sector: 'salon'
+                businessCategory: 'salon'
             }
         };
         const res2 = mockResponse();
@@ -121,30 +121,30 @@ const runSectorsVerification = async () => {
 
     const mockOwnerId = 'mock_owner_789';
 
-    // 1. Create Healthcare Org
     const reqMem1 = {
         body: {
-            name: 'In-Memory Care',
-            address: 'Vite Street',
+            businessName: 'In-Memory Care',
+            address1: 'Vite',
+            address2: 'Street',
             city: 'Bangalore',
-            contactNumber: '8888888888',
+            businessPhone: '8888888888',
             ownerId: mockOwnerId,
-            sector: 'healthcare'
+            businessCategory: 'healthcare'
         }
     };
     const resMem1 = mockResponse();
     await createHospital(reqMem1, resMem1);
     console.log(`🏥 Registered In-Memory Healthcare Org: "${resMem1.body.data.name}" | Sector: ${resMem1.body.data.sector}`);
 
-    // 2. Create Salon Org
     const reqMem2 = {
         body: {
-            name: 'In-Memory Cut & Style',
-            address: 'Node Avenue',
+            businessName: 'In-Memory Cut & Style',
+            address1: 'Node',
+            address2: 'Avenue',
             city: 'Bangalore',
-            contactNumber: '7777777777',
+            businessPhone: '7777777777',
             ownerId: mockOwnerId,
-            sector: 'salon'
+            businessCategory: 'salon'
         }
     };
     const resMem2 = mockResponse();

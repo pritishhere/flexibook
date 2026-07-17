@@ -772,14 +772,46 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({
-          name: formData.businessName,
-          address: `${formData.address1} ${formData.address2 || ''} ${formData.landmark || ''}`.trim(),
-          city: formData.city,
-          contactNumber: formData.businessPhone,
-          emergencyNumber: formData.whatsappNumber || '',
-          sector: formData.businessCategory || 'healthcare'
-        })
+       body: JSON.stringify({
+  businessName: formData.businessName,
+  ownerName: formData.ownerName,
+  businessEmail: formData.businessEmail,
+  businessPhone: formData.businessPhone,
+  whatsappNumber: formData.whatsappNumber,
+
+  businessCategory: formData.businessCategory,
+  businessType: formData.businessType,
+  registrationNumber: formData.registrationNumber,
+  gstNumber: formData.gstNumber,
+  website: formData.website,
+  logo: formData.logo,
+
+  address1: formData.address1,
+  address2: formData.address2,
+  landmark: formData.landmark,
+  city: formData.city,
+  state: formData.state,
+  pincode: formData.pincode,
+  description: formData.description,
+  establishedYear: formData.establishedYear,
+  employees: formData.employees,
+  languages: formData.languages,
+
+  services: formData.services,
+  serviceMode: formData.serviceMode,
+  averagePrice: formData.averagePrice,
+  gstRegistered: formData.gstRegistered,
+  paymentMethods: formData.paymentMethods,
+  slotDuration: formData.slotDuration,
+  bufferTime: formData.bufferTime,
+
+  workingDays: formData.workingDays,
+  openTime: formData.openTime,
+  closeTime: formData.closeTime,
+  lunchBreak: formData.lunchBreak,
+  appointmentRequired: formData.appointmentRequired,
+  emergencySupport: formData.emergencySupport
+})
       });
       
       const data = await res.json().catch(() => ({}));

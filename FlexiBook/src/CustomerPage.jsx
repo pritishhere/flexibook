@@ -1,6 +1,6 @@
 // src/pages/CustomerPage.jsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { serviceCategories } from './data/categories';
 import { io } from "socket.io-client";
@@ -372,7 +372,7 @@ const CustomerPage = () => {
         checkDoctorLeave('mock-doc-0', getLocalDateInputValue());
       }
     }
-  }, [availableDoctors, bookingService]);
+  }, [bookingService, checkDoctorLeave]);
 
   useEffect(() => {
     if (activeDetailPage) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -602,7 +602,7 @@ const CustomerPage = () => {
     }
   };
 
-  const checkDoctorLeave = async (doctorId, selectedDate) => {
+  const checkDoctorLeave = useCallback(async (doctorId, selectedDate) => {
     if (!doctorId || doctorId.startsWith("mock-doc")) {
       setDoctorOnLeave(false);
       setLeaveMessage("");
@@ -661,7 +661,7 @@ const CustomerPage = () => {
       setDoctorOnLeave(false);
       setLeaveMessage("");
     }
-  };
+  });
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -833,7 +833,7 @@ const CustomerPage = () => {
       }
 
       // Return a promise from the Razorpay payment flow
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve) => {
         const options = {
           key: checkoutKey,
           amount: order.amount,
@@ -881,7 +881,7 @@ const CustomerPage = () => {
                 });
               }
               resolve();
-            } catch (verifyErr) {
+            } catch {
               setBookingStatus({
                 state: 'success',
                 message: `Appointment booked (Token #${tokenNumber || '—'}). Payment was processed but verification encountered an issue. Please contact support.`,
@@ -917,7 +917,7 @@ const CustomerPage = () => {
             resolve();
           });
           rzp.open();
-        } catch (rzpError) {
+        } catch {
           setBookingStatus({
             state: 'success',
             message: `Appointment booked (Token #${tokenNumber || '—'}). Could not open payment gateway – please pay at the counter.`,
@@ -1345,9 +1345,9 @@ const CustomerPage = () => {
     const paymentIncomplete = /pay at the counter|payment failed|payment was skipped|payment could not|payment configuration|online payment is currently unavailable|could not open payment/i.test(bookingStatus.message || '');
 
     return (
-      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+      <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
         <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 flex-shrink-0">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 shrink-0">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
                 {isQueueBooking ? 'Join healthcare queue' : 'Book healthcare appointment'}
@@ -1777,25 +1777,6 @@ const CustomerPage = () => {
           price: s.price,
           duration: 'On request'
         }));
-    const reviewCards = detailProfile.reviews.length > 0
-      ? detailProfile.reviews.map((review) => {
-          const createdAt = review.createdAt ? new Date(review.createdAt) : null;
-          const reviewDate = createdAt && !Number.isNaN(createdAt.getTime())
-            ? createdAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-            : 'Recent visit';
-
-          return {
-            id: review._id || review.comment,
-            name: review.userId?.name || 'Verified patient',
-            date: reviewDate,
-            rating: review.rating || 5,
-            text: review.comment || 'Good experience with the hospital team.'
-          };
-        })
-      : [
-          { id: 'fallback-review-1', name: 'Rahul Sharma', date: '2 days ago', rating: 5, text: 'Excellent service. The staff was polite and the facility was clean.' },
-          { id: 'fallback-review-2', name: 'Priya Patel', date: '1 week ago', rating: 5, text: 'Booked through FlexiBook and the visit felt much smoother than waiting in line.' }
-        ];
     const detailTabs = [
       { id: 'overview', label: 'Overview' },
       { id: 'departments', label: 'Departments' },
@@ -1829,9 +1810,9 @@ const CustomerPage = () => {
 
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 grid lg:grid-cols-[minmax(0,0.95fr)_minmax(430px,1fr)] gap-6'>
           <section className='space-y-6 min-w-0'>
-            <div className='relative h-[320px] sm:h-[430px] overflow-hidden rounded-xl border border-slate-200 bg-slate-900 shadow-sm'>
+            <div className='relative h-80 sm:h-107.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-900 shadow-sm'>
               <img src={mainImage} alt={hospitalName} className='absolute inset-0 w-full h-full object-cover' />
-              <div className='absolute inset-0 bg-gradient-to-r from-slate-950/45 via-slate-950/10 to-slate-950/55'></div>
+              <div className='absolute inset-0 bg-linear-to-r from-slate-950/45 via-slate-950/10 to-slate-950/55'></div>
               <div className='absolute inset-y-8 left-4 hidden w-28 overflow-hidden rounded-lg border border-white/20 bg-white/10 opacity-70 md:block'>
                 <img src={sideImageOne} alt='Gallery preview' className='w-full h-full object-cover' />
               </div>
@@ -1880,7 +1861,7 @@ const CustomerPage = () => {
           </section>
 
           <section className='min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden'>
-            <div className='bg-gradient-to-r from-white via-blue-50 to-emerald-50 px-5 py-5 border-b border-slate-200'>
+            <div className='bg-linear-to-r from-white via-blue-50 to-emerald-50 px-5 py-5 border-b border-slate-200'>
               <div className='flex flex-col xl:flex-row gap-5'>
                 <div className='flex-1 min-w-0'>
                   <div className='flex flex-wrap items-center gap-3 mb-3'>
@@ -1957,7 +1938,7 @@ const CustomerPage = () => {
               ))}
             </div>
 
-            <div className='p-5 min-h-[360px]'>
+            <div className='p-5 min-h-90'>
               {activeTab === 'overview' && (
                 <div className='animate-fade-in space-y-5'>
                   <div>
@@ -2037,7 +2018,7 @@ const CustomerPage = () => {
                 <div className="animate-fade-in space-y-6">
                   {/* Rating Header (Enhanced) */}
                   <div className="flex items-center gap-5 mb-8 pb-6 border-b border-slate-200/60">
-                    <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-blue-500">
+                    <div className="text-5xl font-black text-transparent bg-clip-text bg-linear-to-r from-blue-700 to-blue-500">
                       {s.rating}
                     </div>
                     <div>
@@ -2047,7 +2028,7 @@ const CustomerPage = () => {
                   </div>
 
                   {/* 1. COMPLAINT / FEEDBACK FORM (Premium UI with Hover) */}
-                  <div className="bg-gradient-to-br from-white to-blue-50/30 p-6 border border-slate-200 rounded-2xl mb-8 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
+                  <div className="bg-linear-to-br from-white to-blue-50/30 p-6 border border-slate-200 rounded-2xl mb-8 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
                     {/* Decorative background element */}
                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-40 group-hover:bg-blue-200 transition-all duration-500"></div>
                     
@@ -2169,7 +2150,7 @@ const CustomerPage = () => {
                       detailProfile.reviews.map((rev) => (
                         <div key={rev._id} className="group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.1)] hover:-translate-y-1 hover:border-blue-200/60 transition-all duration-400 ease-out relative overflow-hidden">
                           {/* Hover Accent Border */}
-                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-linear-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           
                           {rev.status && (
                              <span className={`absolute top-5 right-5 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wide border shadow-sm transition-colors ${
@@ -2199,7 +2180,7 @@ const CustomerPage = () => {
                         { name: 'Priya Patel', date: '1 week ago', subject: 'Smooth and seamless process', text: 'Highly recommended. I booked through FlexiBook and didn\'t have to wait in line at all. The entire process was paperless.' }
                       ].map((rev, i) => (
                         <div key={`mock-${i}`} className="group bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.1)] hover:-translate-y-1 hover:border-blue-200/60 transition-all duration-400 ease-out relative overflow-hidden">
-                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-linear-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                           <div className="absolute top-5 right-5 text-xs font-semibold text-slate-400">{rev.date}</div>
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center font-black text-sm border border-slate-200 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm">
@@ -2268,7 +2249,7 @@ const CustomerPage = () => {
           <div className="flex flex-col lg:flex-row gap-6 mb-8">
 
             {/* Left: Gallery Grid */}
-            <div className="flex-1 grid grid-cols-3 gap-2 sm:gap-4 h-[300px] sm:h-[400px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-white p-2">
+            <div className="flex-1 grid grid-cols-3 gap-2 sm:gap-4 h-75 sm:h-100 rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-white p-2">
               <div className="col-span-2 relative rounded-xl overflow-hidden cursor-pointer group">
                 {s.image ? <img src={s.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Main" /> : <div className="w-full h-full bg-slate-200"></div>}
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
@@ -2287,7 +2268,7 @@ const CustomerPage = () => {
             </div>
 
             {/* Right: Premium Booking Card (Gradient like screenshot) */}
-            <div className="w-full lg:w-[400px] bg-gradient-to-br from-emerald-50 via-teal-50/30 to-blue-50 rounded-2xl p-6 shadow-sm border border-emerald-100 flex flex-col relative overflow-hidden">
+            <div className="w-full lg:w-100 bg-linear-to-brrom-emerald-50 via-teal-50/30 to-blue-50 rounded-2xl p-6 shadow-sm border border-emerald-100 flex flex-col relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/50 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
               <div className="relative z-10">
@@ -2361,7 +2342,7 @@ const CustomerPage = () => {
               ))}
             </div>
 
-            <div className="p-6 sm:p-8 min-h-[300px]">
+            <div className="p-6 sm:p-8 min-h-75">
               {/* Tab: Overview */}
               {activeTab === 'overview' && (
                 <div className="animate-fade-in">
@@ -2454,7 +2435,7 @@ const CustomerPage = () => {
                 <div
                   key={rel.id}
                   onClick={() => { setActiveDetailPage(rel); setActiveTab('overview'); }}
-                  className="min-w-[260px] max-w-[260px] bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group shrink-0"
+                  className="min-w-65 max-w-65 bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group shrink-0"
                 >
                   <div className="w-full h-32 bg-slate-100 rounded-lg mb-3 overflow-hidden relative">
                     {rel.image ? <img src={rel.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="rel" /> : <div className="w-full h-full flex items-center justify-center">{rel.icon}</div>}
@@ -2482,7 +2463,7 @@ const CustomerPage = () => {
   // ================= 8. STANDARD LIST RENDERER (IF NOT ON DETAIL PAGE) =================
   return (
     <div className="relative w-full min-h-screen font-sans bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('/customer-bg.jpg')" }}>
-      <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[12px] z-0"></div>
+      <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-md z-0"></div>
 
       <div className="relative z-10 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
 
@@ -2669,7 +2650,7 @@ const CustomerPage = () => {
                 // 🔥 RESTORED PREMIUM HOVER ANIMATIONS HERE 🔥
                 <div key={service.id} className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/50 p-4 sm:p-5 flex flex-col md:flex-row gap-5 hover:-translate-y-1.5 hover:shadow-[0_12px_30px_-10px_rgba(37,99,235,0.2)] hover:border-blue-300/50 transition-all duration-400 ease-out group/card relative overflow-hidden">
 
-                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute top-0 left-0 w-1 h-full bg-linear-to-b from-blue-400 to-blue-600 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="w-full md:w-48 h-40 bg-slate-50 rounded-xl shrink-0 relative flex items-center justify-center border border-slate-100 overflow-hidden shadow-inner">
                     {service.image ? (
@@ -2677,17 +2658,17 @@ const CustomerPage = () => {
                     ) : (
                       <span className="text-4xl opacity-80 transition-transform duration-500 group-hover/card:scale-125">{service.icon}</span>
                     )}
-                    {service.image && <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent"></div>}
+                    {service.image && <div className="absolute inset-0 bg-linear-to-t from-slate-900/30 to-transparent"></div>}
                   </div>
 
                   <div className="flex-1 flex flex-col justify-between ml-0 md:ml-1">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <h3 className="text-lg font-bold text-slate-900 bg-left-bottom bg-gradient-to-r from-blue-600 to-blue-600 bg-[length:0%_2px] bg-no-repeat group-hover/card:bg-[length:100%_2px] transition-all duration-500 ease-out pb-0.5">
+                        <h3 className="text-lg font-bold text-slate-900 bg-bottom-left bg-linear-to-r from-blue-600 to-blue-600 bg-size-[0%_2px] bg-no-repeat group-hover/card:bg-size-[100%_2px] transition-all duration-500 ease-out pb-0.5">
                           {service.name}
                         </h3>
                         {service.verified && (
-                          <span className="flex items-center gap-1 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm border border-emerald-100/50 uppercase tracking-wide">
+                          <span className="flex items-center gap-1 bg-linear-to-r from-emerald-50 to-teal-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm border border-emerald-100/50 uppercase tracking-wide">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
                             Verified
                           </span>
@@ -2729,9 +2710,9 @@ const CustomerPage = () => {
 
                   <div className="w-full md:w-48 flex flex-col items-start md:items-end justify-between border-t border-slate-100 md:border-t-0 md:border-l md:border-slate-100/80 pt-4 md:pt-0 md:pl-5 mt-4 md:mt-0">
                     <div className="w-full flex justify-between md:justify-end items-start mb-4">
-                      <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm ${service.availabilityStatus === 'Available Now' ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-emerald-700 border-emerald-100' :
-                          service.availabilityStatus === 'Available Today' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-100' :
-                            service.availabilityStatus === 'Join Queue' ? 'bg-gradient-to-r from-purple-50 to-fuchsia-50 text-purple-700 border-purple-100' :
+                      <span className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-sm ${service.availabilityStatus === 'Available Now' ? 'bg-linear-to-r from-green-50 to-emerald-50 text-emerald-700 border-emerald-100' :
+                          service.availabilityStatus === 'Available Today' ? 'bg-linear-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-100' :
+                            service.availabilityStatus === 'Join Queue' ? 'bg-linear-to-r from-purple-50 to-fuchsia-50 text-purple-700 border-purple-100' :
                               'bg-slate-50 text-slate-500 border-slate-200'
                         }`}>
                         {service.availabilityStatus}
@@ -2744,7 +2725,7 @@ const CustomerPage = () => {
                         <p className="text-sm font-bold text-slate-800">{service.nextAvailable}</p>
                       </div>
                       <div className="text-left md:text-right">
-                        <p className="text-[15px] font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-blue-500">{service.price}</p>
+                        <p className="text-[15px] font-black text-transparent bg-clip-text bg-linear-to-r from-blue-700 to-blue-500">{service.price}</p>
                       </div>
                     </div>
 

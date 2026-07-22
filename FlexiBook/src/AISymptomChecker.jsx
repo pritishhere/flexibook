@@ -357,7 +357,7 @@ function AISymptomChecker() {
       </div>
 
       {bookingDoctor && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-955/60 px-4 py-6 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-955/60 px-4 py-6 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl p-6 relative">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-5">
               <div>

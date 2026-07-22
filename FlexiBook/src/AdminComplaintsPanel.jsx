@@ -103,15 +103,15 @@ const AdminComplaintsPanel = () => {
             <p className="text-sm font-bold text-slate-500 mb-1">Total Tickets</p>
             <h3 className="text-3xl font-black text-slate-900">{tickets.length}</h3>
           </div>
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
+          <div className="bg-linear-to-br from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
             <p className="text-sm font-bold text-amber-700 mb-1">Pending Action</p>
             <h3 className="text-3xl font-black text-amber-900">{pendingCount}</h3>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100 shadow-sm">
+          <div className="bg-linear-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100 shadow-sm">
             <p className="text-sm font-bold text-blue-700 mb-1">In Progress</p>
             <h3 className="text-3xl font-black text-blue-900">{progressCount}</h3>
           </div>
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 rounded-2xl border border-emerald-100 shadow-sm">
+          <div className="bg-linear-to-br from-emerald-50 to-teal-50 p-5 rounded-2xl border border-emerald-100 shadow-sm">
             <p className="text-sm font-bold text-emerald-700 mb-1">Resolved</p>
             <h3 className="text-3xl font-black text-emerald-900">{resolvedCount}</h3>
           </div>

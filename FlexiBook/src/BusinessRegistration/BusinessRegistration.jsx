@@ -1,6 +1,6 @@
 // src/BusinessRegistration/BusinessRegistration.jsx
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import RegistrationHeader from "./RegistrationHeader";
 import ProgressBar from "./ProgressBar";
@@ -86,6 +86,7 @@ const steps = [
     title: "Availability",
     subtitle: "Working schedule",
   },
+
   {
     id: 5,
     title: "Review",
@@ -96,6 +97,17 @@ const steps = [
 export default function BusinessRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(initialForm);
+  useEffect(() => {
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  if (user) {
+    setFormData((prev) => ({
+      ...prev,
+      ownerName: user.name || "",
+      businessEmail: user.email || "",
+    }));
+  }
+  }, []);
 
   const updateField = (field, value) => {
     setFormData((prev) => ({

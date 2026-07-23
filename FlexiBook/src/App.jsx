@@ -7,11 +7,6 @@ import Loader from './Components/Loader';
 import IntroSplash from './Components/IntroSplash'; 
 import SignUpPage from './SignUpPage'; 
 
-
-// 2. Apne <Routes> tags ke andar purane signup route ko hatakar ye NAYA link daaliye:
-
-
-
 /* ====================================================================
    🔥 1. ENTERPRISE CODE SPLITTING (Lazy Loading)
 ==================================================================== */
@@ -27,6 +22,9 @@ const DoctorPortal = lazy(() => import('./DoctorPortal'));
 const AISymptomChecker = lazy(() => import('./AISymptomChecker'));
 const AdminComplaintsPanel = lazy(() => import('./AdminComplaintsPanel'));
 const BusinessOwnerChoice = lazy(() => import("./BusinessOwnerChoice"));
+
+// 🟢 TASK 2 STEP 2: Lazy load MasterDashboard
+const MasterDashboard = lazy(() => import('./MasterDashboard'));
 
 
 /* ====================================================================
@@ -115,8 +113,11 @@ function App() {
                 <Route path="/business/dashboard" element={<BusinessDashboard />} />
                 <Route path="/doctor/portal" element={<DoctorPortal />} />
                 <Route path="/ai-symptom-checker" element={<AISymptomChecker />} />
-                <Route path="/admin-complaints" element={<AdminComplaintsPanel />} />
+                <Route path="/admin-complaints" element={<MasterDashboard />} />
                 <Route path="/business-owner" element={<BusinessOwnerChoice />} />
+
+                {/* 🟢 TASK 2 STEP 2: Super Admin Master Dashboard Route */}
+                <Route path="/admin-dashboard" element={<MasterDashboard />} />
               </Routes>
             </Suspense>
           </main>

@@ -1,4 +1,3 @@
-// src/Components/Header.jsx
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -37,7 +36,6 @@ export const Header = () => {
   }; 
   
   return (
-    // 🔴 FIXED: Ab Header hamesha top par sticky rahega aur auth pages par gayab nahi hoga!
     <div className="w-full z-50 sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
       <header className="w-full">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-20 md:h-24 flex items-center justify-between">
@@ -57,11 +55,30 @@ export const Header = () => {
           <nav className="flex-none hidden lg:flex items-center justify-center gap-6 xl:gap-10 mt-1">
             <Link to="/" className={getDesktopLinkStyle('/')}>Home</Link>
             <Link to="/customers" className={getDesktopLinkStyle('/customers')}>For Customers</Link>
+
+            {/* TASK 1: "My Bookings" button added for logged-in customers */}
+            {isLoggedIn && (
+              <Link 
+                to="/customers" 
+                className={
+                  location.pathname === '/customers'
+                    ? "text-sm xl:text-base font-bold text-blue-600 bg-blue-50 px-3.5 py-1.5 rounded-lg border border-blue-200"
+                    : "text-sm xl:text-base font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg border border-blue-100 transition-all"
+                }
+              >
+                📋 My Bookings
+              </Link>
+            )}
+
             <Link to="/business-register" className={getDesktopLinkStyle('/business-register')}>For Businesses</Link>
             <Link to="/categories" className={getDesktopLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" className={getDesktopLinkStyle('/about')}>About Us</Link>
+            
+            {/* TASK 2 STEP 3: Admin Central link updated to point to /admin-dashboard */}
             {user?.role === 'admin' && (
-              <Link to="/admin-complaints" className={getDesktopLinkStyle('/admin-complaints')}>Admin Central</Link>
+              <Link to="/admin-dashboard" className={getDesktopLinkStyle('/admin-dashboard')}>
+                🛡️ Admin Central
+              </Link>
             )}
           </nav>
 
@@ -113,13 +130,30 @@ export const Header = () => {
         {isOpen && (
           <div className="lg:hidden bg-white border-t border-gray-100 px-6 py-6 flex flex-col gap-4 shadow-inner">
             <Link to="/" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/')}>Home</Link>
+            
+            {/* TASK 1: "My Bookings" in Mobile View */}
+            {isLoggedIn && (
+              <Link 
+                to="/customers" 
+                onClick={() => setIsOpen(false)} 
+                className="text-base font-bold text-blue-600 bg-blue-50 p-3 rounded-lg flex items-center gap-2 border border-blue-100"
+              >
+                <span>📋</span> My Bookings
+              </Link>
+            )}
+
             <Link to="/customers" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/customers')}>For Customers</Link>
             <Link to="/business-register" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/business-register')}>For Businesses</Link>
             <Link to="/categories" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/about')}>About Us</Link>
+            
+            {/* TASK 2 STEP 3: Admin Central in Mobile View updated to /admin-dashboard */}
             {user?.role === 'admin' && (
-              <Link to="/admin-complaints" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/admin-complaints')}>Admin Central</Link>
+              <Link to="/admin-dashboard" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/admin-dashboard')}>
+                🛡️ Admin Central
+              </Link>
             )}
+            
             <hr className="border-gray-100 my-2" />
 
             <div className="flex flex-col gap-3">

@@ -61,7 +61,7 @@ const CustomerRegister = () => {
 
       setIsLoading(false);
       alert(`Welcome ${data.name}! Account created successfully.`);
-      navigate('/');
+      navigate('/customers');
     } catch (err) {
       console.error('Signup error:', err);
       setError('Connection to registration server failed. Please check if the server is running.');

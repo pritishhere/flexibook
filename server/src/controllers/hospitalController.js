@@ -86,6 +86,7 @@ exports.createHospital = async (req, res) => {
         }
 
     } catch (error) {
+        console.log("Error creating hospital:", error);
         res.status(500).json({
             success: false,
             message: "Failed to create hospital",

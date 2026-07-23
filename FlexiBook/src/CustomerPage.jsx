@@ -145,6 +145,38 @@ const getServiceSpecialization = (service = {}) => {
   return primaryCategory || 'General Medicine';
 };
 
+const isHealthcareService = (service = {}) => service?.category?.toLowerCase().includes('healthcare');
+
+const getDynamicTeam = (category = '') => {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('healthcare')) return [
+    { name: "Dr. Rajesh Gupta", title: "HOD, Cardiology", exp: "20 years of experience", desc: "Top-tier specialist in invasive cardiology and heart surgeries.", image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=900&q=80" },
+    { name: "Dr. Smriti Sen", title: "Senior Neurologist", exp: "15 years of experience", desc: "Expert in neuro-surgery and brain mapping.", image: "https://images.unsplash.com/photo-1594824436951-7f12bcce0a52?auto=format&fit=crop&w=900&q=80" },
+    { name: "Dr. Havanansh", title: "Orthopedic Surgeon", exp: "18 years of experience", desc: "Specializes in sports injuries and joint replacement.", image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=80" },
+    { name: "Dr. Anjali Verma", title: "Pediatrician", exp: "12 years of experience", desc: "Dedicated child healthcare and neonatology expert.", image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80" }
+  ];
+  if (cat.includes('beauty')) return [
+    { name: "Ayesha Khan", title: "Creative Director", exp: "10 years of experience", desc: "Celebrity hair stylist and color expert.", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=80" },
+    { name: "Rohan Mehra", title: "Senior MUA", exp: "8 years of experience", desc: "Bridal makeup and prosthetic specialist.", image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=900&q=80" },
+    { name: "Priya Desai", title: "Dermatologist", exp: "12 years of experience", desc: "Advanced skin care and laser therapy.", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=900&q=80" },
+    { name: "Kabir Singh", title: "Spa Therapist", exp: "15 years of experience", desc: "Deep tissue and authentic Ayurvedic massages.", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=80" }
+  ];
+  return [
+    { name: "Alex Mercer", title: "Lead Specialist", exp: "10+ years experience", desc: "Ensures top quality service delivery.", image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=80" },
+    { name: "Sarah Connor", title: "Senior Executive", exp: "8+ years experience", desc: "Customer relations and operations head.", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=900&q=80" },
+    { name: "David Miller", title: "Technical Expert", exp: "12+ years experience", desc: "Handles all complex operational queries.", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=900&q=80" },
+    { name: "Elena Rostova", title: "Quality Analyst", exp: "5+ years experience", desc: "Maintains high standards of service.", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=900&q=80" }
+  ];
+};
+
+const getDynamicDetails = (category = '') => {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('healthcare')) return [{ title: "Key Facilities", items: ["24/7 Emergency", "ICU/NICU", "Blood Bank", "MRI"] }];
+  if (cat.includes('beauty')) return [{ title: "Amenities", items: ["Free Wi-Fi", "Beverages", "Sanitized Tools"] }];
+  if (cat.includes('automotive')) return [{ title: "Highlights", items: ["Genuine Parts", "Service Warranty", "Free Pickup"] }];
+  return [{ title: "Core Offerings", items: ["Premium Quality", "Trained Pros", "24/7 Support"] }];
+};
+
 const CustomerPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
@@ -185,6 +217,67 @@ const CustomerPage = () => {
   const [detailProfile, setDetailProfile] = useState(DEFAULT_DETAIL_PROFILE);
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
+
+  const checkDoctorLeave = useCallback(async (doctorId, selectedDate) => {
+    if (!doctorId || doctorId.startsWith("mock-doc")) {
+      setDoctorOnLeave(false);
+      setLeaveMessage("");
+      return;
+    }
+
+    // 1. Availability Weekday Check
+    const docObj = availableDoctors.find(d => d._id === doctorId);
+    if (docObj && Array.isArray(docObj.availability) && docObj.availability.length > 0) {
+      const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const selectedDayName = weekdays[new Date(year, month - 1, day).getDay()];
+      
+      const isAvailableDay = docObj.availability.some(
+        a => a.day.toLowerCase() === selectedDayName.toLowerCase()
+      );
+
+      if (!isAvailableDay) {
+        setDoctorOnLeave(true);
+        const sittingDays = docObj.availability.map(a => a.day).join(', ');
+        setLeaveMessage(`Doctor is not available on ${selectedDayName}s. Sitting days: ${sittingDays}`);
+        return;
+      }
+    }
+
+    // 2. Fetch & Validate Registered Leave Dates
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/doctors/${doctorId}/leaves`
+      );
+      const data = await res.json();
+      const leaves = data.data || data;
+
+      const formatLocalDate = (dateObjOrStr) => {
+        const d = new Date(dateObjOrStr);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dayVal = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dayVal}`;
+      };
+
+      const leaveFound = Array.isArray(leaves) && leaves.some((leave) => {
+        return formatLocalDate(leave.date) === selectedDate;
+      });
+
+      if (leaveFound) {
+        setDoctorOnLeave(true);
+        setLeaveMessage("Doctor is on leave on this date.");
+      } else {
+        setDoctorOnLeave(false);
+        setLeaveMessage("");
+      }
+    } catch (err) {
+      console.error('Error validating doctor leaves:', err);
+      setDoctorOnLeave(false);
+      setLeaveMessage("");
+    }
+  }, [availableDoctors]);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [familyState, setFamilyState] = useState({ loading: false, adding: false, error: '' });
   const [showFamilyForm, setShowFamilyForm] = useState(false);
@@ -377,8 +470,6 @@ const CustomerPage = () => {
   useEffect(() => {
     if (activeDetailPage) window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeDetailPage]);
-
-  const isHealthcareService = (service) => service?.category?.toLowerCase().includes('healthcare');
 
   useEffect(() => {
     if (!activeDetailPage || !isHealthcareService(activeDetailPage)) {
@@ -602,66 +693,7 @@ const CustomerPage = () => {
     }
   };
 
-  const checkDoctorLeave = useCallback(async (doctorId, selectedDate) => {
-    if (!doctorId || doctorId.startsWith("mock-doc")) {
-      setDoctorOnLeave(false);
-      setLeaveMessage("");
-      return;
-    }
 
-    // 1. Availability Weekday Check
-    const docObj = availableDoctors.find(d => d._id === doctorId);
-    if (docObj && Array.isArray(docObj.availability) && docObj.availability.length > 0) {
-      const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      
-      const [year, month, day] = selectedDate.split('-').map(Number);
-      const selectedDayName = weekdays[new Date(year, month - 1, day).getDay()];
-      
-      const isAvailableDay = docObj.availability.some(
-        a => a.day.toLowerCase() === selectedDayName.toLowerCase()
-      );
-
-      if (!isAvailableDay) {
-        setDoctorOnLeave(true);
-        const sittingDays = docObj.availability.map(a => a.day).join(', ');
-        setLeaveMessage(`Doctor is not available on ${selectedDayName}s. Sitting days: ${sittingDays}`);
-        return;
-      }
-    }
-
-    // 2. Fetch & Validate Registered Leave Dates
-    try {
-      const res = await fetch(
-        `${API_BASE_URL}/doctors/${doctorId}/leaves`
-      );
-      const data = await res.json();
-      const leaves = data.data || data;
-
-      const formatLocalDate = (dateObjOrStr) => {
-        const d = new Date(dateObjOrStr);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const dayVal = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${dayVal}`;
-      };
-
-      const leaveFound = Array.isArray(leaves) && leaves.some((leave) => {
-        return formatLocalDate(leave.date) === selectedDate;
-      });
-
-      if (leaveFound) {
-        setDoctorOnLeave(true);
-        setLeaveMessage("Doctor is on leave on this date.");
-      } else {
-        setDoctorOnLeave(false);
-        setLeaveMessage("");
-      }
-    } catch (err) {
-      console.error('Error validating doctor leaves:', err);
-      setDoctorOnLeave(false);
-      setLeaveMessage("");
-    }
-  });
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -1215,36 +1247,7 @@ const CustomerPage = () => {
 
   const allServices = [...dbHospitals, ...realHealthcareData, ...realBeautyData, ...mappedRemainingData];
 
-  // 🔥 4. AI-DRIVEN DYNAMIC TEAM ENGINE FOR FULL PAGE TABS 🔥
-  const getDynamicTeam = (category) => {
-    const cat = category.toLowerCase();
-    if (cat.includes('healthcare')) return [
-      { name: "Dr. Rajesh Gupta", title: "HOD, Cardiology", exp: "20 years of experience", desc: "Top-tier specialist in invasive cardiology and heart surgeries.", image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=150&q=80" },
-      { name: "Dr. Smriti Sen", title: "Senior Neurologist", exp: "15 years of experience", desc: "Expert in neuro-surgery and brain mapping.", image: "https://images.unsplash.com/photo-1594824436951-7f12bcce0a52?auto=format&fit=crop&w=150&q=80" },
-      { name: "Dr. Havanansh", title: "Orthopedic Surgeon", exp: "18 years of experience", desc: "Specializes in sports injuries and joint replacement.", image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=150&q=80" },
-      { name: "Dr. Anjali Verma", title: "Pediatrician", exp: "12 years of experience", desc: "Dedicated child healthcare and neonatology expert.", image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=150&q=80" }
-    ];
-    if (cat.includes('beauty')) return [
-      { name: "Ayesha Khan", title: "Creative Director", exp: "10 years of experience", desc: "Celebrity hair stylist and color expert.", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80" },
-      { name: "Rohan Mehra", title: "Senior MUA", exp: "8 years of experience", desc: "Bridal makeup and prosthetic specialist.", image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80" },
-      { name: "Priya Desai", title: "Dermatologist", exp: "12 years of experience", desc: "Advanced skin care and laser therapy.", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80" },
-      { name: "Kabir Singh", title: "Spa Therapist", exp: "15 years of experience", desc: "Deep tissue and authentic Ayurvedic massages.", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" }
-    ];
-    return [
-      { name: "Alex Mercer", title: "Lead Specialist", exp: "10+ years experience", desc: "Ensures top quality service delivery.", image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80" },
-      { name: "Sarah Connor", title: "Senior Executive", exp: "8+ years experience", desc: "Customer relations and operations head.", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80" },
-      { name: "David Miller", title: "Technical Expert", exp: "12+ years experience", desc: "Handles all complex operational queries.", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80" },
-      { name: "Elena Rostova", title: "Quality Analyst", exp: "5+ years experience", desc: "Maintains high standards of service.", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80" }
-    ];
-  };
 
-  const getDynamicDetails = (category) => {
-    const cat = category.toLowerCase();
-    if (cat.includes('healthcare')) return [{ title: "Key Facilities", items: ["24/7 Emergency", "ICU/NICU", "Blood Bank", "MRI"] }];
-    if (cat.includes('beauty')) return [{ title: "Amenities", items: ["Free Wi-Fi", "Beverages", "Sanitized Tools"] }];
-    if (cat.includes('automotive')) return [{ title: "Highlights", items: ["Genuine Parts", "Service Warranty", "Free Pickup"] }];
-    return [{ title: "Core Offerings", items: ["Premium Quality", "Trained Pros", "24/7 Support"] }];
-  };
 
   // ================= 5. FILTER ENGINE FOR LIST =================
   const filteredServices = allServices.filter((service) => {

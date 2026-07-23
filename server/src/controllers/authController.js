@@ -14,25 +14,37 @@ const generateToken = (id) => {
 // @desc    Register a new user (Patient or Business)
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, password, role, mobile } = req.body;
+        let { name, email, password, role, mobile, phone } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'Validation failed: Name, email, and password are required' });
+        }
+
+        email = (email || '').trim().toLowerCase();
+        const userMobile = (mobile || phone || '').trim();
+
+        const userData = {
+            name: (name || '').trim(),
+            email,
+            password,
+            role: role || 'patient'
+        };
+
+        if (userMobile) {
+            userData.mobile = userMobile;
+            userData.phone = userMobile;
+        }
 
         if (mongoose.connection.readyState === 1) {
-            // 1. Check if user already exists in the database
+            // 1. Check if user already exists in DB
             const userExists = await User.findOne({ email });
             if (userExists) {
-                return res.status(400).json({ message: 'User already exists with this email' });
+                return res.status(400).json({ message: 'User already exists with this email address' });
             }
 
-            // 2. Create the new user (Password will be auto-hashed by our User model hook)
-            const user = await User.create({
-                name,
-                email,
-                password,
-                role,
-                mobile
-            });
+            // 2. Create the new user
+            const user = await User.create(userData);
 
-            // 3. If user is created successfully, send data and token back to frontend
             if (user) {
                 return res.status(201).json({
                     _id: user._id,
@@ -44,23 +56,18 @@ exports.registerUser = async (req, res) => {
             }
         } else {
             // In-Memory Fallback
-            if (!name || !email || !password) {
-                return res.status(400).json({ message: 'Validation failed: name, email, and password are required' });
-            }
-
-            const userExists = inMemoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+            const userExists = inMemoryDb.users.find(u => u.email.toLowerCase() === email);
             if (userExists) {
-                return res.status(400).json({ message: 'User already exists with this email' });
+                return res.status(400).json({ message: 'User already exists with this email address' });
             }
 
-            // Hash password in-memory using bcryptjs
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
             const newUser = {
                 _id: new mongoose.Types.ObjectId().toString(),
-                name,
-                email: email.toLowerCase(),
+                name: name.trim(),
+                email,
                 password: hashedPassword,
                 role: role || 'patient',
                 createdAt: new Date(),
@@ -78,6 +85,10 @@ exports.registerUser = async (req, res) => {
             });
         }
     } catch (error) {
+        console.error('Registration error:', error);
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'User already exists with this email or phone number.' });
+        }
         res.status(500).json({ message: 'Server error during registration', error: error.message });
     }
 };
@@ -85,7 +96,13 @@ exports.registerUser = async (req, res) => {
 // @desc    Login existing user
 exports.loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        let { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        email = (email || '').trim().toLowerCase();
 
         if (mongoose.connection.readyState === 1) {
             // 1. Find the user by their email
@@ -105,7 +122,7 @@ exports.loginUser = async (req, res) => {
             }
         } else {
             // In-Memory Fallback
-            const user = inMemoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+            const user = inMemoryDb.users.find(u => u.email.toLowerCase() === email);
             if (user && (await bcrypt.compare(password, user.password))) {
                 return res.status(200).json({
                     _id: user._id,
@@ -119,6 +136,7 @@ exports.loginUser = async (req, res) => {
             }
         }
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({ message: 'Server error during login', error: error.message });
     }
 };

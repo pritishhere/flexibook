@@ -1,6 +1,5 @@
-// src/App.jsx
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Header } from './Components/Header';
 import { Footer } from './Components/Footer';
 import Loader from './Components/Loader'; 
@@ -67,7 +66,46 @@ const IntelligentLoader = () => {
 };
 
 /* ====================================================================
-   👑 4. MAIN APP COMPONENT
+   🔐 4. ROLE-BASED ACCESS ROUTE GUARD
+==================================================================== */
+const RoleRoute = ({ children, allowedRoles = [], requireAuth = false }) => {
+  const token = localStorage.getItem('token');
+  let user = null;
+  try {
+    const userStr = localStorage.getItem('user');
+    user = userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
+  } catch (e) {
+    user = null;
+  }
+
+  // 1. Require Login Guard
+  if (requireAuth && !token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // 2. Role Restriction Guard for Logged-In Users
+  if (token && user?.role) {
+    const role = (user.role || '').toLowerCase();
+    
+    if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+      if (role === 'business' || role === 'hospital') {
+        return <Navigate to="/business/dashboard" replace />;
+      }
+      if (role === 'doctor') {
+        return <Navigate to="/doctor/portal" replace />;
+      }
+      if (role === 'admin') {
+        return <Navigate to="/admin-complaints" replace />;
+      }
+      return <Navigate to="/customers" replace />;
+    }
+  }
+
+  return children;
+};
+
+/* ====================================================================
+   👑 5. MAIN APP COMPONENT
 ==================================================================== */
 function App() {
   // 🔴 CHECK: Session memory to see if intro has already played
@@ -103,7 +141,11 @@ function App() {
             <Suspense fallback={<Loader />}>
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/customers" element={<CustomerPage />} />
+                <Route path="/customers" element={
+                  <RoleRoute allowedRoles={['patient', 'customer', 'doctor', 'admin']}>
+                    <CustomerPage />
+                  </RoleRoute>
+                } />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/Login" element={<Login />} />
@@ -112,10 +154,22 @@ function App() {
                 <Route path="/register" element={<BusinessRegistration />} />
                 <Route path="/customer-register" element={<CustomerRegister />} />
                 <Route path="/real-business-form" element={<BusinessRegistration />} />
-                <Route path="/business/dashboard" element={<BusinessDashboard />} />
-                <Route path="/doctor/portal" element={<DoctorPortal />} />
+                <Route path="/business/dashboard" element={
+                  <RoleRoute requireAuth={true} allowedRoles={['business', 'hospital', 'admin']}>
+                    <BusinessDashboard />
+                  </RoleRoute>
+                } />
+                <Route path="/doctor/portal" element={
+                  <RoleRoute requireAuth={true} allowedRoles={['doctor', 'admin']}>
+                    <DoctorPortal />
+                  </RoleRoute>
+                } />
                 <Route path="/ai-symptom-checker" element={<AISymptomChecker />} />
-                <Route path="/admin-complaints" element={<AdminComplaintsPanel />} />
+                <Route path="/admin-complaints" element={
+                  <RoleRoute requireAuth={true} allowedRoles={['admin']}>
+                    <AdminComplaintsPanel />
+                  </RoleRoute>
+                } />
                 <Route path="/business-owner" element={<BusinessOwnerChoice />} />
               </Routes>
             </Suspense>

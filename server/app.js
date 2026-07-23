@@ -1,6 +1,15 @@
 // Node.js ko bolna ki 10 ki jagah 20 listeners allow kare
 require('events').EventEmitter.defaultMaxListeners = 50;
 
+// 🛡️ CRASH-PROOF GUARD: Prevent server from crashing on background errors
+process.on('uncaughtException', (err) => {
+    console.error('⚠️ [SAFEGUARD] Uncaught Exception caught:', err.message || err);
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('⚠️ [SAFEGUARD] Unhandled Promise Rejection caught:', reason?.message || reason);
+});
+
 // ==========================================
 // 1. IMPORT REQUIRED PACKAGES & LOAD ENV
 // ==========================================

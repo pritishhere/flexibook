@@ -748,7 +748,8 @@ function ReviewItem({ title, value }) {
 
 const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
   const [errors, setErrors] = useState({});
-const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false); 
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -763,7 +764,7 @@ const navigate = useNavigate();
 
     try {
       const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const API_BASE_URL = 'http://localhost:3000/api';
       
       const res = await fetch(`${API_BASE_URL}/hospitals`, {
         method: 'POST',
@@ -966,24 +967,24 @@ const navigate = useNavigate();
   );
 };
 
-export default function App() {
-  const [currentStep, setCurrentStep] = useState(1); 
-  const [completedSteps, setCompletedSteps] = useState([]);
-  const [formData, setFormData] = useState({});
+  export default function App() {
+    const [currentStep, setCurrentStep] = useState(1); 
+    const [completedSteps, setCompletedSteps] = useState([]);
+    const [formData, setFormData] = useState({});
 
-  const updateField = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+    const updateField = (field, value) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
 
-  const handleNext = () => {
-    // Only mark as completed if we are officially submitting the current step
-    if (!completedSteps.includes(currentStep)) {
-      setCompletedSteps((prev) => [...prev, currentStep]);
-    }
-    setCurrentStep((prev) => Math.min(steps.length, prev + 1));
-  };
+    const handleNext = () => {
+      // Only mark as completed if we are officially submitting the current step
+      if (!completedSteps.includes(currentStep)) {
+        setCompletedSteps((prev) => [...prev, currentStep]);
+      }
+      setCurrentStep((prev) => Math.min(steps.length, prev + 1));
+    };
 
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(1, prev - 1));
-  };
-}
+    const handleBack = () => {
+      setCurrentStep((prev) => Math.max(1, prev - 1));
+    };
+  }

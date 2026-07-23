@@ -498,7 +498,7 @@ exports.getPatientAppointments = async (req, res) => {
 
         const appointments = await Appointment.find({ patient: patientId })
             .sort({ createdAt: -1 })
-            .populate('doctor', 'name specialization')
+            .populate({path: 'doctor', populate: { path: 'userId', select: 'name' } })
             .populate('hospital', 'name address')
             .populate('familyMember', 'name age gender relationToUser');
 

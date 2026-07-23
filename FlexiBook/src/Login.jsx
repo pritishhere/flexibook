@@ -61,7 +61,17 @@ const Login = () => {
       }));
 
       trackUserAction('LOGIN_SUCCESSFUL', { email: data.email, name: data.name });
-      navigate('/');
+
+      const role = (data.role || '').toLowerCase();
+      if (role === 'business' || role === 'hospital') {
+        navigate('/business/dashboard');
+      } else if (role === 'doctor') {
+        navigate('/doctor/portal');
+      } else if (role === 'admin') {
+        navigate('/admin-complaints');
+      } else {
+        navigate('/customers');
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError('Connection to authorization server failed. Please check if the server is running.');

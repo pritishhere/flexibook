@@ -74,10 +74,13 @@ const SignUpPage = () => {
       setIsLoading(false);
       trackUserAction('SIGNUP_SUCCESSFUL', { email: data.email, role: data.role });
       alert(`Welcome ${data.name}! Account created successfully.`);
-      if (data.role === "business") {
-        navigate("/business-register");
+      const role = (data.role || '').toLowerCase();
+      if (role === 'business' || role === 'hospital') {
+        navigate('/business-register');
+      } else if (role === 'doctor') {
+        navigate('/doctor/portal');
       } else {
-        navigate("/");
+        navigate('/customers');
       }
     } catch (err) {
       console.error('Signup error:', err);

@@ -25,13 +25,19 @@ const MasterDashboard = () => {
       // 1. Fetch live metrics from /api/auth/admin-stats
       const statsRes = await api.get('/auth/admin-stats');
       
-      // 2. Fetch users list (optional fallback if endpoint exists)
+      // 2. Fetch users list
       let usersData = [];
       try {
-        const usersRes = await api.get('/users');
-        usersData = usersRes.data || [];
+        const usersRes = await api.get('/users/all');
+        const raw = usersRes.data?.data || usersRes.data || [];
+        usersData = Array.isArray(raw) ? raw : [];
       } catch (userErr) {
         console.warn('Could not load detailed user list:', userErr);
+        try {
+          const fallbackRes = await api.get('/users');
+          const raw = fallbackRes.data?.data || fallbackRes.data || [];
+          usersData = Array.isArray(raw) ? raw : [];
+        } catch (e) {}
       }
 
       if (statsRes.data) {

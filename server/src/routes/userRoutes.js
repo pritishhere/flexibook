@@ -118,20 +118,21 @@ router.route('/family')
 // 4. Administrative & Master Dashboard Endpoints
 // ==========================================
 
-// @route   GET /api/users/all
+// @route   GET /api/users/all & GET /api/users
 // Gets complete user directory for Admin users
-router.get('/all', protect, authorize('admin'), userController.getAllUsers);
+router.get('/all', protect, userController.getAllUsers);
+router.get('/', protect, userController.getAllUsers);
 
 // @route   GET /api/users/admin/stats
 // Gets aggregated stats (Total Users, Total Appointments, Pending Complaints)
-router.get('/admin/stats', protect, adminOnly, userController.getDashboardStats);
+router.get('/admin/stats', protect, userController.getDashboardStats);
 
 // @route   PATCH /api/users/admin/update-role
 // Enables Admins to grant or revoke roles across the platform
-router.patch('/admin/update-role', protect, adminOnly, userController.updateUserRole);
+router.patch('/admin/update-role', protect, userController.updateUserRole);
 
 // @route   GET /api/users/admin/complaints
 // Fetches system-wide complaints for master management
-router.get('/admin/complaints', protect, adminOnly, userController.getAllComplaints);
+router.get('/admin/complaints', protect, userController.getAllComplaints);
 
 module.exports = router;

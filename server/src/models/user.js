@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema({
         type: String, 
         default: '' 
     },
-    // Keeps track of appointments linked to this user (from teammate branch)
+    // Keeps track of appointments linked to this user
     appointments: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Appointment'

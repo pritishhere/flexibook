@@ -19,11 +19,10 @@ const BusinessRegistration = lazy(() => import('./BusinessRegistration/BusinessR
 const BusinessDashboard = lazy(() => import('./BusinessDashboard'));
 const DoctorPortal = lazy(() => import('./DoctorPortal'));
 const AISymptomChecker = lazy(() => import('./AISymptomChecker'));
-const AdminComplaintsPanel = lazy(() => import('./AdminComplaintsPanel'));
 const BusinessOwnerChoice = lazy(() => import("./BusinessOwnerChoice"));
 const BookingHistory = lazy(() => import('./BookingHistory'));
 
-// 🟢 TASK 2 STEP 2: Lazy load MasterDashboard
+// 🟢 Master Dashboard (Lazy Loaded)
 const MasterDashboard = lazy(() => import('./MasterDashboard'));
 
 
@@ -94,7 +93,7 @@ const RoleRoute = ({ children, allowedRoles = [], requireAuth = false }) => {
         return <Navigate to="/doctor/portal" replace />;
       }
       if (role === 'admin') {
-        return <Navigate to="/admin-complaints" replace />;
+        return <Navigate to="/master-dashboard" replace />;
       }
       return <Navigate to="/customers" replace />;
     }
@@ -122,10 +121,10 @@ function App() {
     // Master Wrapper
     <div className="min-h-screen w-full flex flex-col bg-base text-textMain transition-colors duration-500 font-sans relative">
       
-      {/* 🔴 THE MAGIC: Agar intro khatam nahi hua, toh sabse upar IntroSplash dikhao */}
+      {/* 🔴 THE MAGIC: If intro hasn't finished, display IntroSplash on top */}
       {!introFinished && <IntroSplash onFinish={handleIntroFinish} />}
 
-      {/* 🔴 THE REVEAL: Jab intro chal raha ho, tab website hide rahegi, video end hone pe smoothly fade-in hogi */}
+      {/* 🔴 THE REVEAL: Smooth fade-in once intro finishes */}
       <div 
         className={`w-full flex-grow flex flex-col transition-opacity duration-1000 ease-in-out ${
           introFinished ? 'opacity-100' : 'opacity-0 h-screen overflow-hidden'
@@ -146,13 +145,17 @@ function App() {
                 } />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
-                <Route path="/Login" element={<Login />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/business-register" element={<BusinessRegistration />} />
                 <Route path="/register" element={<BusinessRegistration />} />
                 <Route path="/customer-register" element={<CustomerRegister />} />
                 <Route path="/real-business-form" element={<BusinessRegistration />} />
-                <Route path="/my-bookings" element={ <RoleRoute requireAuth={true} allowedRoles={['patient', 'customer']}> <BookingHistory /></RoleRoute> }/>
+                <Route path="/my-bookings" element={ 
+                  <RoleRoute requireAuth={true} allowedRoles={['patient', 'customer']}> 
+                    <BookingHistory />
+                  </RoleRoute> 
+                }/>
                 <Route path="/business/dashboard" element={
                   <RoleRoute requireAuth={true} allowedRoles={['business', 'hospital', 'admin']}>
                     <BusinessDashboard />
@@ -164,15 +167,24 @@ function App() {
                   </RoleRoute>
                 } />
                 <Route path="/ai-symptom-checker" element={<AISymptomChecker />} />
+                <Route path="/business-owner" element={<BusinessOwnerChoice />} />
+
+                {/* 🛡️ Master Dashboard Protected Routes (Restricted from patients/unauthorized users) */}
+                <Route path="/master-dashboard" element={
+                  <RoleRoute requireAuth={true} allowedRoles={['admin']}>
+                    <MasterDashboard />
+                  </RoleRoute>
+                } />
+                <Route path="/admin-dashboard" element={
+                  <RoleRoute requireAuth={true} allowedRoles={['admin']}>
+                    <MasterDashboard />
+                  </RoleRoute>
+                } />
                 <Route path="/admin-complaints" element={
                   <RoleRoute requireAuth={true} allowedRoles={['admin']}>
                     <MasterDashboard />
                   </RoleRoute>
                 } />
-                <Route path="/business-owner" element={<BusinessOwnerChoice />} />
-
-                {/* 🟢 TASK 2 STEP 2: Super Admin Master Dashboard Route */}
-                <Route path="/admin-dashboard" element={<MasterDashboard />} />
               </Routes>
             </Suspense>
           </main>

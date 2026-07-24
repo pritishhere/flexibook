@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 const userController = require('../controllers/userController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, adminOnly } = require('../middleware/authMiddleware');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_super_secret_key';
 
@@ -115,8 +115,23 @@ router.route('/family')
     .get(protect, userController.getFamilyMembers);
 
 // ==========================================
-// 4. Administrative Endpoints
+// 4. Administrative & Master Dashboard Endpoints
 // ==========================================
+
+// @route   GET /api/users/all
+// Gets complete user directory for Admin users
 router.get('/all', protect, authorize('admin'), userController.getAllUsers);
+
+// @route   GET /api/users/admin/stats
+// Gets aggregated stats (Total Users, Total Appointments, Pending Complaints)
+router.get('/admin/stats', protect, adminOnly, userController.getDashboardStats);
+
+// @route   PATCH /api/users/admin/update-role
+// Enables Admins to grant or revoke roles across the platform
+router.patch('/admin/update-role', protect, adminOnly, userController.updateUserRole);
+
+// @route   GET /api/users/admin/complaints
+// Fetches system-wide complaints for master management
+router.get('/admin/complaints', protect, adminOnly, userController.getAllComplaints);
 
 module.exports = router;

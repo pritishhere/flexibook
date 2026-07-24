@@ -5,7 +5,7 @@ export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation(); 
 
-  // Secure Auth State Memory se data read karne ke liye
+  // Secure Auth State Memory - Read stored user data
   const isLoggedIn = !!localStorage.getItem('token');
   let user = null;
   try {
@@ -14,6 +14,10 @@ export const Header = () => {
   } catch (e) {
     console.error("Error parsing user from localStorage", e);
   }
+
+  // Admin Check: Grants access strictly if user role is 'admin'
+  const userRole = user?.role?.toLowerCase();
+  const isAdmin = userRole === 'admin';
 
   // Professional Secure Logout
   const handleLogout = () => {
@@ -55,12 +59,12 @@ export const Header = () => {
           <nav className="flex-none hidden lg:flex items-center justify-center gap-6 xl:gap-10 mt-1">
             <Link to="/" className={getDesktopLinkStyle('/')}>Home</Link>
 
-            {(user?.role?.toLowerCase() === 'business' || user?.role?.toLowerCase() === 'hospital') ? (
+            {(userRole === 'business' || userRole === 'hospital') ? (
               <>
                 <Link to="/business/dashboard" className={getDesktopLinkStyle('/business/dashboard')}>Business Dashboard</Link>
                 <Link to="/business-register" className={getDesktopLinkStyle('/business-register')}>Business Setup</Link>
               </>
-            ) : user?.role?.toLowerCase() === 'doctor' ? (
+            ) : userRole === 'doctor' ? (
               <>
                 <Link to="/doctor/portal" className={getDesktopLinkStyle('/doctor/portal')}>Doctor Portal</Link>
                 <Link to="/customers" className={getDesktopLinkStyle('/customers')}>For Customers</Link>
@@ -74,20 +78,21 @@ export const Header = () => {
               </>
             )}
 
-            {isLoggedIn && (user?.role?.toLowerCase() === "patient" || user?.role?.toLowerCase() === "customer") && (
-            <Link to="/my-bookings" className={ location.pathname === "/my-bookings"
-              ? "text-sm xl:text-base font-bold text-blue-600 bg-blue-50 px-3.5 py-1.5 rounded-lg border border-blue-200"
-              : "text-sm xl:text-base font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg border border-blue-100 transition-all" }>
-              📋 My Bookings
-            </Link>
+            {isLoggedIn && (userRole === "patient" || userRole === "customer") && (
+              <Link to="/my-bookings" className={ location.pathname === "/my-bookings"
+                ? "text-sm xl:text-base font-bold text-blue-600 bg-blue-50 px-3.5 py-1.5 rounded-lg border border-blue-200"
+                : "text-sm xl:text-base font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg border border-blue-100 transition-all" }>
+                📋 My Bookings
+              </Link>
             )}
 
             <Link to="/categories" className={getDesktopLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" className={getDesktopLinkStyle('/about')}>About Us</Link>
 
-            {user?.role?.toLowerCase() === 'admin' && (
-              <Link to="/admin-dashboard" className={getDesktopLinkStyle('/admin-dashboard')}>
-                🛡️ Admin Central
+            {/* MASTER DASHBOARD LINK (Visible strictly to Admin) */}
+            {isAdmin && (
+              <Link to="/master-dashboard" className={getDesktopLinkStyle('/master-dashboard')}>
+                🛡️ Master Dashboard
               </Link>
             )}
           </nav>
@@ -97,7 +102,7 @@ export const Header = () => {
             {isLoggedIn ? (
               <div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-full shadow-inner">
-                  Hi, {user?.name?.split(' ')[0] || 'User'} ({user?.role === 'business' ? 'Business Owner' : user?.role === 'doctor' ? 'Doctor' : 'Customer'}) 👋
+                  Hi, {user?.name?.split(' ')[0] || 'User'} ({userRole === 'admin' ? 'Admin' : userRole === 'business' ? 'Business Owner' : userRole === 'doctor' ? 'Doctor' : 'Customer'}) 👋
                 </span>
                 <button 
                   onClick={handleLogout}
@@ -141,12 +146,12 @@ export const Header = () => {
           <div className="lg:hidden bg-white border-t border-gray-100 px-6 py-6 flex flex-col gap-4 shadow-inner">
             <Link to="/" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/')}>Home</Link>
 
-            {(user?.role?.toLowerCase() === 'business' || user?.role?.toLowerCase() === 'hospital') ? (
+            {(userRole === 'business' || userRole === 'hospital') ? (
               <>
                 <Link to="/business/dashboard" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/business/dashboard')}>Business Dashboard</Link>
                 <Link to="/business-register" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/business-register')}>Business Setup</Link>
               </>
-            ) : user?.role?.toLowerCase() === 'doctor' ? (
+            ) : userRole === 'doctor' ? (
               <>
                 <Link to="/doctor/portal" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/doctor/portal')}>Doctor Portal</Link>
                 <Link to="/customers" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/customers')}>For Customers</Link>
@@ -160,22 +165,23 @@ export const Header = () => {
               </>
             )}
 
-            {isLoggedIn &&
-              (user?.role?.toLowerCase() === "patient" ||
-              user?.role?.toLowerCase() === "customer") && (
-            <Link
-              to="/my-bookings"
-              onClick={() => setIsOpen(false)}
-              className="text-base font-bold text-blue-600 bg-blue-50 p-3 rounded-lg flex items-center gap-2 border border-blue-100"
-            >
-            <span>📋</span> My Bookings
-          </Link>
-          )}
+            {isLoggedIn && (userRole === "patient" || userRole === "customer") && (
+              <Link
+                to="/my-bookings"
+                onClick={() => setIsOpen(false)}
+                className="text-base font-bold text-blue-600 bg-blue-50 p-3 rounded-lg flex items-center gap-2 border border-blue-100"
+              >
+                <span>📋</span> My Bookings
+              </Link>
+            )}
+
             <Link to="/categories" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/about')}>About Us</Link>
-            {user?.role?.toLowerCase() === 'admin' && (
-              <Link to="/admin-dashboard" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/admin-dashboard')}>
-                🛡️ Admin Central
+
+            {/* MASTER DASHBOARD LINK (Mobile) */}
+            {isAdmin && (
+              <Link to="/master-dashboard" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/master-dashboard')}>
+                🛡️ Master Dashboard
               </Link>
             )}
             
@@ -185,7 +191,7 @@ export const Header = () => {
               {isLoggedIn ? (
                 <>
                   <div className="text-center text-base font-bold text-slate-700 py-2 bg-slate-50 rounded-lg">
-                    Logged in as {user?.name || 'User'} ({user?.role || 'Customer'})
+                    Logged in as {user?.name || 'User'} ({userRole === 'admin' ? 'Admin' : userRole || 'Customer'})
                   </div>
                   <button 
                     onClick={() => { setIsOpen(false); handleLogout(); }} 

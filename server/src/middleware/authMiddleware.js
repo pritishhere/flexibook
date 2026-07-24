@@ -14,7 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_super_secret_key';
 const protect = async (req, res, next) => {
     let token;
 
-    // Check if the authorization header is properly structured with a Bearer token
+    // Check if authorization header is properly structured with a Bearer token
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             // Extract token string by splitting "Bearer <TOKEN>"
@@ -23,7 +23,7 @@ const protect = async (req, res, next) => {
             // Verify the cryptographic signature of the token
             const decoded = jwt.verify(token, JWT_SECRET);
 
-            // Fetch the user from MongoDB or In-Memory fallback depending on connection state
+            // Fetch user from MongoDB or In-Memory fallback depending on connection state
             if (inMemoryDb.isDbConnected()) {
                 req.user = await User.findById(decoded.id).select('-password');
             } else {
@@ -43,7 +43,7 @@ const protect = async (req, res, next) => {
                 return res.status(401).json({ success: false, message: 'Authorization failed. User no longer exists.' });
             }
 
-            // Authentication successful, hand over to the next route/controller handler
+            // Authentication successful, hand over to next route/controller handler
             next();
         } catch (error) {
             console.error('JWT Verification Error:', error.message);
@@ -58,11 +58,13 @@ const protect = async (req, res, next) => {
 };
 
 // ==========================================================
-// 2. Role-Based Authorization Filter (RBAC)
+// 2. Dynamic Role-Based Authorization Filter (RBAC)
 // ==========================================================
 /**
- * Restricts route access to specific account roles (e.g., 'admin', 'doctor', 'patient').
+ * Restricts route access to specific account roles.
  * MUST be placed sequentially AFTER the 'protect' middleware in your routes.
+ * 
+ * Example usage: authorize('admin') or authorize('doctor', 'admin')
  * @param {...String} roles - Allowed roles for the target route
  */
 const authorize = (...roles) => {
@@ -72,11 +74,13 @@ const authorize = (...roles) => {
             return res.status(500).json({ success: false, message: 'Authorization middleware sequence error.' });
         }
 
-        // Match user's role against the array of acceptable roles passed to the route
-        if (!roles.includes(req.user.role)) {
+        const userRole = req.user.role;
+        const isAuthorized = roles.includes(userRole);
+
+        if (!isAuthorized) {
             return res.status(403).json({ 
                 success: false, 
-                message: `Forbidden Access: Role '${req.user.role}' is unauthorized to access this resource.` 
+                message: `Forbidden Access: Role '${userRole}' is unauthorized to access this resource.` 
             });
         }
 
@@ -84,4 +88,25 @@ const authorize = (...roles) => {
     };
 };
 
-module.exports = { protect, authorize };
+// ==========================================================
+// 3. Admin Dedicated Middleware
+// ==========================================================
+/**
+ * Quick shortcut middleware specifically for protecting Master Dashboard endpoints.
+ */
+const adminOnly = (req, res, next) => {
+    if (!req.user) {
+        return res.status(500).json({ success: false, message: 'Authorization middleware sequence error.' });
+    }
+
+    if (req.user.role === 'admin') {
+        return next();
+    }
+
+    return res.status(403).json({
+        success: false,
+        message: 'Access denied: Requires Admin privileges for the Master Dashboard.'
+    });
+};
+
+module.exports = { protect, authorize, adminOnly };

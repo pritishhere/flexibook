@@ -490,22 +490,112 @@ exports.bookAppointment = async (req, res) => {
 };
 
 // ==========================================
-// 2. GET PATIENT'S APPOINTMENT HISTORY
+// 2. GET PATIENT'S APPOINTMENT HISTORY (UPDATED & PROTECTED)
 // ==========================================
 exports.getPatientAppointments = async (req, res) => {
     try {
         const { patientId } = req.params;
 
-        const appointments = await Appointment.find({ patient: patientId })
-            .sort({ createdAt: -1 })
-            .populate({path: 'doctor', populate: { path: 'userId', select: 'name' } })
-            .populate('hospital', 'name address')
-            .populate('familyMember', 'name age gender relationToUser');
+        if (!patientId || patientId === 'undefined') {
+            return res.status(400).json({
+                success: false,
+                message: "Valid Patient ID is required."
+            });
+        }
 
-        res.status(200).json({ success: true, count: appointments.length, data: appointments });
+        if (inMemoryDb.isDbConnected()) {
+            // Flexible query matching patient, user, or patientId fields safely
+            const query = mongoose.Types.ObjectId.isValid(patientId)
+                ? {
+                    $or: [
+                        { patient: patientId },
+                        { user: patientId },
+                        { userId: patientId },
+                        { patientId: patientId }
+                    ]
+                }
+                : { patientName: patientId };
+
+            const appointments = await Appointment.find(query)
+                .sort({ createdAt: -1 })
+                .populate({ path: 'doctor', populate: { path: 'userId', select: 'name' } })
+                .populate('hospital', 'name address city')
+                .populate('familyMember', 'name age gender relationToUser')
+                .lean();
+
+            return res.status(200).json({
+                success: true,
+                count: appointments.length,
+                data: appointments || []
+            });
+        } else {
+            // In-Memory Fallback Mode
+            const userAppointments = (inMemoryDb.appointments || []).filter(a =>
+                String(a.patient) === String(patientId) ||
+                String(a.user) === String(patientId) ||
+                String(a.userId) === String(patientId)
+            );
+
+            const populated = userAppointments.map(a => {
+                const docObj = inMemoryDb.doctors.find(d => String(d._id) === String(a.doctor));
+                const hospObj = inMemoryDb.hospitals.find(h => String(h._id) === String(a.hospital));
+                let populatedDoctor = a.doctor;
+                let populatedHospital = a.hospital;
+
+                if (docObj) {
+                    const docUser = inMemoryDb.users.find(u => String(u._id) === String(docObj.userId));
+                    populatedDoctor = {
+                        ...docObj,
+                        userId: docUser ? { _id: docUser._id, name: docUser.name } : docObj.userId
+                    };
+                }
+
+                if (hospObj) {
+                    populatedHospital = {
+                        _id: hospObj._id,
+                        name: hospObj.name,
+                        address: hospObj.address,
+                        city: hospObj.city
+                    };
+                }
+
+                return {
+                    ...a,
+                    doctor: populatedDoctor,
+                    hospital: populatedHospital
+                };
+            }).sort((a, b) => new Date(b.createdAt || b.appointmentDate) - new Date(a.createdAt || a.appointmentDate));
+
+            return res.status(200).json({
+                success: true,
+                count: populated.length,
+                data: populated
+            });
+        }
 
     } catch (error) {
         console.error('Fetch Appointments Error:', error);
+        res.status(500).json({
+            success: false,
+            message: "Server error fetching history",
+            error: error.message
+        });
+    }
+};
+
+// ==========================================
+// 2B. GET MY APPOINTMENTS (Using Auth Token)
+// ==========================================
+exports.getMyAppointments = async (req, res) => {
+    try {
+        const userId = req.user?._id || req.user?.id || req.user;
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized access. Please login again." });
+        }
+        req.params.patientId = userId.toString();
+        return exports.getPatientAppointments(req, res);
+    } catch (error) {
+        console.error('Fetch My Appointments Error:', error);
         res.status(500).json({ success: false, message: "Server error fetching history", error: error.message });
     }
 };

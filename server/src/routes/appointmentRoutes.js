@@ -11,7 +11,10 @@ const { protect } = require('../middleware/authMiddleware');
 // POST: Book new appointment
 router.post('/book', protect, appointmentController.bookAppointment); 
 
-// GET: Fetch patient's history
+// 🚀 GET: Fetch logged-in user's appointments (Using Auth Token)
+router.get('/my-appointments', protect, appointmentController.getMyAppointments);
+
+// GET: Fetch patient's history by Patient ID
 router.get('/patient/:patientId', protect, appointmentController.getPatientAppointments);
 
 // PUT: General manual status update
@@ -43,4 +46,5 @@ router.put('/:appointmentId/no-show', protect, appointmentController.markNoShow)
 // 🔥 LIVE WEBSOCKET TRIGGERS (Naye Routes)
 router.post('/next-patient', protect, queueController.callNextPatient);
 router.post('/trigger-emergency', protect, queueController.triggerEmergency);
+
 module.exports = router;

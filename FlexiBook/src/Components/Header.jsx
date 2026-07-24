@@ -74,17 +74,12 @@ export const Header = () => {
               </>
             )}
 
-            {isLoggedIn && (
-              <Link 
-                to="/customers" 
-                className={
-                  location.pathname === '/customers'
-                    ? "text-sm xl:text-base font-bold text-blue-600 bg-blue-50 px-3.5 py-1.5 rounded-lg border border-blue-200"
-                    : "text-sm xl:text-base font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg border border-blue-100 transition-all"
-                }
-              >
-                📋 My Bookings
-              </Link>
+            {isLoggedIn && (user?.role?.toLowerCase() === "patient" || user?.role?.toLowerCase() === "customer") && (
+            <Link to="/my-bookings" className={ location.pathname === "/my-bookings"
+              ? "text-sm xl:text-base font-bold text-blue-600 bg-blue-50 px-3.5 py-1.5 rounded-lg border border-blue-200"
+              : "text-sm xl:text-base font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg border border-blue-100 transition-all" }>
+              📋 My Bookings
+            </Link>
             )}
 
             <Link to="/categories" className={getDesktopLinkStyle('/categories')}>Categories</Link>
@@ -165,16 +160,17 @@ export const Header = () => {
               </>
             )}
 
-            {isLoggedIn && (
-              <Link 
-                to="/customers" 
-                onClick={() => setIsOpen(false)} 
-                className="text-base font-bold text-blue-600 bg-blue-50 p-3 rounded-lg flex items-center gap-2 border border-blue-100"
-              >
-                <span>📋</span> My Bookings
-              </Link>
-            )}
-
+            {isLoggedIn &&
+              (user?.role?.toLowerCase() === "patient" ||
+              user?.role?.toLowerCase() === "customer") && (
+            <Link
+              to="/my-bookings"
+              onClick={() => setIsOpen(false)}
+              className="text-base font-bold text-blue-600 bg-blue-50 p-3 rounded-lg flex items-center gap-2 border border-blue-100"
+            >
+            <span>📋</span> My Bookings
+          </Link>
+          )}
             <Link to="/categories" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/categories')}>Categories</Link>
             <Link to="/about" onClick={() => setIsOpen(false)} className={getMobileLinkStyle('/about')}>About Us</Link>
             {user?.role?.toLowerCase() === 'admin' && (

@@ -21,6 +21,7 @@ const DoctorPortal = lazy(() => import('./DoctorPortal'));
 const AISymptomChecker = lazy(() => import('./AISymptomChecker'));
 const AdminComplaintsPanel = lazy(() => import('./AdminComplaintsPanel'));
 const BusinessOwnerChoice = lazy(() => import("./BusinessOwnerChoice"));
+const BookingHistory = lazy(() => import('./BookingHistory'));
 
 // 🟢 TASK 2 STEP 2: Lazy load MasterDashboard
 const MasterDashboard = lazy(() => import('./MasterDashboard'));
@@ -151,6 +152,7 @@ function App() {
                 <Route path="/register" element={<BusinessRegistration />} />
                 <Route path="/customer-register" element={<CustomerRegister />} />
                 <Route path="/real-business-form" element={<BusinessRegistration />} />
+                <Route path="/my-bookings" element={ <RoleRoute requireAuth={true} allowedRoles={['patient', 'customer']}> <BookingHistory /></RoleRoute> }/>
                 <Route path="/business/dashboard" element={
                   <RoleRoute requireAuth={true} allowedRoles={['business', 'hospital', 'admin']}>
                     <BusinessDashboard />

@@ -55,6 +55,7 @@ const Login = () => {
       // SUCCESS! Store JWT token and user info from server
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify({
+        _id: data._id,
         name: data.name,
         email: data.email,
         role: data.role

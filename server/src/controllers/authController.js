@@ -175,6 +175,9 @@ exports.loginUser = async (req, res) => {
     }
 };
 
+const Appointment = require('../models/Appointment');
+const Complaint = require('../models/Complaint');
+
 // @desc    Get dashboard metrics for Master/Admin Dashboard
 // @route   GET /api/auth/admin-stats
 // @access  Private (Admin)
@@ -182,6 +185,8 @@ exports.getAdminStats = async (req, res) => {
     try {
         let totalUsers = 0;
         let totalHospitals = 0;
+        let totalBookings = 0;
+        let openComplaints = 0;
 
         if (inMemoryDb.isDbConnected()) {
             // Count from MongoDB Database
@@ -189,18 +194,24 @@ exports.getAdminStats = async (req, res) => {
             totalHospitals = await User.countDocuments({ 
                 role: { $in: ['business', 'hospital'] } 
             });
+            totalBookings = await Appointment.countDocuments();
+            openComplaints = await Complaint.countDocuments({ 
+                status: { $in: ['open', 'pending', 'Open', 'Pending'] } 
+            });
         } else {
             // Count from In-Memory DB
-            totalUsers = inMemoryDb.users.length;
-            totalHospitals = inMemoryDb.users.filter(u => ['business', 'hospital'].includes(u.role)).length;
+            totalUsers = inMemoryDb.users ? inMemoryDb.users.length : 0;
+            totalHospitals = inMemoryDb.users ? inMemoryDb.users.filter(u => ['business', 'hospital'].includes(u.role)).length : 0;
+            totalBookings = inMemoryDb.appointments ? inMemoryDb.appointments.length : 0;
+            openComplaints = inMemoryDb.complaints ? inMemoryDb.complaints.filter(c => ['open', 'pending', 'Open', 'Pending'].includes(c?.status)).length : 0;
         }
 
         return res.status(200).json({
             success: true,
             totalUsers,
             totalHospitals,
-            totalBookings: 0,
-            openComplaints: 0
+            totalBookings,
+            openComplaints
         });
     } catch (error) {
         console.error('Error fetching admin stats:', error);

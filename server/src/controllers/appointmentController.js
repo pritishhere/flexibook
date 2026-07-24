@@ -379,6 +379,14 @@ exports.bookAppointment = async (req, res) => {
                 }
             }
 
+            try {
+                const { getIO } = require('../config/socket');
+                const io = getIO();
+                if (io) {
+                    io.emit('master_dashboard:update', { type: 'NEW_BOOKING' });
+                }
+            } catch (socketErr) {}
+
             return res.status(201).json({
                 success: true,
                 message: "Appointment booked successfully!",

@@ -80,7 +80,8 @@ exports.registerUser = async (req, res) => {
             }
 
             // 2. Create the new user
-            const user = await User.create(userData);            syncUserToMemory(user);
+            const user = await User.create(userData);
+            syncUserToMemory(user);
             if (user) {
                 return res.status(201).json({
                     _id: user._id,
@@ -171,5 +172,42 @@ exports.loginUser = async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Server error during login', error: error.message });
+    }
+};
+
+// @desc    Get dashboard metrics for Master/Admin Dashboard
+// @route   GET /api/auth/admin-stats
+// @access  Private (Admin)
+exports.getAdminStats = async (req, res) => {
+    try {
+        let totalUsers = 0;
+        let totalHospitals = 0;
+
+        if (inMemoryDb.isDbConnected()) {
+            // Count from MongoDB Database
+            totalUsers = await User.countDocuments();
+            totalHospitals = await User.countDocuments({ 
+                role: { $in: ['business', 'hospital'] } 
+            });
+        } else {
+            // Count from In-Memory DB
+            totalUsers = inMemoryDb.users.length;
+            totalHospitals = inMemoryDb.users.filter(u => ['business', 'hospital'].includes(u.role)).length;
+        }
+
+        return res.status(200).json({
+            success: true,
+            totalUsers,
+            totalHospitals,
+            totalBookings: 0,
+            openComplaints: 0
+        });
+    } catch (error) {
+        console.error('Error fetching admin stats:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error fetching admin statistics',
+            error: error.message
+        });
     }
 };

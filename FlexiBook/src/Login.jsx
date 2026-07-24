@@ -58,7 +58,9 @@ const Login = () => {
         _id: data._id,
         name: data.name,
         email: data.email,
-        role: data.role
+        role: data.role,
+        mobile: data.mobile || '',
+        businessName: data.businessName || ''
       }));
 
       trackUserAction('LOGIN_SUCCESSFUL', { email: data.email, name: data.name });

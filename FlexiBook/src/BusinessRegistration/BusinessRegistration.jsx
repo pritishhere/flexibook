@@ -107,20 +107,20 @@ export default function BusinessRegistration() {
       if (parsedDraft || user) {
         setFormData((prev) => ({
           ...prev,
-          businessName: parsedDraft?.businessName || user?.businessName || "",
-          ownerName: parsedDraft?.name || user?.name || "",
-          businessEmail: parsedDraft?.email || user?.email || "",
-          businessPhone: parsedDraft?.phone || user?.mobile || "",
+          businessName: prev.businessName || parsedDraft?.businessName || user?.businessName || "",
+          ownerName: prev.ownerName || parsedDraft?.name || user?.name || "",
+          businessEmail: prev.businessEmail || parsedDraft?.email || user?.email || "",
+          businessPhone: prev.businessPhone || parsedDraft?.phone || user?.mobile || user?.phone || "",
           signupPassword: parsedDraft?.password || "",
         }));
-        return;
       }
 
       const token = localStorage.getItem("token");
       if (!token) return;
 
       try {
-        const res = await fetch("http://localhost:3000/api/users/profile", {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+        const res = await fetch(`${API_BASE_URL}/users/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -132,10 +132,10 @@ export default function BusinessRegistration() {
         const profile = payload?.data || payload;
         setFormData((prev) => ({
           ...prev,
-          businessName: profile?.businessName || "",
-          ownerName: profile?.name || "",
-          businessEmail: profile?.email || "",
-          businessPhone: profile?.mobile || profile?.phone || "",
+          businessName: prev.businessName || profile?.businessName || "",
+          ownerName: prev.ownerName || profile?.name || "",
+          businessEmail: prev.businessEmail || profile?.email || "",
+          businessPhone: prev.businessPhone || profile?.mobile || profile?.phone || "",
         }));
       } catch (error) {
         console.error("Failed to hydrate business registration form", error);

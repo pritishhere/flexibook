@@ -19,7 +19,8 @@ router.get('/my', protect, getMyComplaints);
 // 🌐 GET /api/complaints - View all submitted complaints (Admin)
 router.get('/', protect, authorize('admin'), getAllComplaints);
 
-// 🌐 PUT /api/complaints/:id/status - Update the status of a complaint (Admin)
+// 🌐 PUT & PATCH /api/complaints/:id/status - Update the status of a complaint (Admin)
 router.put('/:id/status', protect, authorize('admin'), updateComplaintStatus);
+router.patch('/:id/status', protect, authorize('admin'), updateComplaintStatus);
 
 module.exports = router;

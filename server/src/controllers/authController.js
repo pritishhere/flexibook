@@ -1,8 +1,22 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const User = require('../models/user');
+const User = require('../models/user'); // Ensure correct model path case
 const jwt = require('jsonwebtoken'); 
 const inMemoryDb = require('../utils/inMemoryDb');
+
+// Import Booking and Complaint models to calculate all metrics dynamically
+let Booking, Complaint;
+try {
+    Booking = require('../models/Booking');
+} catch (e) {
+    console.warn('Booking model not found at ../models/Booking. Ensure path is correct.');
+}
+
+try {
+    Complaint = require('../models/Complaint');
+} catch (e) {
+    console.warn('Complaint model not found at ../models/Complaint. Ensure path is correct.');
+}
 
 const syncUserToMemory = (user) => {
     if (!user) return;
@@ -23,6 +37,18 @@ const syncUserToMemory = (user) => {
         inMemoryDb.users[existingIndex] = normalizedUser;
     } else {
         inMemoryDb.users.push(normalizedUser);
+    }
+};
+
+// Helper function to emit Socket.io real-time update event
+const notifyDashboardUpdate = (req) => {
+    try {
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('master_dashboard:update');
+        }
+    } catch (err) {
+        console.warn('Could not emit dashboard update event:', err.message);
     }
 };
 
@@ -82,6 +108,10 @@ exports.registerUser = async (req, res) => {
             // 2. Create the new user
             const user = await User.create(userData);
             syncUserToMemory(user);
+
+            // 📢 Broadcast live socket update to Master Dashboard
+            notifyDashboardUpdate(req);
+
             if (user) {
                 return res.status(201).json({
                     _id: user._id,
@@ -109,11 +139,16 @@ exports.registerUser = async (req, res) => {
                 email,
                 password: hashedPassword,
                 role: role || 'patient',
+                mobile: userMobile || null,
+                businessName: businessName || '',
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
 
             inMemoryDb.users.push(newUser);
+
+            // 📢 Broadcast live socket update to Master Dashboard
+            notifyDashboardUpdate(req);
 
             return res.status(201).json({
                 _id: newUser._id,
@@ -182,25 +217,43 @@ exports.getAdminStats = async (req, res) => {
     try {
         let totalUsers = 0;
         let totalHospitals = 0;
+        let totalBookings = 0;
+        let openComplaints = 0;
 
         if (inMemoryDb.isDbConnected()) {
-            // Count from MongoDB Database
+            // 1. Count Total Users from MongoDB
             totalUsers = await User.countDocuments();
+
+            // 2. Count Total Hospitals / Clinics (doctors, businesses, or hospitals)
             totalHospitals = await User.countDocuments({ 
-                role: { $in: ['business', 'hospital'] } 
+                role: { $in: ['business', 'hospital', 'doctor'] } 
             });
+
+            // 3. Count Total Bookings dynamically from Booking Model
+            if (Booking) {
+                totalBookings = await Booking.countDocuments();
+            }
+
+            // 4. Count Open Complaints dynamically from Complaint Model
+            if (Complaint) {
+                openComplaints = await Complaint.countDocuments({
+                    status: { $in: ['open', 'Pending', 'In Progress', 'Unresolved'] }
+                });
+            }
         } else {
             // Count from In-Memory DB
-            totalUsers = inMemoryDb.users.length;
-            totalHospitals = inMemoryDb.users.filter(u => ['business', 'hospital'].includes(u.role)).length;
+            totalUsers = inMemoryDb.users ? inMemoryDb.users.length : 0;
+            totalHospitals = inMemoryDb.users ? inMemoryDb.users.filter(u => ['business', 'hospital', 'doctor'].includes(u.role)).length : 0;
+            totalBookings = inMemoryDb.bookings ? inMemoryDb.bookings.length : 0;
+            openComplaints = inMemoryDb.complaints ? inMemoryDb.complaints.filter(c => ['open', 'Pending'].includes(c.status)).length : 0;
         }
 
         return res.status(200).json({
             success: true,
             totalUsers,
             totalHospitals,
-            totalBookings: 0,
-            openComplaints: 0
+            totalBookings,
+            openComplaints
         });
     } catch (error) {
         console.error('Error fetching admin stats:', error);
@@ -209,5 +262,78 @@ exports.getAdminStats = async (req, res) => {
             message: 'Server error fetching admin statistics',
             error: error.message
         });
+    }
+};
+
+// @desc    Get all registered users across all categories
+// @route   GET /api/auth/users
+// @access  Private (Admin)
+exports.getAllUsers = async (req, res) => {
+    try {
+        let users = [];
+
+        if (inMemoryDb.isDbConnected()) {
+            users = await User.find().select('-password').sort({ createdAt: -1 });
+        } else {
+            users = inMemoryDb.users ? inMemoryDb.users.map(({ password, ...u }) => u) : [];
+        }
+
+        return res.status(200).json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return res.status(500).json({ message: 'Failed to fetch users list', error: error.message });
+    }
+};
+
+// @desc    Update user role dynamically
+// @route   PATCH /api/auth/update-role
+// @access  Private (Admin)
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { userId, role } = req.body;
+
+        if (!userId || !role) {
+            return res.status(400).json({ message: 'User ID and role are required' });
+        }
+
+        if (inMemoryDb.isDbConnected()) {
+            await User.findByIdAndUpdate(userId, { role });
+        } else {
+            const user = inMemoryDb.users.find(u => String(u._id) === String(userId));
+            if (user) {
+                user.role = role;
+            }
+        }
+
+        // 📢 Broadcast live socket update to Master Dashboard
+        notifyDashboardUpdate(req);
+
+        return res.status(200).json({ message: 'Role updated successfully' });
+    } catch (error) {
+        console.error('Error updating role:', error);
+        return res.status(500).json({ message: 'Failed to update role', error: error.message });
+    }
+};
+
+// @desc    Delete a user account
+// @route   DELETE /api/auth/users/:id
+// @access  Private (Admin)
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (inMemoryDb.isDbConnected()) {
+            await User.findByIdAndDelete(id);
+        } else {
+            inMemoryDb.users = inMemoryDb.users.filter(u => String(u._id) !== String(id));
+        }
+
+        // 📢 Broadcast live socket update to Master Dashboard
+        notifyDashboardUpdate(req);
+
+        return res.status(200).json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        return res.status(500).json({ message: 'Failed to delete user', error: error.message });
     }
 };

@@ -970,24 +970,4 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
   );
 };
 
-  export default function App() {
-    const [currentStep, setCurrentStep] = useState(1); 
-    const [completedSteps, setCompletedSteps] = useState([]);
-    const [formData, setFormData] = useState({});
-
-    const updateField = (field, value) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleNext = () => {
-      // Only mark as completed if we are officially submitting the current step
-      if (!completedSteps.includes(currentStep)) {
-        setCompletedSteps((prev) => [...prev, currentStep]);
-      }
-      setCurrentStep((prev) => Math.min(steps.length, prev + 1));
-    };
-
-    const handleBack = () => {
-      setCurrentStep((prev) => Math.max(1, prev - 1));
-    };
-  }
+export default ReviewStep;

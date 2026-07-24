@@ -9,14 +9,15 @@ const steps = [
   "Review & Submit",
 ];
 
-const ProgressBar = ({ currentStep, completedSteps, onStepClick }) => {
+const ProgressBar = ({ steps: stepsProp, currentStep = 1, completedSteps = [], completion = 0, onStepClick }) => {
+  const stepsList = stepsProp && stepsProp.length ? stepsProp.map(s => typeof s === 'string' ? s : s.title) : steps;
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8 w-full">
       <div className="flex justify-between items-start relative w-full">
-        {steps.map((step, index) => {
+        {stepsList.map((step, index) => {
           const stepNumber = index + 1;
           const isActive = currentStep === stepNumber;
-          const isCompleted = completedSteps.includes(stepNumber);
+          const isCompleted = Array.isArray(completedSteps) ? completedSteps.includes(stepNumber) : stepNumber < currentStep;
 
           return (
             <div 

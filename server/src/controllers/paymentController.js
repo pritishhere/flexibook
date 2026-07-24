@@ -49,13 +49,13 @@ exports.createOrder = async (req, res) => {
 
         if (inMemoryDb.isDbConnected()) {
             appointment = await Appointment.findById(appointmentId).populate('doctor', 'fees');
-            orderAmount = Number(appointment?.consultationFee || appointment?.doctor?.fees);
+            orderAmount = Number(appointment?.consultationFee || appointment?.doctor?.fees || 500);
         } else {
             appointment = inMemoryDb.appointments.find(item => item._id === appointmentId);
             const doctor = appointment
                 ? inMemoryDb.doctors.find(item => item._id === appointment.doctor)
                 : null;
-            orderAmount = Number(appointment?.consultationFee || doctor?.fees);
+            orderAmount = Number(appointment?.consultationFee || doctor?.fees || 500);
         }
 
         if (!appointment) {

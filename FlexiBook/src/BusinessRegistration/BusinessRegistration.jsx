@@ -17,6 +17,7 @@ const initialForm = {
   businessName: "",
   ownerName: "",
   businessEmail: "",
+  signupPassword: "",
   businessPhone: "",
   whatsappNumber: "",
   businessCategory: "",
@@ -98,15 +99,50 @@ export default function BusinessRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(initialForm);
   useEffect(() => {
-  const user = JSON.parse(localStorage.getItem("user"));
+    const hydrateFromUser = async () => {
+      const storedDraft = localStorage.getItem("signupDraft");
+      const parsedDraft = storedDraft ? JSON.parse(storedDraft) : null;
+      const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  if (user) {
-    setFormData((prev) => ({
-      ...prev,
-      ownerName: user.name || "",
-      businessEmail: user.email || "",
-    }));
-  }
+      if (parsedDraft || user) {
+        setFormData((prev) => ({
+          ...prev,
+          businessName: parsedDraft?.businessName || user?.businessName || "",
+          ownerName: parsedDraft?.name || user?.name || "",
+          businessEmail: parsedDraft?.email || user?.email || "",
+          businessPhone: parsedDraft?.phone || user?.mobile || "",
+          signupPassword: parsedDraft?.password || "",
+        }));
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await fetch("http://localhost:3000/api/users/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) return;
+
+        const payload = await res.json();
+        const profile = payload?.data || payload;
+        setFormData((prev) => ({
+          ...prev,
+          businessName: profile?.businessName || "",
+          ownerName: profile?.name || "",
+          businessEmail: profile?.email || "",
+          businessPhone: profile?.mobile || profile?.phone || "",
+        }));
+      } catch (error) {
+        console.error("Failed to hydrate business registration form", error);
+      }
+    };
+
+    hydrateFromUser();
   }, []);
 
   const updateField = (field, value) => {

@@ -4,9 +4,31 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken'); 
 const inMemoryDb = require('../utils/inMemoryDb');
 
+const syncUserToMemory = (user) => {
+    if (!user) return;
+
+    const normalizedUser = {
+        _id: String(user._id || user.id),
+        id: String(user._id || user.id),
+        name: user.name,
+        email: user.email,
+        role: user.role || 'patient',
+        password: user.password,
+        mobile: user.mobile || user.phone || null,
+        businessName: user.businessName || ''
+    };
+
+    const existingIndex = inMemoryDb.users.findIndex((entry) => String(entry._id) === normalizedUser._id);
+    if (existingIndex >= 0) {
+        inMemoryDb.users[existingIndex] = normalizedUser;
+    } else {
+        inMemoryDb.users.push(normalizedUser);
+    }
+};
+
 // Helper function to generate a JWT token
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'your_fallback_super_secret_key', {
         expiresIn: '30d', 
     });
 };
@@ -14,7 +36,8 @@ const generateToken = (id) => {
 // @desc    Register a new user (Patient or Business)
 exports.registerUser = async (req, res) => {
     try {
-        let { name, email, password, role, mobile, phone } = req.body;
+        let { name, email, password, role, mobile, phone, businessName, businessPhone, businessEmail } = req.body;
+        const shouldUseDatabase = inMemoryDb.isDbConnected();
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Validation failed: Name, email, and password are required' });
@@ -30,12 +53,26 @@ exports.registerUser = async (req, res) => {
             role: role || 'patient'
         };
 
+        if (businessName) {
+            userData.businessName = (businessName || '').trim();
+        }
+
         if (userMobile) {
             userData.mobile = userMobile;
             userData.phone = userMobile;
         }
 
-        if (mongoose.connection.readyState === 1) {
+        if (businessPhone) {
+            userData.mobile = (businessPhone || '').trim();
+            userData.phone = (businessPhone || '').trim();
+        }
+
+        if (businessEmail) {
+            userData.email = (businessEmail || '').trim().toLowerCase();
+            email = userData.email;
+        }
+
+        if (shouldUseDatabase) {
             // 1. Check if user already exists in DB
             const userExists = await User.findOne({ email });
             if (userExists) {
@@ -43,14 +80,15 @@ exports.registerUser = async (req, res) => {
             }
 
             // 2. Create the new user
-            const user = await User.create(userData);
-
+            const user = await User.create(userData);            syncUserToMemory(user);
             if (user) {
                 return res.status(201).json({
                     _id: user._id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    mobile: user.mobile || user.phone || null,
+                    businessName: user.businessName || '',
                     token: generateToken(user._id)
                 });
             }
@@ -81,6 +119,8 @@ exports.registerUser = async (req, res) => {
                 name: newUser.name,
                 email: newUser.email,
                 role: newUser.role,
+                mobile: newUser.mobile || newUser.phone || null,
+                businessName: newUser.businessName || '',
                 token: generateToken(newUser._id)
             });
         }
@@ -104,37 +144,30 @@ exports.loginUser = async (req, res) => {
 
         email = (email || '').trim().toLowerCase();
 
-        if (mongoose.connection.readyState === 1) {
-            // 1. Find the user by their email
-            const user = await User.findOne({ email });
+        let user = null;
 
-            // 2. Check if user exists AND if the entered password matches the database
-            if (user && (await user.comparePassword(password))) {
-                return res.status(200).json({
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    token: generateToken(user._id)
-                });
-            } else {
-                return res.status(401).json({ message: 'Invalid email or password' });
-            }
+        if (inMemoryDb.isDbConnected()) {
+            user = await User.findOne({ email });
         } else {
-            // In-Memory Fallback
-            const user = inMemoryDb.users.find(u => u.email.toLowerCase() === email);
-            if (user && (await bcrypt.compare(password, user.password))) {
-                return res.status(200).json({
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    token: generateToken(user._id)
-                });
-            } else {
-                return res.status(401).json({ message: 'Invalid email or password' });
-            }
+            user = inMemoryDb.users.find((entry) => (entry.email || '').toLowerCase() === email);
         }
+
+        if (user && (await bcrypt.compare(password, user.password))) {
+            if (user._id && user.email) {
+                syncUserToMemory(user);
+            }
+            return res.status(200).json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                mobile: user.mobile || user.phone || null,
+                businessName: user.businessName || '',
+                token: generateToken(user._id)
+            });
+        }
+
+        return res.status(401).json({ message: 'Invalid email or password' });
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Server error during login', error: error.message });

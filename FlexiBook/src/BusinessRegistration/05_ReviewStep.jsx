@@ -764,7 +764,9 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const API_BASE_URL = 'http://localhost:3000/api';
+      const userStr = localStorage.getItem('user');
+      const userObj = userStr ? JSON.parse(userStr) : null;
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
       
       const res = await fetch(`${API_BASE_URL}/hospitals`, {
         method: 'POST',
@@ -773,6 +775,7 @@ const ReviewStep = ({ formData = {}, updateField, previousStep, nextStep }) => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
        body: JSON.stringify({
+  ownerId: userObj?._id || userObj?.id,
   businessName: formData.businessName,
   ownerName: formData.ownerName,
   businessEmail: formData.businessEmail,

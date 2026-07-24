@@ -78,6 +78,7 @@ const businessTypes = [
 
 const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
   const [errors, setErrors] = useState({});
+  const isPrefilledFromSignup = Boolean(formData.businessName || formData.ownerName || formData.businessEmail || formData.businessPhone);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -126,8 +127,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.businessName) setErrors({ ...errors, businessName: null });
               }}
               placeholder="ABC Healthcare"
+              disabled={isPrefilledFromSignup}
+              readOnly={isPrefilledFromSignup}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.businessName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.businessName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isPrefilledFromSignup ? "bg-slate-100 text-slate-600 cursor-not-allowed" : ""}`}
             />
             {errors.businessName && <p className="text-red-500 text-xs mt-2 font-medium">{errors.businessName}</p>}
           </div>
@@ -143,8 +147,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.ownerName) setErrors({ ...errors, ownerName: null });
               }}
               placeholder="John Doe"
+              disabled={isPrefilledFromSignup}
+              readOnly={isPrefilledFromSignup}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.ownerName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.ownerName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isPrefilledFromSignup ? "bg-slate-100 text-slate-600 cursor-not-allowed" : ""}`}
             />
             {errors.ownerName && <p className="text-red-500 text-xs mt-2 font-medium">{errors.ownerName}</p>}
           </div>
@@ -160,8 +167,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.businessEmail) setErrors({ ...errors, businessEmail: null });
               }}
               placeholder="business@email.com"
+              disabled={isPrefilledFromSignup}
+              readOnly={isPrefilledFromSignup}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.businessEmail ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.businessEmail ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isPrefilledFromSignup ? "bg-slate-100 text-slate-600 cursor-not-allowed" : ""}`}
             />
             {errors.businessEmail && <p className="text-red-500 text-xs mt-2 font-medium">{errors.businessEmail}</p>}
           </div>
@@ -177,8 +187,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.businessPhone) setErrors({ ...errors, businessPhone: null });
               }}
               placeholder="+91 9876543210"
+              disabled={isPrefilledFromSignup}
+              readOnly={isPrefilledFromSignup}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.businessPhone ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.businessPhone ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isPrefilledFromSignup ? "bg-slate-100 text-slate-600 cursor-not-allowed" : ""}`}
             />
             {errors.businessPhone && <p className="text-red-500 text-xs mt-2 font-medium">{errors.businessPhone}</p>}
           </div>

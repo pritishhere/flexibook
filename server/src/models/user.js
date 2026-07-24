@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
+    businessName: {
+        type: String,
+        default: ''
+    },
     dob: {
         type: String,
         default: null

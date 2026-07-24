@@ -51,7 +51,10 @@ const SignUpPage = () => {
           email: formData.email.toLowerCase(),
           password: formData.password,
           role: backendRole,
-          mobile: formData.phone // Pass phone as mobile in backend schema/controller
+          mobile: formData.phone,
+          businessName: role === 'business' ? formData.businessName : '',
+          businessPhone: role === 'business' ? formData.phone : '',
+          businessEmail: role === 'business' ? formData.email.toLowerCase() : ''
         })
       });
       const data = await res.json().catch(() => ({}));
@@ -68,7 +71,16 @@ const SignUpPage = () => {
       localStorage.setItem('user', JSON.stringify({
         name: data.name,
         email: data.email,
-        role: data.role
+        role: data.role,
+        mobile: data.mobile || formData.phone,
+        businessName: data.businessName || formData.businessName
+      }));
+      localStorage.setItem('signupDraft', JSON.stringify({
+        name: data.name,
+        email: data.email,
+        phone: formData.phone,
+        password: formData.password,
+        businessName: formData.businessName
       }));
 
       setIsLoading(false);

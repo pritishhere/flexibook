@@ -5,6 +5,28 @@ const Review = require('../models/Review');
 const Doctor = require('../models/Doctor');
 const inMemoryDb = require('../utils/inMemoryDb');
 
+const normalizeSector = (value) => {
+    if (!value) return 'healthcare';
+
+    const normalized = String(value).trim().toLowerCase();
+    const sectorMap = {
+        clinic: 'healthcare',
+        hospital: 'healthcare',
+        salon: 'salon',
+        spa: 'salon',
+        gym: 'other',
+        restaurant: 'dining',
+        cafe: 'dining',
+        education: 'other',
+        consultancy: 'other',
+        legal: 'other',
+        automobile: 'travel',
+        other: 'other'
+    };
+
+    return sectorMap[normalized] || 'healthcare';
+};
+
 // @desc    Create a new hospital (Typically for Business Owners)
 exports.createHospital = async (req, res) => {
     try {
@@ -16,14 +38,14 @@ exports.createHospital = async (req, res) => {
             city: req.body.city,
             contactNumber: req.body.businessPhone,
             emergencyNumber: req.body.whatsappNumber,
-            ownerId: req.body.ownerId || null,
-            sector: req.body.businessCategory || "healthcare",
+            ownerId: req.body.ownerId || (req.user ? String(req.user._id || req.user.id) : null),
 
             // Business Information
             ownerName: req.body.ownerName,
             businessEmail: req.body.businessEmail,
             businessType: req.body.businessType,
             registrationNumber: req.body.registrationNumber,
+            sector: normalizeSector(req.body.businessCategory || req.body.sector),
             gstNumber: req.body.gstNumber,
             website: req.body.website,
             logo: req.body.logo,

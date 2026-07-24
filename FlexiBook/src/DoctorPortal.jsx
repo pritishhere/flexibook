@@ -7,6 +7,7 @@ const DoctorPortal = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [currentToken, setCurrentToken] = useState(1);
   
@@ -17,36 +18,116 @@ const DoctorPortal = () => {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ type: '', message: '' });
 
-  // Fetch all doctors in system to simulate selecting the logged-in doctor
   useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+    } catch (err) {
+      console.error('Failed to read current user:', err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?._id) return;
+
     const fetchDoctors = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/doctors`);
         const json = await res.json();
         if (json.success && json.data.length > 0) {
-          setDoctors(json.data);
-          setSelectedDoctorId(json.data[0]._id);
+          const doctorList = json.data;
+          setDoctors(doctorList);
+
+          const matchedDoctor = doctorList.find((doctor) => {
+            const doctorUserId = doctor?.userId?._id || doctor?.userId || '';
+            return String(doctorUserId) === String(currentUser._id);
+          });
+
+          if (matchedDoctor) {
+            setSelectedDoctorId(matchedDoctor._id);
+          } else {
+            setSelectedDoctorId('');
+            setAlert({
+              type: 'error',
+              message: 'No doctor profile is linked to your account yet. Please contact the admin.'
+            });
+          }
+        } else {
+          setDoctors([]);
+          setSelectedDoctorId('');
         }
       } catch (err) {
         console.error('Failed to load doctors list:', err.message);
       }
     };
-    fetchDoctors();
-  }, []);
 
-  // Fetch mock appointments for doctor simulation
+    fetchDoctors();
+  }, [currentUser?._id]);
+
   useEffect(() => {
-    if (!selectedDoctorId) return;
-    
-    // Simulate real-time patient queue appointments list
-    const mockAppointments = [
-      { id: '1', patientName: 'John Doe', token: 1, time: '09:30 AM', reason: 'Routine Heart checkup', status: 'In Waiting' },
-      { id: '2', patientName: 'Jane Smith', token: 2, time: '10:00 AM', reason: 'Fever symptom analysis', status: 'In Waiting' },
-      { id: '3', patientName: 'Robert Johnson', token: 3, time: '10:30 AM', reason: 'Joint fracture follow-up', status: 'In Waiting' },
-      { id: '4', patientName: 'Sarah Williams', token: 4, time: '11:00 AM', reason: 'Skin allergy rash review', status: 'In Waiting' }
-    ];
-    setAppointments(mockAppointments);
-    setCurrentToken(1);
+    const fetchAppointments = async () => {
+      if (!selectedDoctorId) {
+        setAppointments([]);
+        setCurrentToken(1);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const doctorRes = await fetch(`${API_BASE_URL}/doctors/${selectedDoctorId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+        const doctorJson = await doctorRes.json();
+        const hospitalId = doctorJson?.data?.hospitalId?._id || doctorJson?.data?.hospitalId || '';
+
+        if (!hospitalId) {
+          setAppointments([]);
+          setCurrentToken(1);
+          return;
+        }
+
+        const appointmentsRes = await fetch(`${API_BASE_URL}/appointments/hospital/${hospitalId}?doctorId=${selectedDoctorId}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+        const json = await appointmentsRes.json();
+
+        if (json.success) {
+          const doctorAppointments = (json.data || [])
+            .map((appointment) => ({
+              id: appointment._id,
+              patientName: appointment.patientName || appointment.patient?.name || 'Patient',
+              token: appointment.tokenNumber,
+              time: appointment.timeSlot || 'Scheduled',
+              reason: appointment.reasonForVisit || 'General Checkup',
+              status: appointment.status || 'Pending',
+              appointmentDate: appointment.appointmentDate,
+              hospitalName: appointment.hospital?.name || 'Hospital'
+            }))
+            .sort((a, b) => a.token - b.token);
+
+          setAppointments(doctorAppointments);
+          const nextAppointment = doctorAppointments.find(
+            (appointment) => !['Completed', 'Cancelled', 'Missed'].includes(appointment.status)
+          );
+          setCurrentToken(nextAppointment?.token || 1);
+        } else {
+          setAppointments([]);
+          setCurrentToken(1);
+        }
+      } catch (err) {
+        console.error('Failed to load appointments:', err.message);
+        setAppointments([]);
+        setCurrentToken(1);
+      }
+    };
+
+    fetchAppointments();
   }, [selectedDoctorId]);
 
  const handleCallNext = async () => {
@@ -169,6 +250,8 @@ const handleEmergency = async () => {
     }
   };
 
+  const selectedDoctorData = doctors.find((doctor) => doctor._id === selectedDoctorId) || null;
+
   return (
     <div className="min-h-screen bg-base text-textMain font-sans flex flex-col md:flex-row transition-colors duration-500">
       {/* Sidebar Panel */}
@@ -178,18 +261,20 @@ const handleEmergency = async () => {
           <p className="text-xs text-textMuted font-bold uppercase tracking-widest mt-1">Doctor Portal</p>
         </div>
 
-        {/* Selected Doctor drop-down to simulate different logins */}
         <div className="bg-base border border-borderSoft p-3 rounded-lg flex flex-col gap-1.5 transition-colors duration-500">
-          <label className="text-[10px] font-black uppercase text-textMuted">Doctor Profile</label>
-          <select 
-            value={selectedDoctorId} 
-            onChange={(e) => setSelectedDoctorId(e.target.value)} 
-            className="w-full bg-surface border border-borderSoft rounded p-1.5 text-xs text-textMain outline-none transition-colors duration-500"
-          >
-            {doctors.map(d => (
-              <option key={d._id} value={d._id}>{d.userId ? d.userId.name : 'Doctor Profile'}</option>
-            ))}
-          </select>
+          <label className="text-[10px] font-black uppercase text-textMuted">Your Doctor Profile</label>
+          {selectedDoctorData ? (
+            <div>
+              <p className="text-sm font-bold text-textMain">
+                {selectedDoctorData.userId?.name || 'Your doctor profile'}
+              </p>
+              <p className="text-[11px] text-textMuted mt-1">
+                {selectedDoctorData.specialization || 'Specialist'}
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-textMuted">No profile linked to your account yet.</p>
+          )}
         </div>
 
         <nav className="flex flex-col gap-2 mt-4">
@@ -256,7 +341,8 @@ const handleEmergency = async () => {
                           <h4 className="font-bold text-base text-textMain">{app.patientName}</h4>
                         </div>
                         <p className="text-xs text-textMuted mt-1">Reason: {app.reason}</p>
-                        <p className="text-xs text-textMuted mt-1 font-semibold">🕒 Scheduled Time: {app.time}</p>
+                        <p className="text-xs text-textMuted mt-1 font-semibold">🕒 Time: {app.time}</p>
+                        <p className="text-[11px] text-textMuted mt-1">{app.hospitalName}</p>
                       </div>
 
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
@@ -279,17 +365,19 @@ const handleEmergency = async () => {
               <div className="bg-surface border border-borderSoft rounded-2xl p-6 flex flex-col items-center text-center transition-colors duration-500">
                 <p className="text-xs text-textMuted font-bold uppercase tracking-widest mb-2">Live Waiting Room Status</p>
                 <h3 className="text-5xl font-black text-textMain my-3">Token #{currentToken}</h3>
-                <p className="text-xs text-emerald-400 font-semibold mb-6">Patient Consultation In Progress</p>
+                <p className="text-xs text-emerald-400 font-semibold mb-6">Next patient for your queue</p>
 
                 <button 
                   onClick={handleCallNext}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all active:scale-95 shadow-lg shadow-blue-500/10"
+                  disabled={!selectedDoctorId}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all active:scale-95 shadow-lg shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Call Next Patient 🔔
                 </button>
                 <button
                   onClick={handleEmergency}
-                  className="mt-3 w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all active:scale-95 shadow-lg"
+                  disabled={!selectedDoctorId}
+                  className="mt-3 w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   🚨 Emergency Alert
                 </button>

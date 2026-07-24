@@ -78,6 +78,10 @@ const businessTypes = [
 
 const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
   const [errors, setErrors] = useState({});
+  const isBusinessNameLocked = Boolean(formData.businessName);
+  const isOwnerNameLocked = Boolean(formData.ownerName);
+  const isEmailLocked = Boolean(formData.businessEmail);
+  const isPhoneLocked = Boolean(formData.businessPhone);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -126,8 +130,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.businessName) setErrors({ ...errors, businessName: null });
               }}
               placeholder="ABC Healthcare"
+              disabled={isBusinessNameLocked}
+              readOnly={isBusinessNameLocked}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.businessName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.businessName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isBusinessNameLocked ? "bg-slate-100 text-slate-600 cursor-not-allowed font-semibold" : ""}`}
             />
             {errors.businessName && <p className="text-red-500 text-xs mt-2 font-medium">{errors.businessName}</p>}
           </div>
@@ -143,8 +150,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.ownerName) setErrors({ ...errors, ownerName: null });
               }}
               placeholder="John Doe"
+              disabled={isOwnerNameLocked}
+              readOnly={isOwnerNameLocked}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.ownerName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.ownerName ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isOwnerNameLocked ? "bg-slate-100 text-slate-600 cursor-not-allowed font-semibold" : ""}`}
             />
             {errors.ownerName && <p className="text-red-500 text-xs mt-2 font-medium">{errors.ownerName}</p>}
           </div>
@@ -160,8 +170,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.businessEmail) setErrors({ ...errors, businessEmail: null });
               }}
               placeholder="business@email.com"
+              disabled={isEmailLocked}
+              readOnly={isEmailLocked}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.businessEmail ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.businessEmail ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isEmailLocked ? "bg-slate-100 text-slate-600 cursor-not-allowed font-semibold" : ""}`}
             />
             {errors.businessEmail && <p className="text-red-500 text-xs mt-2 font-medium">{errors.businessEmail}</p>}
           </div>
@@ -177,8 +190,11 @@ const BusinessInfoStep = ({ formData, updateField, nextStep }) => {
                 if (errors.businessPhone) setErrors({ ...errors, businessPhone: null });
               }}
               placeholder="+91 9876543210"
+              disabled={isPhoneLocked}
+              readOnly={isPhoneLocked}
               className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-colors
-                ${errors.businessPhone ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}`}
+                ${errors.businessPhone ? "border-red-500 focus:border-red-600 bg-red-50" : "border-slate-300 focus:border-blue-600 bg-white"}
+                ${isPhoneLocked ? "bg-slate-100 text-slate-600 cursor-not-allowed font-semibold" : ""}`}
             />
             {errors.businessPhone && <p className="text-red-500 text-xs mt-2 font-medium">{errors.businessPhone}</p>}
           </div>
@@ -420,25 +436,4 @@ const BusinessDetailStep = ({ formData, updateField, previousStep, nextStep }) =
   );
 };
 
-export default function App() {
-  const [currentStep, setCurrentStep] = useState(1); 
-  const [completedSteps, setCompletedSteps] = useState([]);
-  const [formData, setFormData] = useState({});
-
-  const updateField = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleNext = () => {
-    // Only mark as completed if we are officially submitting the current step
-    if (!completedSteps.includes(currentStep)) {
-      setCompletedSteps((prev) => [...prev, currentStep]);
-    }
-    setCurrentStep((prev) => Math.min(steps.length, prev + 1));
-  };
-
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(1, prev - 1));
-  };
-
-}
+export default BusinessInfoStep;

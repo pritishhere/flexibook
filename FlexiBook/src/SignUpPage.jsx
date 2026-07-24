@@ -51,7 +51,10 @@ const SignUpPage = () => {
           email: formData.email.toLowerCase(),
           password: formData.password,
           role: backendRole,
-          mobile: formData.phone // Pass phone as mobile in backend schema/controller
+          mobile: formData.phone,
+          businessName: role === 'business' ? formData.businessName : '',
+          businessPhone: role === 'business' ? formData.phone : '',
+          businessEmail: role === 'business' ? formData.email.toLowerCase() : ''
         })
       });
       const data = await res.json().catch(() => ({}));
@@ -68,16 +71,25 @@ const SignUpPage = () => {
       localStorage.setItem('user', JSON.stringify({
         name: data.name,
         email: data.email,
-        role: data.role
+        role: data.role,
+        mobile: data.mobile || formData.phone,
+        businessName: data.businessName || formData.businessName
+      }));
+      localStorage.setItem('signupDraft', JSON.stringify({
+        name: data.name,
+        email: data.email,
+        phone: formData.phone,
+        password: formData.password,
+        businessName: formData.businessName
       }));
 
       setIsLoading(false);
       trackUserAction('SIGNUP_SUCCESSFUL', { email: data.email, role: data.role });
       alert(`Welcome ${data.name}! Account created successfully.`);
-      const role = (data.role || '').toLowerCase();
-      if (role === 'business' || role === 'hospital') {
+      const userRole = (data.role || '').toLowerCase();
+      if (userRole === 'business' || userRole === 'hospital') {
         navigate('/business-register');
-      } else if (role === 'doctor') {
+      } else if (userRole === 'doctor') {
         navigate('/doctor/portal');
       } else {
         navigate('/customers');

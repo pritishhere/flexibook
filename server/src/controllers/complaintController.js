@@ -64,10 +64,12 @@ exports.createComplaint = async (req, res) => {
 // @access  Private (Patient)
 exports.getMyComplaints = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id || req.user.id;
 
         if (inMemoryDb.isDbConnected()) {
-            const complaints = await Complaint.find({ userId })
+            const complaints = await Complaint.find({
+                $or: [{ userId: userId }, { userId: String(userId) }]
+            })
                 .populate('hospitalId', 'name city')
                 .sort({ createdAt: -1 });
 
@@ -77,14 +79,16 @@ exports.getMyComplaints = async (req, res) => {
                 data: complaints
             });
         } else {
-            const userComplaints = inMemoryDb.complaints.filter(c => c.userId === userId.toString());
+            const userComplaints = inMemoryDb.complaints.filter(c => 
+                String(c.userId) === String(userId) || String(c.userId) === String(req.user.id)
+            );
             const populated = userComplaints.map(c => {
-                const hospital = inMemoryDb.hospitals.find(h => h._id === c.hospitalId);
+                const hospital = inMemoryDb.hospitals.find(h => String(h._id) === String(c.hospitalId));
                 return {
                     ...c,
                     hospitalId: hospital ? { _id: hospital._id, name: hospital.name, city: hospital.city } : c.hospitalId
                 };
-            }).sort((a, b) => b.createdAt - a.createdAt);
+            }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             return res.status(200).json({
                 success: true,
@@ -119,14 +123,14 @@ exports.getAllComplaints = async (req, res) => {
             });
         } else {
             const populated = inMemoryDb.complaints.map(c => {
-                const user = inMemoryDb.users.find(u => u._id === c.userId);
-                const hospital = inMemoryDb.hospitals.find(h => h._id === c.hospitalId);
+                const user = inMemoryDb.users.find(u => String(u._id) === String(c.userId));
+                const hospital = inMemoryDb.hospitals.find(h => String(h._id) === String(c.hospitalId));
                 return {
                     ...c,
                     userId: user ? { _id: user._id, name: user.name, email: user.email } : c.userId,
                     hospitalId: hospital ? { _id: hospital._id, name: hospital.name, city: hospital.city } : c.hospitalId
                 };
-            }).sort((a, b) => b.createdAt - a.createdAt);
+            }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             return res.status(200).json({
                 success: true,
@@ -158,43 +162,45 @@ exports.updateComplaintStatus = async (req, res) => {
             });
         }
 
+        let updatedTicket = null;
+
         if (inMemoryDb.isDbConnected()) {
-            const complaint = await Complaint.findByIdAndUpdate(
+            updatedTicket = await Complaint.findByIdAndUpdate(
                 id,
                 { status },
                 { new: true }
-            );
-
-            if (!complaint) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Complaint ticket not found'
-                });
-            }
-
-            return res.status(200).json({
-                success: true,
-                message: 'Complaint status updated successfully (MongoDB)',
-                data: complaint
-            });
+            ).populate('userId', 'name email').populate('hospitalId', 'name city');
         } else {
-            const index = inMemoryDb.complaints.findIndex(c => c._id === id);
-            if (index === -1) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Complaint ticket not found'
-                });
+            const index = inMemoryDb.complaints.findIndex(c => String(c._id) === String(id));
+            if (index !== -1) {
+                inMemoryDb.complaints[index].status = status;
+                inMemoryDb.complaints[index].updatedAt = new Date();
+                updatedTicket = inMemoryDb.complaints[index];
             }
+        }
 
-            inMemoryDb.complaints[index].status = status;
-            inMemoryDb.complaints[index].updatedAt = new Date();
-
-            return res.status(200).json({
-                success: true,
-                message: 'Complaint status updated successfully (In-Memory Fallback)',
-                data: inMemoryDb.complaints[index]
+        if (!updatedTicket) {
+            return res.status(404).json({
+                success: false,
+                message: 'Complaint ticket not found'
             });
         }
+
+        // Emit real-time WebSocket event so Customer UI updates instantly
+        try {
+            const { getIO } = require('../config/socket');
+            const io = getIO();
+            if (io) {
+                io.emit('complaint_updated', { ticketId: id, status, updatedTicket });
+                io.emit('master_dashboard:update', { type: 'COMPLAINT_UPDATED' });
+            }
+        } catch (socketErr) {}
+
+        return res.status(200).json({
+            success: true,
+            message: 'Complaint status updated successfully',
+            data: updatedTicket
+        });
     } catch (error) {
         res.status(500).json({
             success: false,

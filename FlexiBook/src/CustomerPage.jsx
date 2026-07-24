@@ -517,11 +517,7 @@ const CustomerPage = () => {
             });
             if (complaintsRes.ok) {
               const complaintsData = await complaintsRes.json();
-              const allComplaints = complaintsData.data || [];
-              myComplaints = allComplaints.filter(c => {
-                const hId = c.hospitalId?._id || c.hospitalId;
-                return hId && String(hId) === String(hospitalId);
-              });
+              myComplaints = complaintsData.data || [];
             }
           } catch (err) {
             console.error("Error fetching my complaints:", err);
@@ -559,6 +555,24 @@ const CustomerPage = () => {
       controller.abort();
     };
   }, [activeDetailPage]);
+
+  // Real-time listener for complaint ticket status updates
+  useEffect(() => {
+    const SOCKET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+    const socket = io(SOCKET_BASE_URL);
+    socket.on('complaint_updated', ({ ticketId, status }) => {
+      setDetailProfile(prev => {
+        if (!prev || !prev.myComplaints) return prev;
+        return {
+          ...prev,
+          myComplaints: prev.myComplaints.map(t => 
+            String(t._id) === String(ticketId) ? { ...t, status } : t
+          )
+        };
+      });
+    });
+    return () => socket.disconnect();
+  }, []);
 
   const loadFamilyMembers = async (token) => {
     if (!token) return;
